@@ -79,6 +79,61 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Unfold config
+
+UNFOLD = {
+    'SITE_TITLE': 'App Mudanzas',
+    'SITE_HEADER': 'Gestión de mudanzas',
+    'SITE_SUBHEADER': 'Panel de administración',
+
+    "SIDEBAR": {
+        "navigation": [
+            {
+                "title": "Operaciones",
+                "items": [
+                    {
+                        "title": "Mudanzas",
+                        "icon":  "local_shipping",
+                        "link":  "/admin/gestion/mudanza/",
+                    },
+                    {
+                        "title": "Clientes",
+                        "icon":  "people",
+                        "link":  "/admin/gestion/cliente/",
+                    },
+                ],
+            },
+            {
+                "title": "Flota y Personal",
+                "items": [
+                    {
+                        "title": "Camiones",
+                        "icon":  "fire_truck",
+                        "link":  "/admin/gestion/camion/",
+                    },
+                    {
+                        "title": "Empleados",
+                        "icon":  "badge",
+                        "link":  "/admin/gestion/empleado/",
+                    },
+                ],
+            },
+            {
+                "title": "Configuración",
+                "items": [
+                    {
+                        "title": "Tarifas",
+                        "icon":  "payments",
+                        "link":  "/admin/gestion/tarifabase/",
+                    },
+                ],
+            },
+        ],
+    },
+}
+
+# Celery config
+
 CELERY_BROKER_URL         = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND     = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT     = ["json"]
