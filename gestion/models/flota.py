@@ -1,0 +1,43 @@
+from enum import unique
+from random import choice
+from tabnanny import verbose
+from django.db import models
+from django.contrib.auth.models import User
+
+
+class Camion(models.Model):
+    class Categoria(models.TextChoices):
+        N1 = 'N1', 'Liviano N1 (2.5-3.5 t)'
+        N2 = 'N2', 'Mediano N2 (4.5-5.5 t)'
+
+    patente = models.CharField(max_length=10, unique=True)
+    modelo = models.CharField(max_length=100)
+    categoria = models.CharField(max_length=2, choices=Categoria.choices)
+    capacidad_ton = models.DecimalField(max_digits=4, decimal_places=2)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Camión'
+        verbose_name_plural = 'Camiones'
+
+    def __str__(self):
+        return f'{self.patente} - {self.get_categoria_display()}'
+
+
+class Empleado(models.Model):
+    class Rol(models.TextChoices):
+        CONDUCTOR = 'CONDUCTOR', 'Conductor'
+        AYUDANTE = 'AYUDANTE', 'Ayudante de carga'
+        ADMIN = 'ADMIN', 'Administrativo'
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='empleado')
+    rol = models.CharField(max_length=20, choices=Rol.choices)
+    nro_licencia = models.CharField(max_length=50, blank=True, unique=True)
+    disponible = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Empleado'
+        verbose_name_plural = 'Empleados'
+
+    def __str__(self):
+        return f'{self.user.get_full_name()} - {self.get_rol_display()}'
