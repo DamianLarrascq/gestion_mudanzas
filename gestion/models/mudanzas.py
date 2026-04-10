@@ -1,5 +1,3 @@
-from email.policy import default
-from tokenize import blank_re
 from django.db import models
 from .clientes import Cliente
 from .flota import Camion, Empleado
