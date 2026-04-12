@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django import forms
+from datetime import timedelta
+from django.forms import BaseInlineFormSet, ValidationError
 from unfold.widgets import UnfoldAdminTextInputWidget, UnfoldAdminPasswordWidget
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
@@ -13,18 +15,108 @@ from .models import (
     TarifaBase,
     Presupuesto,
     Notificacion,
+    AsignacionEmpleado,
+    ItemInventario
 )
 
 @admin.register(Cliente)
 class ClienteAdmin(ModelAdmin):
-    list_display = ['nombre_completo', 'telefono', 'email', 'creado_en']
-    search_fields = ['nombre_completo', 'telefono', 'email']
+    list_display = ['nombre_completo', 'dni', 'telefono', 'email', 'creado_en']
+    search_fields = ['nombre_completo', 'dni', 'telefono', 'email']
+
+    fieldsets = (
+        ('Datos personales', {
+            'fields': (
+                ('nombre_completo', 'dni'),
+                ('fecha_nacimiento',),
+            ),
+        }),
+        ('Contacto', {
+            'fields': (
+                ('telefono', 'email'),
+            ),
+        }),
+    )
 
 
 @admin.register(Camion)
 class CamionAdmin(ModelAdmin):
     list_display = ['patente', 'modelo', 'categoria', 'activo']
     list_filter = ['categoria', 'activo']
+
+    fieldsets = (
+        ('Identificación', {
+            'fields': (
+                ('patente', 'modelo'),
+            ),
+        }),
+        ('Categoría', {
+            'fields': (
+                ('categoria', 'activo'),
+            ),
+        }),
+    )
+
+
+class ItemInventarioInline(TabularInline):
+    model = ItemInventario
+    extra = 1
+    fields = ['tipo', 'descripcion', 'cantidad']
+
+
+class AsignacionEmpleadoFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+
+        empleados_asignados = []
+
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+
+            empleado = form.cleaned_data.get('empleado')
+            if not empleado:
+                continue
+
+            if empleado in empleados_asignados:
+                raise ValidationError(
+                    f'{empleado.nombre} ya fue asignado a esta mudanza.'
+                )
+            empleados_asignados.append(empleado)
+
+            mudanza = self.instance
+            if not mudanza.fecha_hora:
+                continue
+
+            fin = mudanza.fecha_hora + timedelta(hours=2)
+
+            conflicto = AsignacionEmpleado.objects.filter(
+                empleado = empleado,
+                mudanza__fecha_hora__lt = fin,
+                mudanza__fecha_hora__gt = mudanza.fecha_hora - timedelta(hours=2),
+                mudanza__estado__in = [
+                    Mudanza.Estado.CONFIRMADA,
+                    Mudanza.Estado.EN_CURSO,
+                ],
+            ).exclude(mudanza=mudanza)
+
+            if conflicto.exists():
+                mudanza_conflicto = conflicto.first().mudanza
+                raise ValidationError(
+                    f'{empleado.nombre} ya está asignado a la mudanza #{mudanza_conflicto.pk} en ese horario.'
+                )
+
+
+class AsignacionEmpleadoInline(TabularInline):
+    model = AsignacionEmpleado
+    formset = AsignacionEmpleadoFormSet
+    extra = 1
+    fields = ['empleado', 'rol']
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'empleado':
+            kwargs['queryset'] = Empleado.objects.filter(disponible=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class EmpleadoCreationForm(forms.ModelForm):
@@ -86,6 +178,31 @@ class EmpleadoAdmin(ModelAdmin):
     list_filter = ['rol', 'disponible']
     search_fields = ['nombre', 'dni']
 
+    add_fieldsets = (
+        ('Acceso al sistema', {
+            'fields': (
+                ('username',),
+                ('password1', 'password2'),
+            ),
+        }),
+        ('Datos personales', {
+            'fields': (
+                ('nombre', 'dni'),
+            ),
+        }),
+        ('Rol y disponibilidad', {
+            'fields': (
+                ('rol', 'disponible'),
+                ('nro_licencia',),
+            ),
+        }),
+    )
+
+    def get_fieldsets(self, request, obj=None):
+        if obj is None:
+            return self.add_fieldsets
+        return self.fieldsets
+
     def get_form(self, request, obj=None, **kwargs):
         if obj is None:
             kwargs['form'] = EmpleadoCreationForm
@@ -114,6 +231,37 @@ class MudanzaAdmin(ModelAdmin):
     list_display = ['__str__', 'cliente', 'fecha_hora', 'estado', 'camion']
     list_filter = ['estado']
     search_fields = ['cliente__nombre_completo', 'domicilio_origen', 'domicilio_destino']
+    inlines = [ItemInventarioInline, AsignacionEmpleadoInline]
+
+    fieldsets = (
+        ('Datos generales', {
+            'fields': (
+                ('cliente', 'estado'),
+                ('fecha_hora', 'camion'),
+            ),
+        }),
+        ('Domicilios', {
+            'fields': (
+                ('domicilio_origen', 'domicilio_destino'),
+                ('piso_origen', 'ascensor_origen'),
+                ('piso_destino', 'ascensor_destino'),
+                ('distancia_km',),
+            ),
+        }),
+        ('Coordenadas', {
+            'classes': ('collapse',),
+            'fields': (
+                ('lat_origen', 'lng_origen'),
+                ('lat_destino', 'lng_destino'),
+            ),
+        }),
+        ('Servicio', {
+            'fields': (
+                ('necesita_ayudantes',),
+                ('mp_preference_id',),
+            ),
+        }),
+    )
 
 
 @admin.register(TarifaBase)

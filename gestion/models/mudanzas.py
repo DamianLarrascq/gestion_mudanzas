@@ -1,6 +1,8 @@
 from django.db import models
+from django.forms import ValidationError
 from .clientes import Cliente
 from .flota import Camion, Empleado
+from datetime import timedelta
 
 
 class Mudanza(models.Model):
@@ -36,6 +38,33 @@ class Mudanza(models.Model):
     mp_preference_id  = models.CharField(max_length=200, blank=True)
     creado_en         = models.DateTimeField(auto_now_add=True)
     actualizado_en    = models.DateTimeField(auto_now=True)  
+
+    def get_rango_horario(self):
+        fin = self.fecha_hora + timedelta(hours=2)
+        return self.fecha_hora, fin
+
+    def clean(self):
+        if not self.fecha_hora:
+            return
+
+        inicio, fin = self.get_rango_horario()
+
+        if self.camion:
+            conflicto_camion = Mudanza.objects.filter(
+                camion=self.camion,
+                fecha_hora__lt=fin,
+                fecha_hora__gt=inicio - timedelta(hours=2),
+                estado__in=[
+                    self.Estado.CONFIRMADA,
+                    self.Estado.EN_CURSO,
+                ],
+            ).exclude(pk=self.pk)
+
+            if conflicto_camion.exists():
+                raise ValidationError({
+                    'camion': f'El camión {self.camion} ya tiene una mudanza asignada en ese horario.'
+                })
+
 
     class Meta:
         verbose_name = 'Mudanza'
