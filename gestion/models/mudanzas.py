@@ -72,7 +72,7 @@ class Mudanza(models.Model):
         ordering = ['-fecha_hora']
 
     def __str__(self):
-        return f'Mudanza #{self.pk} - {self.cliente} - {self.get_estado_display()}'
+        return f'Mudanza #{self.pk}'
 
 
 class AsignacionEmpleado(models.Model):

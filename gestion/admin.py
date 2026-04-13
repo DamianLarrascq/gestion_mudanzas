@@ -2,9 +2,11 @@ from django.contrib import admin
 from django import forms
 from datetime import timedelta
 from django.forms import BaseInlineFormSet, ValidationError
+from django.utils.html import format_html
 from unfold.widgets import UnfoldAdminTextInputWidget, UnfoldAdminPasswordWidget
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
+from unfold.decorators import display, action
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from .models import (
@@ -68,43 +70,58 @@ class AsignacionEmpleadoFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
 
-        empleados_asignados = []
+        mudanza = self.instance
+        empleados_en_form = []
+        conductores = []
 
         for form in self.forms:
             if not form.cleaned_data or form.cleaned_data.get('DELETE'):
                 continue
 
             empleado = form.cleaned_data.get('empleado')
+            rol = form.cleaned_data.get('rol')
             if not empleado:
                 continue
 
-            if empleado in empleados_asignados:
-                raise ValidationError(
-                    f'{empleado.nombre} ya fue asignado a esta mudanza.'
+            if empleado in empleados_en_form:
+                form.add_error('empleado', 'Este empleado está duplicado en la mudanza.')
+            empleados_en_form.append(empleado)
+
+            if rol == Empleado.Rol.CONDUCTOR:
+                conductores.append(form)
+
+            from django.utils.dateparse import parse_datetime
+
+            fecha_hora = mudanza.fecha_hora or self.data.get('fecha_hora')
+
+            if isinstance(fecha_hora, str):
+                fecha_hora = parse_datetime(fecha_hora)
+
+            if not fecha_hora:
+                return
+
+            fin = fecha_hora + timedelta(hours=2)
+
+            for empleado in empleados_en_form:
+                conflicto = AsignacionEmpleado.objects.filter(
+                    empleado = empleado,
+                    mudanza__fecha_hora__lt = fin,
+                    mudanza__fecha_hora__gt = mudanza.fecha_hora - timedelta(hours=2),
+                    mudanza__estado__in = [
+                        Mudanza.Estado.CONFIRMADA,
+                        Mudanza.Estado.EN_CURSO,
+                        Mudanza.Estado.PRESUPUESTADA,
+                    ],
                 )
-            empleados_asignados.append(empleado)
 
-            mudanza = self.instance
-            if not mudanza.fecha_hora:
-                continue
+                if mudanza.pk:
+                    conflicto = conflicto.exclude(mudanza=mudanza)
 
-            fin = mudanza.fecha_hora + timedelta(hours=2)
-
-            conflicto = AsignacionEmpleado.objects.filter(
-                empleado = empleado,
-                mudanza__fecha_hora__lt = fin,
-                mudanza__fecha_hora__gt = mudanza.fecha_hora - timedelta(hours=2),
-                mudanza__estado__in = [
-                    Mudanza.Estado.CONFIRMADA,
-                    Mudanza.Estado.EN_CURSO,
-                ],
-            ).exclude(mudanza=mudanza)
-
-            if conflicto.exists():
-                mudanza_conflicto = conflicto.first().mudanza
-                raise ValidationError(
-                    f'{empleado.nombre} ya está asignado a la mudanza #{mudanza_conflicto.pk} en ese horario.'
-                )
+                if conflicto.exists():
+                    mudanza_conflicto = conflicto.first().mudanza
+                    raise ValidationError(
+                        f'{empleado.nombre} ya está asignado a la mudanza #{mudanza_conflicto.pk} en ese horario.'
+                    )
 
 
 class AsignacionEmpleadoInline(TabularInline):
@@ -115,7 +132,32 @@ class AsignacionEmpleadoInline(TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'empleado':
-            kwargs['queryset'] = Empleado.objects.filter(disponible=True)
+            qs = Empleado.objects.filter(disponible=True)
+
+            object_id = request.resolver_match.kwargs.get('object_id')
+
+            if object_id:
+                try:
+                    mudanza = Mudanza.objects.get(pk=object_id)
+
+                    if mudanza.fecha_hora:
+                        inicio = mudanza.fecha_hora
+                        fin = inicio + timedelta(hours=2)
+
+                        empleados_ocupados = AsignacionEmpleado.objects.filter(
+                            mudanza__fecha_hora__lt=fin,
+                            mudanza__fecha_hora__gt=inicio - timedelta(hours=2),
+                            mudanza__estado__in=[
+                                Mudanza.Estado.CONFIRMADA,
+                                Mudanza.Estado.EN_CURSO,
+                            ],
+                        ).values_list('empleado_id', flat=True)
+
+                        qs = qs.exclude(id__in=empleados_ocupados)
+                    
+                except Mudanza.DoesNotExist:
+                    pass
+            kwargs['queryset'] = qs
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -178,6 +220,20 @@ class EmpleadoAdmin(ModelAdmin):
     list_filter = ['rol', 'disponible']
     search_fields = ['nombre', 'dni']
 
+    fieldsets = (
+        ('Datos personales', {
+            'fields': (
+                ('nombre', 'dni'),
+            ),
+        }),
+        ('Rol y disponibilidad', {
+            'fields': (
+                ('rol', 'disponible'),
+                ('nro_licencia',),
+            ),
+        }),
+    )
+
     add_fieldsets = (
         ('Acceso al sistema', {
             'fields': (
@@ -226,12 +282,29 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     change_password_form = AdminPasswordChangeForm
 
 
+ESTADO_COLORES = {
+    Mudanza.Estado.BORRADOR: ('gray', '⬤'),
+    Mudanza.Estado.PRESUPUESTADA: ('blue', '⬤'),
+    Mudanza.Estado.CONFIRMADA: ('green', '⬤'),
+    Mudanza.Estado.EN_CURSO: ('orange', '⬤'),
+    Mudanza.Estado.COMPLETADA: ('teal', '⬤'),
+    Mudanza.Estado.CANCELADA: ('red', '⬤'),
+    Mudanza.Estado.POSPUESTA: ('purple', '⬤'),
+}
+
+
 @admin.register(Mudanza)
 class MudanzaAdmin(ModelAdmin):
-    list_display = ['__str__', 'cliente', 'fecha_hora', 'estado', 'camion']
+    list_display = ['__str__', 'cliente', 'fecha_hora', 'estado_colored', 'camion', 'total_presupuesto']
     list_filter = ['estado']
     search_fields = ['cliente__nombre_completo', 'domicilio_origen', 'domicilio_destino']
     inlines = [ItemInventarioInline, AsignacionEmpleadoInline]
+    actions = [
+        'marcar_confirmada',
+        'marcar_en_curso',
+        'marcar_completada',
+        'marcar_cancelada'
+    ]
 
     fieldsets = (
         ('Datos generales', {
@@ -263,6 +336,51 @@ class MudanzaAdmin(ModelAdmin):
         }),
     )
 
+    @display(description='Estado', ordering='estado')
+    def estado_colored(self, obj):
+        color, icono = ESTADO_COLORES.get(obj.estado, ('gray', "⬤"))
+        return format_html(
+            '<span style="color: {};">{}</span> {}',
+            color, icono, obj.get_estado_display()
+        )
+
+    # total presupuesto
+    @display(description='Presupuesto', ordering='presupuesto__total')
+    def total_presupuesto(self, obj):
+        try:
+            return f'${obj.presupuesto.total:,.0f}'
+        except Mudanza.presupuesto.RelatedObjectDoesNotExist:
+            return '-'
+
+    # acciones en masa
+    @action(description='Marcar como Confirmada')
+    def marcar_confirmada(self, request, queryset):
+        actualizadas = queryset.filter(
+            estado=Mudanza.Estado.PRESUPUESTADA
+        ).update(estado=Mudanza.Estado.CONFIRMADA)
+        self.message_user(request, f'{actualizadas} mudanza(s) marcadas como Confirmadas.')
+
+
+    @action(description='Marcar como En curso')
+    def marcar_en_curso(self, request, queryset):
+        actualizadas = queryset.filter(
+            estado=Mudanza.Estado.CONFIRMADA
+        ).update(estado=Mudanza.Estado.EN_CURSO)
+        self.message_user(request, f'{actualizadas} mudanza(s) marcadas como En curso')
+
+    @action(description='Marcar como Completada')
+    def marcar_completada(self, request, queryset):
+        actualizadas = queryset.filter(
+            estado = Mudanza.Estado.EN_CURSO
+        ).update(estado=Mudanza.Estado.COMPLETADA)
+        self.message_user(request, f'{actualizadas} mudanza(s) marcadas como Completadas')
+
+    @action(description='Marcar como Cancelada')
+    def marcar_cancelada(self, request, queryset):
+        actualizadas = queryset.exclude(
+            estado__in=[Mudanza.Estado.COMPLETADA, Mudanza.Estado.CANCELADA]
+        ).update(estado=Mudanza.Estado.CANCELADA)
+        self.message_user(request, f'{actualizadas} mudanza(s) marcadas como Canceladas')
 
 @admin.register(TarifaBase)
 class TarifaBaseAdmin(ModelAdmin):
