@@ -60,12 +60,6 @@ class CamionAdmin(ModelAdmin):
     )
 
 
-class ItemInventarioInline(TabularInline):
-    model = ItemInventario
-    extra = 1
-    fields = ['tipo', 'descripcion', 'cantidad']
-
-
 class AsignacionEmpleadoFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
@@ -298,7 +292,7 @@ class MudanzaAdmin(ModelAdmin):
     list_display = ['__str__', 'cliente', 'fecha_hora', 'estado_colored', 'camion', 'total_presupuesto']
     list_filter = ['estado']
     search_fields = ['cliente__nombre_completo', 'domicilio_origen', 'domicilio_destino']
-    inlines = [ItemInventarioInline, AsignacionEmpleadoInline]
+    inlines = [AsignacionEmpleadoInline]
     actions = [
         'marcar_confirmada',
         'marcar_en_curso',

@@ -1,8 +1,9 @@
 from django.db import models
-from django.forms import ValidationError
 from .clientes import Cliente
 from .flota import Camion, Empleado
-from datetime import timedelta
+from .catalogo import CatalogoItem
+from .direcciones import Direccion
+import uuid
 
 
 class Mudanza(models.Model):
@@ -15,22 +16,14 @@ class Mudanza(models.Model):
         CANCELADA = 'CANCELADA', 'Cancelada'
         POSPUESTA = 'POSPUESTA', 'Pospuesta'
 
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='mudanzas')
     camion = models.ForeignKey(Camion, null=True, blank=True, on_delete=models.SET_NULL, related_name='mudanzas')
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.BORRADOR)
     fecha_hora = models.DateTimeField()
-    domicilio_origen = models.CharField(max_length=300)
-    domicilio_destino = models.CharField(max_length=300)
-    lat_origen        = models.FloatField(null=True, blank=True)
-    lng_origen        = models.FloatField(null=True, blank=True)
-    lat_destino       = models.FloatField(null=True, blank=True)
-    lng_destino       = models.FloatField(null=True, blank=True)
-    piso_origen       = models.PositiveSmallIntegerField(default=0)
-    ascensor_origen   = models.BooleanField(default=False)
-    piso_destino      = models.PositiveSmallIntegerField(default=0)
-    ascensor_destino  = models.BooleanField(default=False)
-    distancia_km      = models.DecimalField(max_digits=8, decimal_places=2,
-                            null=True, blank=True)
+    origen = models.ForeignKey(Direccion, null=True, blank=True, on_delete=models.PROTECT, related_name='mudanzas_como_origen')
+    destino = models.ForeignKey(Direccion, null=True, blank=True, on_delete=models.PROTECT, related_name='mudanzas_como_destino')
+    distancia_km = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     necesita_ayudantes = models.BooleanField(default=True)
     monto_senia       = models.DecimalField(max_digits=10, decimal_places=2,
                             null=True, blank=True)
@@ -38,33 +31,6 @@ class Mudanza(models.Model):
     mp_preference_id  = models.CharField(max_length=200, blank=True)
     creado_en         = models.DateTimeField(auto_now_add=True)
     actualizado_en    = models.DateTimeField(auto_now=True)  
-
-    def get_rango_horario(self):
-        fin = self.fecha_hora + timedelta(hours=2)
-        return self.fecha_hora, fin
-
-    def clean(self):
-        if not self.fecha_hora:
-            return
-
-        inicio, fin = self.get_rango_horario()
-
-        if self.camion:
-            conflicto_camion = Mudanza.objects.filter(
-                camion=self.camion,
-                fecha_hora__lt=fin,
-                fecha_hora__gt=inicio - timedelta(hours=2),
-                estado__in=[
-                    self.Estado.CONFIRMADA,
-                    self.Estado.EN_CURSO,
-                ],
-            ).exclude(pk=self.pk)
-
-            if conflicto_camion.exists():
-                raise ValidationError({
-                    'camion': f'El camión {self.camion} ya tiene una mudanza asignada en ese horario.'
-                })
-
 
     class Meta:
         verbose_name = 'Mudanza'
@@ -90,25 +56,11 @@ class AsignacionEmpleado(models.Model):
 
     
 class ItemInventario(models.Model):
-    class Tipo(models.TextChoices):
-        HELADERA   = "HELADERA",   "Heladera"
-        LAVARROPAS = "LAVARROPAS", "Lavarropas"
-        CAMA       = "CAMA",       "Cama"
-        SOFA       = "SOFA",       "Sofá"
-        MESA       = "MESA",       "Mesa comedor"
-        PLACARD    = "PLACARD",    "Placard / Ropero"
-        CAJA       = "CAJA",       "Caja / Bulto"
-        OTRO       = "OTRO",       "Otro"
-
-    mudanza     = models.ForeignKey(Mudanza, on_delete=models.CASCADE,
-                      related_name="inventario")
-    tipo        = models.CharField(max_length=20, choices=Tipo.choices)
+    mudanza = models.ForeignKey(Mudanza, on_delete=models.CASCADE, related_name='inventario')
+    cantidad = models.PositiveSmallIntegerField(default=1)
     descripcion = models.CharField(max_length=200, blank=True)
-    cantidad    = models.PositiveSmallIntegerField(default=1)
+    catalogo_item = models.ForeignKey(CatalogoItem, null=True, blank=True, on_delete=models.SET_NULL, related_name='items_inventario')
 
     class Meta:
         verbose_name        = "Ítem de inventario"
         verbose_name_plural = "Ítems de inventario"
-
-    def __str__(self):
-        return f"{self.cantidad}x {self.get_tipo_display()}"

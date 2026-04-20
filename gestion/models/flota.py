@@ -11,6 +11,10 @@ class Camion(models.Model):
     modelo = models.CharField(max_length=100)
     categoria = models.CharField(max_length=2, choices=Categoria.choices)
     activo = models.BooleanField(default=True)
+    capacidad_volumen_m3 = models.DecimalField(max_digits=6, decimal_places=2, help_text='Volumen máximo')
+    capacidad_peso_kg = models.DecimalField(max_digits=8, decimal_places=2, help_text='Peso máximo')
+    anio = models.PositiveSmallIntegerField(default=0)
+    ultima_revision_tecnica = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Camión'
