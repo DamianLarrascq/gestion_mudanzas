@@ -9,8 +9,17 @@ class TarifaBase(models.Model):
                           help_text="Precio por ayudante por mudanza")
     recargo_piso    = models.DecimalField(max_digits=8, decimal_places=2,
                           help_text="Recargo por piso sin ascensor")
+    recargo_hora_pico = models.DecimalField(max_digits=5, decimal_places=2, default=1.20, help_text='Multiplicador (ej: 1.20 para +20%)')
+    recargo_fin_de_semana = models.DecimalField(max_digits=5, decimal_places=2, default=1.15)
+    permite_caba_feriados = models.BooleanField(default=False)
     activa          = models.BooleanField(default=True)
     vigente_desde   = models.DateField()
+    seguro_camion = models.DecimalField(max_digits=8, decimal_places=2)
+    empleado_art = models.DecimalField(max_digits=8, decimal_places=2)
+    empleado_seguro_riesgo = models.DecimalField(max_digits=8, decimal_places=2)
+    empleado_seguro_ayudante = models.DecimalField(max_digits=8, decimal_places=2)
+    salario_conductor = models.DecimalField(max_digits=8, decimal_places=2)
+    salario_ayudante = models.DecimalField(max_digits=8, decimal_places=2)
 
     class Meta:
         verbose_name        = "Tarifa base"
@@ -37,4 +46,4 @@ class Presupuesto(models.Model):
         verbose_name = "Presupuesto"
 
     def __str__(self):
-        return f"Presupuesto mudanza #{self.mudanza_id} – ${self.total}"
+        return f"Presupuesto mudanza #{self.mudanza.id} – ${self.total}"
