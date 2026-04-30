@@ -1,9 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from django.db.models import Count, Q, Sum
+from django.db.models import Sum
 from django.utils import timezone
-
-from gestion.models import Cliente
 from gestion.models.mudanzas import Mudanza
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.flota import Empleado
