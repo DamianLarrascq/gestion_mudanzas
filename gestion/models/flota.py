@@ -48,4 +48,4 @@ class Empleado(models.Model):
         verbose_name_plural = 'Empleados'
 
     def __str__(self):
-        return f'{self.nombre} - {self.categoria}'
+        return f'{self.nombre} - {self.rol}'
