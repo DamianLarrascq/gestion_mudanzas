@@ -36,7 +36,7 @@ def _formatear_fecha(dt) -> str:
     if dt is None:
         return "-"
     dia_semana = _DIAS_ES[dt.weekday()]
-    mes = _MESES_ES[dt.moth]
+    mes = _MESES_ES[dt.month]
     return f'{dia_semana} {dt.day}, {mes}'
 
 def _formatear_ruta(origen, destino) -> str:
