@@ -12,12 +12,14 @@ from gestion.services.dashboard_service import (
 )
 from gestion.services.empleados_service import FiltrosEmpleado, obtener_empleados_listado, \
     validar_disponibilidad_para_fecha
-from gestion.services.mudanzas_list_service import  FiltrosMudanza, obtener_mudanzas_filtradas
+from gestion.services.flota_service import obtener_estado_flota
+from gestion.services.mudanzas_list_service import FiltrosMudanza, obtener_mudanzas_filtradas
 from gestion.models.clientes import Cliente
 from gestion.services.clientes_service import (
-FiltrosCliente, obtener_clientes_filtrados, obtener_detalle_cliente
+    FiltrosCliente, obtener_clientes_filtrados, obtener_detalle_cliente
 )
 import datetime
+
 
 @login_required
 def dashboard(request):
@@ -34,6 +36,7 @@ def dashboard(request):
     }
 
     return render(request, 'gestion/dashboard.html', context)
+
 
 # Mudanzas
 
@@ -61,6 +64,7 @@ class MudanzaListView(LoginRequiredMixin, TemplateView):
             return max(1, page)
         except (ValueError, TypeError):
             return 1
+
 
 # Clientes
 
@@ -102,6 +106,7 @@ class ClienteDetailView(LoginRequiredMixin, TemplateView):
         ctx["titulo_pagina"] = "Detalle de cliente"
         ctx["seccion_activa"] = "clientes"
         return ctx
+
 
 # Empleados
 
@@ -161,3 +166,16 @@ def api_validar_disponibilidad(request, empleado_id: int):
         return JsonResponse({"error": "Empleado no encontrado."}, status=404)
 
     return JsonResponse(resultado)
+
+
+# Flota
+
+class FlotaMonitorView(LoginRequiredMixin, TemplateView):
+    template_name = "gestion/flota/monitor.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(obtener_estado_flota())
+        ctx["titulo_pagina"] = "Monitoreo de Flota"
+        ctx["seccion_activa"] = "flota"
+        return ctx
