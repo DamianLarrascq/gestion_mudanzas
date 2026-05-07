@@ -119,7 +119,7 @@ def obtener_detalle_cliente(cliente_id: int) -> dict:
     """
     cliente = Cliente.objects.get(pk=cliente_id)
     mudanzas = _obtener_historial_mudanzas(cliente_id)
-    inversion_total = sum(m['monto'] for m in mudanzas if m['monton'] is not None)
+    inversion_total = sum(m['monto'] for m in mudanzas if m['monto'] is not None)
 
     return {
         'cliente': _serializar_cliente_detalle(cliente),
