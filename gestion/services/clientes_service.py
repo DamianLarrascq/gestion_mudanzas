@@ -31,7 +31,7 @@ def obtener_metricas_clientes() -> dict:
     total = Cliente.objects.count()
 
     activos = (
-        Cliente.objects.filter(mudanzas__estad__in=_ESTADOS_ACTIVO).distinct().count()
+        Cliente.objects.filter(mudanzas__estado__in=_ESTADOS_ACTIVO).distinct().count()
     )
 
     con_historial = (

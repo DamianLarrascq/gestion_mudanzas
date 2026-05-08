@@ -12,6 +12,7 @@ class _ResumenInventario:
     volumen_total_m3: Decimal
     peso_total_kg: Decimal
     items: list[dict]
+    items_por_categoria: dict[str, list[dict]]
 
 
 @dataclass(frozen=True)
@@ -35,44 +36,57 @@ def _obtener_tarifa_activa() -> TarifaBase:
 
 def _calcular_inventario(mudanza: Mudanza) -> _ResumenInventario:
     """
-    Itera ItemInventario con prefetch ya resuelto (caller debe haber hecho prefetch_related('inventario__catalogo_item')).
+    Requiere prefetch_related('inventario__catalogo_item') en el queryset.
+    Agrupa por categoría para facilitar la presentación por secciones.
     """
+    from collections import defaultdict
 
-    volumen = Decimal('0')
-    peso = Decimal('0')
-    items = []
+    volumen = Decimal("0")
+    peso = Decimal("0")
+    items: list[dict] = []
+    por_categoria: dict[str, list[dict]] = defaultdict(list)
 
     for item in mudanza.inventario.all():
         catalogo = item.catalogo_item
+
         if catalogo is None:
-            items.append({
-                'nombre': item.descripcion or 'Item sin catalogo',
-                'cantidad': item.cantidad,
-                'volumen_unitario_m3': None,
-                'peso_unitario_kg': None,
-                'subtotal_m3': Decimal('0'),
-            })
+            fila = {
+                "nombre":             item.descripcion or "Ítem sin catálogo",
+                "cantidad":           item.cantidad,
+                "volumen_unitario_m3": None,
+                "peso_unitario_kg":   None,
+                "subtotal_m3":        Decimal("0"),
+                "categoria":          "VARIOS",
+                "categoria_label":    "Varios",
+            }
+            items.append(fila)
+            por_categoria["VARIOS"].append(fila)
             continue
 
-        subtotal_vol = (catalogo.volumen_m3 * item.cantidad).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
-        subtotal_peso = (catalogo.peso_estimado_kg * item.cantidad).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        subtotal_vol  = (catalogo.volumen_m3       * item.cantidad).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+        subtotal_peso = (catalogo.peso_estimado_kg * item.cantidad).quantize(Decimal("0.01"),  rounding=ROUND_HALF_UP)
 
         volumen += subtotal_vol
-        peso += subtotal_peso
-        items.append({
-            'nombre': catalogo.nombre,
-            'cantidad': item.cantidad,
-            'volumen_unitario_m3': catalogo.volumen_m3,
-            'peso_unitario_kg': catalogo.peso_estimado_kg,
-            'subtotal_m3': subtotal_vol,
-        })
+        peso    += subtotal_peso
+
+        fila = {
+            "nombre":              catalogo.nombre,
+            "cantidad":            item.cantidad,
+            "volumen_unitario_m3": catalogo.volumen_m3,
+            "peso_unitario_kg":    catalogo.peso_estimado_kg,
+            "subtotal_m3":         subtotal_vol,
+            "categoria":           catalogo.categoria,
+            "categoria_label":     catalogo.get_categoria_display(),
+        }
+        items.append(fila)
+        por_categoria[catalogo.categoria].append(fila)
 
     return _ResumenInventario(
         volumen_total_m3=volumen,
         peso_total_kg=peso,
-        items=items
+        items=items,
+        items_por_categoria=dict(por_categoria),
     )
-
 
 def _calcular_piso_sin_ascensor(direccion) -> int:
     """
@@ -200,6 +214,70 @@ class PresupuestoService:
 
         return construir_contexto_presupuesto(mudanza, presupuesto, inventario, costos)
 
+    @staticmethod
+    def validar_capacidad_camion(mudanza_id: int) -> dict:
+        """
+        Valida si el inventario actual cabe en el camión asignado.
+        No persiste ni recalcula costos — lectura pura.
+
+        Útil para:
+          - API de asignación de camión (antes de confirmar).
+          - Validación en tiempo real desde el formulario de inventario.
+
+        Returns:
+            {
+              "camion_asignado": bool,
+              "volumen_total_m3": str,
+              "peso_total_kg": str,
+              "capacidad_volumen_m3": str | None,
+              "capacidad_peso_kg": str | None,
+              "sobrecarga_volumen": bool,
+              "sobrecarga_peso": bool,
+              "puede_transportar": bool,   # True solo si ambos dentro del límite
+              "alerta_label": str | None,
+            }
+
+        Raises:
+            Mudanza.DoesNotExist
+        """
+        mudanza = (
+            Mudanza.objects
+            .select_related("camion")
+            .prefetch_related("inventario__catalogo_item")
+            .get(pk=mudanza_id)
+        )
+
+        inventario = _calcular_inventario(mudanza)
+        camion = mudanza.camion
+
+        if camion is None:
+            return {
+                "camion_asignado":     False,
+                "volumen_total_m3":    str(inventario.volumen_total_m3),
+                "peso_total_kg":       str(inventario.peso_total_kg),
+                "capacidad_volumen_m3": None,
+                "capacidad_peso_kg":   None,
+                "sobrecarga_volumen":  False,
+                "sobrecarga_peso":     False,
+                "puede_transportar":   True,   # sin camión, no hay límite que validar
+                "alerta_label":        None,
+            }
+
+        sobrecarga_vol  = inventario.volumen_total_m3 > camion.capacidad_volumen_m3
+        sobrecarga_peso = inventario.peso_total_kg    > camion.capacidad_peso_kg
+
+        return {
+            "camion_asignado":     True,
+            "volumen_total_m3":    str(inventario.volumen_total_m3),
+            "peso_total_kg":       str(inventario.peso_total_kg),
+            "capacidad_volumen_m3": str(camion.capacidad_volumen_m3),
+            "capacidad_peso_kg":   str(camion.capacidad_peso_kg),
+            "sobrecarga_volumen":  sobrecarga_vol,
+            "sobrecarga_peso":     sobrecarga_peso,
+            "puede_transportar":   not sobrecarga_vol and not sobrecarga_peso,
+            "alerta_label":        _label_alerta_capacidad(sobrecarga_peso, sobrecarga_vol),
+        }
+
 def construir_contexto_presupuesto(
         mudanza: Mudanza,
         presupuesto: Presupuesto,
@@ -239,6 +317,7 @@ def construir_contexto_presupuesto(
 
         # Inventario
         "inventario_items": inventario.items,
+        "inventario_por_categoria": inventario.items_por_categoria,
         "volumen_total_m3": str(inventario.volumen_total_m3),
         "peso_total_kg": str(inventario.peso_total_kg),
 
