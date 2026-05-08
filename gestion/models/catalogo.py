@@ -1,17 +1,8 @@
 from django.db import models
 
 
-class Categoria(models.TextChoices):
-    LIVING = 'LIVING', 'Living'
-    DORMITORIO = 'DORMITORIO', 'Dormitorio'
-    COCINA = 'COCINA', 'Cocina'
-    OFICINA = 'OFICINA', 'Oficina'
-    VARIOS = 'VARIOS', 'Varios'
-
-
 class CatalogoItem(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
-    categoria = models.CharField(max_length=20, choices=Categoria.choices, default=Categoria.VARIOS, db_index=True)
     volumen_m3 = models.DecimalField(max_digits=6, decimal_places=3)
     peso_estimado_kg = models.DecimalField(max_digits=7, decimal_places=2)
 

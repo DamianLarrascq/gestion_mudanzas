@@ -6,3 +6,4 @@ from .notificaciones import Notificacion
 from .direcciones import Direccion
 from .catalogo import CatalogoItem
 from .auditoria import HistorialEstado
+from .evidencias import FotoInventario
