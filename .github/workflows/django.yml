@@ -116,4 +116,3 @@ jobs:
       - name: Verificar migraciones al dia
         run: python manage.py migrate --check --no-input
         continue-on-error: true
-        continue-on-error: true
