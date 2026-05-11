@@ -1,4 +1,4 @@
-name: 🧪 CI — Tests SGM
+name: Tests SGM
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
     branches: [ main, develop ]
 
 env:
-  PYTHON_VERSION: "3.10"
   DJANGO_SETTINGS_MODULE: config.settings
   SECRET_KEY: "ci-secret-key-insecure-only-for-github-actions"
   DEBUG: "True"
@@ -17,16 +16,9 @@ env:
   CELERY_TASK_ALWAYS_EAGER: "True"
 
 jobs:
-  # ──────────────────────────────────────────────────────
-  # JOB 1: Tests unitarios e integración
-  # ──────────────────────────────────────────────────────
   test:
-    name: 🧪 Tests (Python ${{ matrix.python-version }})
+    name: Tests y Cobertura
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.10"]
 
     services:
       redis:
@@ -43,102 +35,83 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Python ${{ matrix.python-version }}
+      - name: Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          python-version: "3.12"
+          cache: pip
+
+      - name: Verificar Python >= 3.12
+        run: python -c "import sys; assert sys.version_info >= (3,12), f'Necesario >=3.12, hay {sys.version}'"
+
+      - name: Actualizar pip
+        run: python -m pip install --upgrade pip
+
+      - name: Normalizar requirements.txt de UTF-16 a UTF-8
+        run: python scripts/decode_requirements.py
 
       - name: Instalar dependencias
-        run: |
-          python -m pip install --upgrade pip
-          # requirements.txt tiene encoding UTF-16 — normalizar antes de instalar
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
-          pip install pytest pytest-django pytest-cov coverage
+        run: pip install -r requirements_utf8.txt
+
+      - name: Instalar herramientas de test
+        run: pip install pytest pytest-django pytest-cov coverage
 
       - name: Verificar Redis
         run: redis-cli -h localhost ping
 
-      - name: Ejecutar migraciones
+      - name: Migraciones
         run: python manage.py migrate --no-input
 
-      - name:  Django check
+      - name: Django check
         run: python manage.py check --no-input
 
-      - name: 🧪 Tests — Modelos
+      - name: Tests - Modelos
         run: |
-          python -m pytest tests/test_models.py \
-            -v --tb=short \
-            --junitxml=reports/junit-models.xml \
-            --cov=gestion --cov-report=xml:reports/coverage-models.xml
+          mkdir -p reports
+          python -m pytest tests/test_models.py -v --tb=short --junitxml=reports/junit-models.xml --cov=gestion --cov-report=xml:reports/coverage-models.xml
 
-      - name: 🧪 Tests — Admin y Formularios
-        run: |
-          python -m pytest tests/test_admin.py \
-            -v --tb=short \
-            --junitxml=reports/junit-admin.xml \
-            --cov=gestion --cov-append --cov-report=xml:reports/coverage-admin.xml
+      - name: Tests - Admin
+        run: python -m pytest tests/test_admin.py -v --tb=short --junitxml=reports/junit-admin.xml --cov=gestion --cov-append --cov-report=xml:reports/coverage-admin.xml
 
-      - name: 🧪 Tests — Celery y Settings
-        run: |
-          python -m pytest tests/test_celery.py \
-            -v --tb=short \
-            --junitxml=reports/junit-celery.xml \
-            --cov=config --cov-append --cov-report=xml:reports/coverage-celery.xml
+      - name: Tests - Celery y Settings
+        run: python -m pytest tests/test_celery.py -v --tb=short --junitxml=reports/junit-celery.xml --cov=config --cov-append --cov-report=xml:reports/coverage-celery.xml
 
-      - name: Reporte de cobertura total
-        run: |
-          python -m pytest tests/ \
-            --cov=gestion --cov=config \
-            --cov-report=term-missing \
-            --cov-report=xml:reports/coverage-total.xml \
-            --cov-fail-under=50
+      - name: Cobertura total
+        run: python -m pytest tests/ --cov=gestion --cov=config --cov-report=term-missing --cov-report=xml:reports/coverage-total.xml --cov-fail-under=50
         continue-on-error: true
 
-      - name: Subir reportes como artefacto
+      - name: Subir reportes
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-reports-py${{ matrix.python-version }}
+          name: test-reports
           path: reports/
           retention-days: 30
 
-  # ──────────────────────────────────────────────────────
-  # JOB 2: Verificaciones de Django
-  # ──────────────────────────────────────────────────────
   django-checks:
     name: Django Checks
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Python
+      - name: Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+          cache: pip
+
+      - name: Actualizar pip
+        run: python -m pip install --upgrade pip
+
+      - name: Normalizar requirements.txt
+        run: python scripts/decode_requirements.py
 
       - name: Instalar dependencias
-        run: |
-          pip install --upgrade pip
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
+        run: pip install -r requirements_utf8.txt
 
-      - name: manage.py check
+      - name: Django check
         run: python manage.py check --no-input
 
-      - name: Verificar migraciones al día
+      - name: Verificar migraciones al dia
         run: python manage.py migrate --check --no-input
         continue-on-error: true
