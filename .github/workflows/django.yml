@@ -7,6 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   DJANGO_SETTINGS_MODULE: config.settings
   SECRET_KEY: "ci-secret-key-insecure-only-for-github-actions"
   DEBUG: "True"
@@ -33,10 +34,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: "3.12"
           cache: pip
@@ -57,7 +58,7 @@ jobs:
         run: pip install pytest pytest-django pytest-cov coverage
 
       - name: Verificar Redis
-        run: redis-cli -h localhost ping
+        run: python -c "import redis; r=redis.Redis(host='localhost',port=6379); assert r.ping(); print('Redis OK')"
 
       - name: Migraciones
         run: python manage.py migrate --no-input
@@ -81,7 +82,7 @@ jobs:
         continue-on-error: true
 
       - name: Subir reportes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
           name: test-reports
@@ -92,10 +93,10 @@ jobs:
     name: Django Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.6.0
         with:
           python-version: "3.12"
           cache: pip
@@ -114,4 +115,5 @@ jobs:
 
       - name: Verificar migraciones al dia
         run: python manage.py migrate --check --no-input
+        continue-on-error: true
         continue-on-error: true
