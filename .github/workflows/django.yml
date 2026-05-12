@@ -57,6 +57,8 @@ jobs:
       - name: Instalar herramientas de test
         run: pip install pytest pytest-django pytest-cov coverage
 
+      # redis-cli no viene en el runner — verificamos con Python directamente
+      # El health-check del servicio Docker ya garantiza que Redis arrancó
       - name: Verificar Redis
         run: python -c "import redis; r=redis.Redis(host='localhost',port=6379); assert r.ping(); print('Redis OK')"
 
@@ -64,7 +66,7 @@ jobs:
         run: python manage.py migrate --no-input
 
       - name: Django check
-        run: python manage.py check --no-input
+        run: python manage.py check
 
       - name: Tests - Modelos
         run: |
@@ -111,7 +113,7 @@ jobs:
         run: pip install -r requirements_utf8.txt
 
       - name: Django check
-        run: python manage.py check --no-input
+        run: python manage.py check
 
       - name: Verificar migraciones al dia
         run: python manage.py migrate --check --no-input
