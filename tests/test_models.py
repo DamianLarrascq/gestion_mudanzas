@@ -11,7 +11,6 @@ Cubre los modelos reales del repo:
   gestion/models/direcciones.py → Direccion
   gestion/models/notificaciones.py → Notificacion
   gestion/models/auditoria.py  → HistorialEstado
-  gestion/models/evidencias.py → FotoInventario
 """
 from decimal import Decimal
 from datetime import date, datetime, timedelta
