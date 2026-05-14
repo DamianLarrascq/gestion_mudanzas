@@ -7,11 +7,12 @@ from gestion.models.clientes import Cliente
 from gestion.models.mudanzas import Mudanza
 from gestion.models.presupuestos import Presupuesto
 
-# Clasificacion de clientes
+# Clasificación de clientes
 
 _ESTADOS_ACTIVO = [Mudanza.Estado.CONFIRMADA, Mudanza.Estado.EN_CURSO]
 _ESTADOS_HISTORICO = [Mudanza.Estado.COMPLETADA]
 _ESTADOS_POTENCIAL = [Mudanza.Estado.BORRADOR, Mudanza.Estado.PRESUPUESTADA]
+
 
 # Un cliente es "activo" si tiene al menos una mudanza CONFIRMADA o EN_CURSO.
 # Un cliente es "potencial" si NO tiene mudanzas completadas y tiene alguna en
@@ -23,15 +24,15 @@ def obtener_metricas_clientes() -> dict:
     KPIs generales del módulo Clientes.
 
     Retorna:
-        total          (int)  – total de clientes registrados
-        activos        (int)  – con mudanza CONFIRMADA o EN_CURSO ahora mismo
-        potenciales    (int)  – sin mudanza completada, con presupuesto/borrador abierto
-        con_historial  (int)  – tienen al menos una mudanza COMPLETADA
+        total (int) – total de clientes registrados
+        activos (int) – con mudanza CONFIRMADA o EN_CURSO ahora mismo
+        potenciales (int) – sin mudanza completada, con presupuesto/borrador abierto
+        con_historial (int) – tienen al menos una mudanza COMPLETADA
     """
     total = Cliente.objects.count()
 
     activos = (
-        Cliente.objects.filter(mudanzas__estad__in=_ESTADOS_ACTIVO).distinct().count()
+        Cliente.objects.filter(mudanzas__estado__in=_ESTADOS_ACTIVO).distinct().count()
     )
 
     con_historial = (
@@ -39,7 +40,8 @@ def obtener_metricas_clientes() -> dict:
     )
 
     potenciales = (
-        Cliente.objects.filter(mudanzas__estado__in=_ESTADOS_POTENCIAL).exclude(mudanzas__estado=Mudanza.Estado.COMPLETADA).distinct().count()
+        Cliente.objects.filter(mudanzas__estado__in=_ESTADOS_POTENCIAL).exclude(
+            mudanzas__estado=Mudanza.Estado.COMPLETADA).distinct().count()
     )
 
     return {
@@ -49,12 +51,13 @@ def obtener_metricas_clientes() -> dict:
         'con_historial': con_historial,
     }
 
+
 # Filtros y listado
 
 @dataclass(frozen=True)
 class FiltrosCliente:
     q: str = ""
-    segmento: str = ""   # "activo" | "potencial" | "con_historial" | ""
+    segmento: str = ""  # "activo" | "potencial" | "con_historial"
     page: int = 1
     page_size: int = 25
 
@@ -109,6 +112,7 @@ def obtener_clientes_filtrados(filtros: FiltrosCliente) -> dict:
         "opciones_segmento": _opciones_segmento(),
     }
 
+
 # Detalles de cliente con historial
 
 def obtener_detalle_cliente(cliente_id: int) -> dict:
@@ -119,7 +123,7 @@ def obtener_detalle_cliente(cliente_id: int) -> dict:
     """
     cliente = Cliente.objects.get(pk=cliente_id)
     mudanzas = _obtener_historial_mudanzas(cliente_id)
-    inversion_total = sum(m['monto'] for m in mudanzas if m['monton'] is not None)
+    inversion_total = sum(m['monto'] for m in mudanzas if m['monto'] is not None)
 
     return {
         'cliente': _serializar_cliente_detalle(cliente),
@@ -127,12 +131,15 @@ def obtener_detalle_cliente(cliente_id: int) -> dict:
         'resumen': _construir_resumen_cliente(mudanzas, inversion_total),
     }
 
+
 def _obtener_historial_mudanzas(cliente_id: int) -> list[dict]:
     qs = (
-        Mudanza.objects.filter(cliente_id=cliente_id).select_related('origen', 'destino', 'camion', 'presupuesto').order_by('-fecha_hora')
+        Mudanza.objects.filter(cliente_id=cliente_id).select_related('origen', 'destino', 'camion',
+                                                                     'presupuesto').order_by('-fecha_hora')
     )
 
     return [_serializar_mudanza_historial(m) for m in qs]
+
 
 def _construir_resumen_cliente(mudanzas: list[dict], inversion_total: Decimal) -> dict:
     completadas = sum(1 for m in mudanzas if m['estado_valor'] == Mudanza.Estado.COMPLETADA)
@@ -149,6 +156,7 @@ def _construir_resumen_cliente(mudanzas: list[dict], inversion_total: Decimal) -
         'inversion_total_display': f'${inversion_total:,.0f}',
         'inversion_total_raw': inversion_total,
     }
+
 
 # Serializers internos
 
@@ -182,7 +190,7 @@ def _serializar_cliente_fila(c: Cliente) -> dict:
         "nombre_completo": c.nombre_completo,
         "telefono": c.telefono,
         "email": c.email or "-",
-        "total_mudanzas": c.total_mudanzas,          # anotado
+        "total_mudanzas": c.total_mudanzas,  # anotado
         "mudanzas_completadas": c.mudanzas_completadas,  # anotado
         "inversion_total_display": f"${c.inversion_total:,.0f}",
         "inversion_total_raw": c.inversion_total,
@@ -284,7 +292,7 @@ def _construir_paginacion(total: int, page: int, page_size: int) -> dict:
 
 def _opciones_segmento() -> list[dict]:
     return [
-        {"valor": "activo",        "label": "Activos"},
-        {"valor": "potencial",     "label": "Potenciales"},
+        {"valor": "activo", "label": "Activos"},
+        {"valor": "potencial", "label": "Potenciales"},
         {"valor": "con_historial", "label": "Con historial"},
     ]
