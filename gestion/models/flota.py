@@ -17,6 +17,7 @@ class Camion(models.Model):
     vtv_fecha_vencimiento = models.DateField(null=True, blank=True)
     seguro_fecha_vencimiento = models.DateField(null=True, blank=True)
     patente_fecha_vencimiento = models.DateField(null=True, blank=True)
+    en_taller = models.BooleanField(default=False, help_text="Marca el vehículo como fuera de servicio por mantenimiento o reparación.")
 
     class Meta:
         verbose_name = 'Camión'
@@ -48,4 +49,4 @@ class Empleado(models.Model):
         verbose_name_plural = 'Empleados'
 
     def __str__(self):
-        return f'{self.nombre} - {self.categoria}'
+        return f'{self.nombre} - {self.rol}'

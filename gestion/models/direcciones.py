@@ -20,4 +20,4 @@ class Direccion(models.Model):
         verbose_name_plural = 'Direcciones'
 
     def __str__(self):
-        return f'{self.calle} {self.altura}, {self.localidad}'
+        return f'{self.calle} {self.numero}, {self.localidad}'
