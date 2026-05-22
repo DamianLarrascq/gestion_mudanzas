@@ -1,0 +1,717 @@
+{% extends "base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Paleta / tokens ─────────────────────────────────────── */
+  :root {
+    --bg:          #0c0e16;
+    --surface:     #13161f;
+    --surface-2:   #191d2b;
+    --surface-3:   #1f2335;
+    --border:      rgba(255,255,255,0.07);
+    --accent:      #4f7cff;
+    --accent-lt:   #7da0ff;
+    --green:       #22c97b;
+    --yellow:      #f5b942;
+    --red:         #ff4f6b;
+    --muted:       #6b7490;
+    --text:        #dde1ef;
+    --text-bright: #ffffff;
+    --radius:      13px;
+    --radius-sm:   8px;
+  }
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  .emp-page {
+    padding: 32px 36px 56px;
+    max-width: 1440px;
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--text);
+  }
+
+  /* ── Header ──────────────────────────────────────────────── */
+  .emp-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .emp-header h1 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text-bright);
+    margin: 0;
+    line-height: 1;
+  }
+  .emp-header .sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* ── Banner de alertas ───────────────────────────────────── */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,79,107,.1);
+    border: 1px solid rgba(255,79,107,.28);
+    border-left: 4px solid var(--red);
+    border-radius: var(--radius-sm);
+    padding: 14px 20px;
+    margin-bottom: 22px;
+    animation: fadeDown .35s ease both;
+  }
+  .alert-banner svg {
+    width: 22px; height: 22px;
+    stroke: var(--red);
+    stroke-width: 2;
+    fill: none;
+    flex-shrink: 0;
+  }
+  .alert-banner-text {
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .alert-banner-text strong { color: var(--red); }
+
+  /* ── Filtros ─────────────────────────────────────────────── */
+  .filter-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .filter-group label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .filter-input,
+  .filter-select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.85rem;
+    padding: 9px 13px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    font-family: inherit;
+    width: 100%;
+  }
+  .filter-input:focus,
+  .filter-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,124,255,.15);
+  }
+  .filter-select option { background: #1a1d2a; }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 0;
+    align-self: flex-end;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 20px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: #3d68e8; transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+  /* ── Tabla ───────────────────────────────────────────────── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: fadeUp .38s ease .1s both;
+  }
+  .emp-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .emp-table thead th {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--muted);
+    padding: 13px 18px;
+    font-weight: 600;
+    text-align: left;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .emp-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
+  }
+  .emp-table tbody tr:last-child { border-bottom: none; }
+  .emp-table tbody tr:hover { background: rgba(255,255,255,.022); }
+  .emp-table td {
+    padding: 14px 18px;
+    font-size: 0.84rem;
+    vertical-align: middle;
+    color: var(--text);
+  }
+
+  /* ── Celda: nombre + alerta ──────────────────────────────── */
+  .nombre-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nombre-main {
+    font-weight: 700;
+    color: var(--text-bright);
+    font-size: 0.87rem;
+  }
+  .dni-sub {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .alert-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: rgba(255,79,107,.14);
+    flex-shrink: 0;
+    cursor: default;
+    position: relative;
+  }
+  .alert-icon svg {
+    width: 13px; height: 13px;
+    stroke: var(--red);
+    stroke-width: 2.5;
+    fill: none;
+  }
+  /* Tooltip sobre el ícono de alerta */
+  .alert-icon[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(100% + 8px);
+    background: #0e1120;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 99;
+  }
+  .alert-icon[data-tooltip]:hover::after { opacity: 1; }
+
+  /* ── Celda: rol ──────────────────────────────────────────── */
+  .rol-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: .03em;
+    white-space: nowrap;
+  }
+  .rol-pill.conductor { border-color: rgba(79,124,255,.3); color: var(--accent-lt); }
+
+  /* ── Celda: disponibilidad ───────────────────────────────── */
+  /* ── Badges ──────────────────────────────────────────────── */
+  .badge-secondary { background: rgba(107,116,144,.18); color: #9aa3b8; }
+  .badge-info      { background: rgba(56,182,255,.15);  color: #56c2ff; }
+  .badge-primary   { background: rgba(79,124,255,.18);  color: var(--accent-lt); }
+  .badge-warning   { background: rgba(245,185,66,.15);  color: var(--yellow); }
+  .badge-success   { background: rgba(34,201,123,.15);  color: var(--green); }
+  .badge-danger    { background: rgba(255,79,107,.15);  color: var(--red); }
+  .badge-dark      { background: rgba(40,40,60,.5);     color: #7a8199; }
+
+  [class^="badge-"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.71rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  [class^="badge-"]::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Celda: licencia ─────────────────────────────────────── */
+  .licencia-na {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ── Celda: seguros (dos filas) ──────────────────────────── */
+  .seguros-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .seguro-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+  }
+  .seguro-label {
+    color: var(--muted);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 600;
+    min-width: 42px;
+    flex-shrink: 0;
+  }
+  .seguro-text { color: var(--text); }
+  .seguro-text.vencido { color: var(--red); font-weight: 600; }
+
+  /* ── Celda: ART ──────────────────────────────────────────── */
+  .art-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .art-ok  { background: rgba(34,201,123,.13); color: var(--green); }
+  .art-no  { background: rgba(255,79,107,.13); color: var(--red); }
+
+  /* ── Celda: acciones ─────────────────────────────────────── */
+  .detalle-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.77rem;
+    color: var(--accent-lt);
+    text-decoration: none;
+    white-space: nowrap;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(79,124,255,.1);
+    border: 1px solid rgba(79,124,255,.2);
+    transition: background .13s;
+  }
+  .detalle-link:hover { background: rgba(79,124,255,.2); }
+  .detalle-link svg {
+    width: 12px; height: 12px;
+    stroke: currentColor; fill: none; stroke-width: 2.5;
+  }
+
+  /* ── Empty state ─────────────────────────────────────────── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    gap: 12px;
+    color: var(--muted);
+  }
+  .empty-state svg {
+    width: 44px; height: 44px;
+    stroke: var(--muted);
+    fill: none;
+    opacity: .3;
+  }
+  .empty-state p { font-size: 0.86rem; }
+
+  /* ── Paginación ──────────────────────────────────────────── */
+  .pag-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pag-info {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .pag-controls {
+    display: flex;
+    gap: 6px;
+  }
+  .pag-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+    transition: background .13s, color .13s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pag-btn:hover { background: var(--surface-3); color: var(--text-bright); }
+  .pag-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .pag-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .pag-btn svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; fill: none; stroke-width: 2.5;
+  }
+
+  /* ── Animaciones ─────────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .filter-bar { animation: fadeUp .3s ease both; }
+</style>
+
+<div class="emp-page">
+
+  {# ── Header ──────────────────────────────────────────────── #}
+  <div class="emp-header">
+    <div>
+      <h1>{{ titulo_pagina }}</h1>
+      <p class="sub">
+        Consulta para
+        <strong style="color:var(--text);">{{ fecha_consulta_iso }}</strong>
+        &nbsp;·&nbsp; {{ paginacion.total_registros }} empleado{{ paginacion.total_registros|pluralize }}
+      </p>
+    </div>
+  </div>
+
+  {# ── Banner alertas documentales ─────────────────────────── #}
+  {% if resumen_alertas.hay_alertas %}
+  <div class="alert-banner">
+    <svg viewBox="0 0 24 24">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <p class="alert-banner-text">
+      <strong>{{ resumen_alertas.total_con_alerta }} empleado{{ resumen_alertas.total_con_alerta|pluralize }}</strong>
+      requier{{ resumen_alertas.total_con_alerta|pluralize:"e,en" }} atención por documentos vencidos o próximos a vencer.
+      Revisá las filas marcadas con <strong>⚠</strong>.
+    </p>
+  </div>
+  {% endif %}
+
+  {# ── Filtros ─────────────────────────────────────────────── #}
+  <form method="get" action="">
+    <div class="filter-bar">
+
+      {# Búsqueda texto #}
+      <div class="filter-group" style="max-width:280px;">
+        <label for="q">Buscar</label>
+        <input
+          id="q"
+          type="text"
+          name="q"
+          class="filter-input"
+          placeholder="Nombre, DNI, N° licencia…"
+          value="{{ filtros_activos.q }}"
+          autocomplete="off"
+        >
+      </div>
+
+      {# Rol #}
+      <div class="filter-group" style="max-width:200px;">
+        <label for="rol">Rol</label>
+        <select id="rol" name="rol" class="filter-select">
+          <option value="">Todos los roles</option>
+          {% for op in opciones_rol %}
+          <option
+            value="{{ op.valor }}"
+            {% if filtros_activos.rol == op.valor %}selected{% endif %}
+          >{{ op.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# Fecha de consulta #}
+      <div class="filter-group" style="max-width:180px;">
+        <label for="fecha">Fecha de disponibilidad</label>
+        <input
+          id="fecha"
+          type="date"
+          name="fecha"
+          class="filter-input"
+          value="{{ fecha_consulta_iso }}"
+        >
+      </div>
+
+      {# Solo disponibles #}
+      <div class="filter-group" style="max-width:170px; justify-content:flex-end;">
+        <label for="solo_disponibles" style="margin-bottom:2px;">Solo disponibles</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 0;">
+          <input
+            type="checkbox"
+            id="solo_disponibles"
+            name="solo_disponibles"
+            value="1"
+            {% if filtros_activos.solo_disponibles %}checked{% endif %}
+            style="accent-color:var(--accent);width:16px;height:16px;"
+          >
+          <span style="font-size:0.83rem;color:var(--text);">Filtrar</span>
+        </label>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary">Filtrar</button>
+        <a href="?" class="btn-ghost">Limpiar</a>
+      </div>
+
+    </div>
+  </form>
+
+  {# ── Tabla ───────────────────────────────────────────────── #}
+  <div class="table-wrap">
+    {% if empleados %}
+    <table class="emp-table">
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th>Rol</th>
+          <th>Disponibilidad</th>
+          <th>Licencia</th>
+          <th>Seguros</th>
+          <th>ART</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in empleados %}
+        <tr>
+
+          {# Nombre + alerta #}
+          <td>
+            <div class="nombre-cell">
+              {% if emp.tiene_alerta_documental %}
+              <span
+                class="alert-icon"
+                data-tooltip="Documentación requiere atención"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </span>
+              {% endif %}
+              <div>
+                <div class="nombre-main">{{ emp.nombre }}</div>
+                <div class="dni-sub">DNI {{ emp.dni }}</div>
+              </div>
+            </div>
+          </td>
+
+          {# Rol #}
+          <td>
+            <span class="rol-pill {% if emp.es_conductor %}conductor{% endif %}">
+              {% if emp.es_conductor %}
+                {# icono volante simbólico #}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="19.78" x2="8.69" y2="16.26"/><line x1="19.78" y1="19.78" x2="15.31" y2="16.26"/></svg>
+              {% endif %}
+              {{ emp.rol_label }}
+            </span>
+          </td>
+
+          {# Disponibilidad #}
+          <td>
+            <span class="{{ emp.disponibilidad_badge }}">{{ emp.disponibilidad_label }}</span>
+          </td>
+
+          {# Licencia #}
+          <td>
+            {% if emp.es_conductor %}
+              <span class="{{ emp.licencia_badge }}" style="font-size:.71rem;">
+                {{ emp.licencia_texto }}
+              </span>
+              {% if emp.nro_licencia and emp.nro_licencia != '—' %}
+                <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">
+                  Nº {{ emp.nro_licencia }}
+                </div>
+              {% endif %}
+            {% else %}
+              <span class="licencia-na">N/A</span>
+            {% endif %}
+          </td>
+
+          {# Seguros: Riesgo y Ayudante #}
+          <td>
+            <div class="seguros-wrap">
+              {# Seguro Riesgo #}
+              <div class="seguro-row">
+                <span class="seguro-label">Riesgo</span>
+                <span class="seguro-text {% if emp.seguro_riesgo.vencido %}vencido{% endif %}">
+                  {{ emp.seguro_riesgo.texto }}
+                </span>
+                {% if emp.seguro_riesgo.vencido %}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {% endif %}
+              </div>
+              {# Seguro Ayudante #}
+              <div class="seguro-row">
+                <span class="seguro-label">Ayud.</span>
+                <span class="seguro-text {% if emp.seguro_ayudante.vencido %}vencido{% endif %}">
+                  {{ emp.seguro_ayudante.texto }}
+                </span>
+                {% if emp.seguro_ayudante.vencido %}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+
+          {# ART #}
+          <td>
+            {% if emp.art_vigente %}
+              <span class="art-badge art-ok">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Vigente
+              </span>
+            {% else %}
+              <span class="art-badge art-no">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Sin ART
+              </span>
+            {% endif %}
+          </td>
+
+          {# Acciones #}
+          <td>
+            <a href="{{ emp.url_detalle }}" class="detalle-link">
+              Ver
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# ── Paginación ──────────────────────────────────────────── #}
+    <div class="pag-bar">
+      <span class="pag-info">
+        Página <strong>{{ paginacion.pagina_actual }}</strong>
+        de <strong>{{ paginacion.total_paginas }}</strong>
+        &nbsp;·&nbsp; {{ paginacion.total_registros }} resultado{{ paginacion.total_registros|pluralize }}
+      </span>
+      <div class="pag-controls">
+        <a
+          href="?q={{ filtros_activos.q }}&rol={{ filtros_activos.rol }}&fecha={{ fecha_consulta_iso }}&page={{ paginacion.pagina_anterior }}"
+          class="pag-btn {% if not paginacion.tiene_anterior %}disabled{% endif %}"
+        >
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Ant.
+        </a>
+        <span class="pag-btn active">{{ paginacion.pagina_actual }}</span>
+        <a
+          href="?q={{ filtros_activos.q }}&rol={{ filtros_activos.rol }}&fecha={{ fecha_consulta_iso }}&page={{ paginacion.pagina_siguiente }}"
+          class="pag-btn {% if not paginacion.tiene_siguiente %}disabled{% endif %}"
+        >
+          Sig.
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    {% else %}
+    {# Empty state #}
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.5">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <p>No se encontraron empleados con los filtros aplicados.</p>
+      <a href="?" class="btn-ghost" style="margin-top:4px;">Limpiar filtros</a>
+    </div>
+    {% endif %}
+
+  </div>{# /table-wrap #}
+
+</div>{# /emp-page #}
+{% endblock %}
