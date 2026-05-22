@@ -1,0 +1,76 @@
+{% comment %}
+  partials/topbar.html
+  Requiere: titulo_pagina (str), seccion_activa (str)
+  Opcional: breadcrumb_extra (list of dicts {label, url})
+{% endcomment %}
+
+<header class="topbar" id="topbar">
+
+  {# ── HAMBURGER (mobile) ────────────────────────────────────────────────── #}
+  <button class="topbar-hamburger" id="sidebarToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="6"  x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  {# ── BREADCRUMB ────────────────────────────────────────────────────────── #}
+  <nav class="topbar-breadcrumb" aria-label="Ruta de navegación">
+    <a href="{% url 'gestion:dashboard' %}" class="topbar-breadcrumb-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+        <polyline points="9 21 9 12 15 12 15 21"/>
+      </svg>
+    </a>
+    {% if seccion_activa != 'dashboard' %}
+    <span class="topbar-breadcrumb-sep" aria-hidden="true">/</span>
+    <span class="topbar-breadcrumb-current">{{ titulo_pagina }}</span>
+    {% endif %}
+    {% if breadcrumb_extra %}
+      {% for crumb in breadcrumb_extra %}
+      <span class="topbar-breadcrumb-sep" aria-hidden="true">/</span>
+      {% if crumb.url %}
+        <a href="{{ crumb.url }}" class="topbar-breadcrumb-link">{{ crumb.label }}</a>
+      {% else %}
+        <span class="topbar-breadcrumb-current">{{ crumb.label }}</span>
+      {% endif %}
+      {% endfor %}
+    {% endif %}
+  </nav>
+
+  {# ── ACCIONES GLOBALES ────────────────────────────────────────────────── #}
+  <div class="topbar-actions">
+
+    {# Búsqueda rápida #}
+    <button class="topbar-action-btn" id="quickSearchBtn" title="Búsqueda rápida (Ctrl+K)" aria-label="Búsqueda rápida">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span class="topbar-action-kbd">⌘K</span>
+    </button>
+
+    {# Notificaciones — placeholder #}
+    <button class="topbar-action-btn topbar-notif-btn" title="Notificaciones" aria-label="Notificaciones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      {# Descomentar cuando haya notificaciones reales: #}
+      {# <span class="topbar-notif-dot"></span> #}
+    </button>
+
+    {# Divider #}
+    <div class="topbar-divider" aria-hidden="true"></div>
+
+    {# Usuario compacto #}
+    <div class="topbar-user-chip">
+      <div class="topbar-user-avatar">
+        {{ request.user.get_full_name|default:request.user.username|first|upper }}
+      </div>
+      <span class="topbar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+    </div>
+
+  </div>
+</header>

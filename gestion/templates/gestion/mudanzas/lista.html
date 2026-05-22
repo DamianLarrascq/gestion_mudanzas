@@ -1,0 +1,614 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ titulo_pagina }} — MudanzasPro{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── PAGE HEADER ─────────────────────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+  }
+  .page-header-left { display: flex; flex-direction: column; gap: 0.2rem; }
+  .page-header-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .page-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  /* ── FILTER BAR ─────────────────────────────────────────────────────────── */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar form {
+    display: contents;
+  }
+
+  .filter-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .filter-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+
+  .filter-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.875rem 0.5rem 2.25rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+
+  .filter-input::placeholder { color: var(--text-muted); }
+  .filter-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+
+  .filter-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 2rem 0.5rem 0.875rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    transition: border-color 0.15s;
+    min-width: 170px;
+  }
+
+  .filter-select:focus { border-color: var(--accent); }
+
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .filter-btn:hover { opacity: 0.88; }
+  .filter-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+
+  .filter-clear {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0.5rem 0.5rem;
+    border-radius: var(--radius-md);
+    transition: color 0.12s;
+  }
+  .filter-clear:hover { color: var(--text-primary); }
+
+  /* ── ACTIVE FILTER CHIPS ─────────────────────────────────────────────────── */
+  .filter-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .filter-chips-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ── TABLE CARD ─────────────────────────────────────────────────────────── */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: fadeSlideUp 0.3s ease both;
+  }
+
+  .table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .table-total-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+  }
+
+  /* ── DATA TABLE ──────────────────────────────────────────────────────────── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .data-table thead th {
+    padding: 0.6rem 1rem;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  .data-table thead th:first-child { padding-left: 1.25rem; }
+  .data-table thead th:last-child  { padding-right: 1.25rem; text-align: right; }
+
+  .data-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .data-table tbody tr:last-child { border-bottom: none; }
+  .data-table tbody tr:hover { background: var(--bg); }
+
+  .data-table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    color: var(--text-primary);
+  }
+
+  .data-table tbody td:first-child { padding-left: 1.25rem; }
+  .data-table tbody td:last-child  { padding-right: 1.25rem; text-align: right; }
+
+  /* ── CELL COMPONENTS ─────────────────────────────────────────────────────── */
+
+  /* Fecha */
+  .fecha-cell { display: flex; flex-direction: column; gap: 0.05rem; }
+  .fecha-dia  { font-family: "JetBrains Mono", monospace; font-size: 0.73rem; font-weight: 600; color: var(--text-primary); }
+  .fecha-id   { font-size: 0.65rem; color: var(--text-muted); }
+
+  /* Cliente */
+  .cliente-cell  { display: flex; align-items: center; gap: 0.55rem; }
+  .cliente-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-size: 0.68rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; text-transform: uppercase;
+  }
+  .cliente-nombre { font-weight: 600; font-size: 0.78rem; }
+
+  /* Ruta */
+  .ruta-cell { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; white-space: nowrap; }
+  .ruta-orig { color: var(--text-primary); font-weight: 500; }
+  .ruta-sep  { color: var(--text-muted); font-size: 0.65rem; }
+  .ruta-dest { color: var(--text-muted); }
+
+  /* Camion */
+  .camion-chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.68rem; font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.15rem 0.45rem;
+    white-space: nowrap;
+  }
+  .camion-chip.sin-asignar {
+    border-style: dashed;
+    color: var(--text-muted); font-weight: 400; font-style: italic;
+  }
+
+  /* Operarios badge */
+  .operarios-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.7rem; font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.15rem 0.45rem;
+  }
+  .operarios-badge svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* Seña */
+  .senia-ok      { color: #22c55e; font-size: 0.85rem; font-weight: 600; }
+  .senia-pending { color: var(--text-muted); font-size: 0.75rem; }
+
+  /* Ver link */
+  .ver-link {
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--accent);
+    text-decoration: none; white-space: nowrap;
+    opacity: 0; transition: opacity 0.12s;
+    display: inline-flex; align-items: center; gap: 0.2rem;
+  }
+  .data-table tbody tr:hover .ver-link { opacity: 1; }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────────────────── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.75rem; padding: 4rem 1.5rem; color: var(--text-muted);
+  }
+  .empty-state svg { width: 36px; height: 36px; stroke: var(--text-muted); fill: none; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; opacity: 0.4; }
+  .empty-state p { font-size: 0.8rem; text-align: center; margin: 0; }
+  .empty-state a { font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+  .empty-state a:hover { text-decoration: underline; }
+
+  /* ── PAGINATION ──────────────────────────────────────────────────────────── */
+  .pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pagination-info {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 32px;
+    font-size: 0.75rem; font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    padding: 0 0.5rem;
+  }
+  .page-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+  .page-btn:hover:not(.disabled):not(.active) { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .page-btn.disabled { opacity: 0.38; pointer-events: none; cursor: default; }
+
+  /* ── ANIMATIONS ──────────────────────────────────────────────────────────── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .filter-bar  { animation: fadeSlideUp 0.25s ease both; }
+  .table-card  { animation: fadeSlideUp 0.3s ease 0.06s both; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .data-table thead th:nth-child(5),
+    .data-table tbody td:nth-child(5) { display: none; } /* Operarios */
+  }
+  @media (max-width: 700px) {
+    .data-table thead th:nth-child(4),
+    .data-table tbody td:nth-child(4) { display: none; } /* Camión */
+    .ruta-cell { flex-direction: column; align-items: flex-start; gap: 0.05rem; }
+  }
+  @media (max-width: 520px) {
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-search-wrap { min-width: unset; }
+    .filter-select { min-width: unset; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── PAGE HEADER ──────────────────────────────────────────────────────────── #}
+<div class="page-header">
+  <div class="page-header-left">
+    <span class="page-header-eyebrow">Gestión</span>
+    <h1 class="page-header-title">{{ titulo_pagina }}</h1>
+  </div>
+  <a href="/gestion/mudanzas/nueva/" class="btn-accent">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:5px;">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Nueva mudanza
+  </a>
+</div>
+
+{# ── FILTER BAR ───────────────────────────────────────────────────────────── #}
+<div class="filter-bar">
+  <form method="get" action="" style="display:contents;">
+    <div class="filter-search-wrap">
+      <svg class="filter-search-icon" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        name="q"
+        class="filter-input"
+        placeholder="Buscar por cliente, localidad, camión…"
+        value="{{ filtros_activos.q }}"
+        autocomplete="off"
+      >
+    </div>
+
+    <select name="estado" class="filter-select">
+      <option value="">Todos los estados</option>
+      {% for op in opciones_estado %}
+      <option value="{{ op.valor }}" {% if filtros_activos.estado == op.valor %}selected{% endif %}>
+        {{ op.label }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="filter-btn">
+      <svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtrar
+    </button>
+
+    {% if filtros_activos.q or filtros_activos.estado %}
+    <a href="?" class="filter-clear">✕ Limpiar</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── ACTIVE FILTER CHIPS ───────────────────────────────────────────────────── #}
+{% if filtros_activos.q or filtros_activos.estado %}
+<div class="filter-chips">
+  <span class="filter-chips-label">Filtros activos:</span>
+  {% if filtros_activos.q %}
+  <span class="filter-chip">
+    <svg viewBox="0 0 24 24" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    "{{ filtros_activos.q }}"
+  </span>
+  {% endif %}
+  {% if filtros_activos.estado %}
+  <span class="filter-chip">
+    <svg viewBox="0 0 24 24" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><circle cx="12" cy="12" r="10"/></svg>
+    {% for op in opciones_estado %}{% if op.valor == filtros_activos.estado %}{{ op.label }}{% endif %}{% endfor %}
+  </span>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── TABLE CARD ───────────────────────────────────────────────────────────── #}
+<div class="table-card">
+  <div class="table-card-header">
+    <span class="table-card-title">Listado de mudanzas</span>
+    <span class="table-total-badge">{{ paginacion.total_registros }} registro{{ paginacion.total_registros|pluralize }}</span>
+  </div>
+
+  {% if mudanzas %}
+  <div style="overflow-x: auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Ruta</th>
+          <th>Camión</th>
+          <th>Operarios</th>
+          <th>Seña</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mudanzas %}
+        <tr onclick="window.location='/gestion/mudanzas/{{ m.id }}/resumen/'"
+            data-fecha-iso="{{ m.fecha_iso }}">
+          <td>
+            <div class="fecha-cell">
+              <span class="fecha-dia">{{ m.fecha_display }}</span>
+              <span class="fecha-id">#{{ m.id }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="cliente-cell">
+              <div class="cliente-avatar">{{ m.cliente_nombre|first }}</div>
+              <span class="cliente-nombre">{{ m.cliente_nombre }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="ruta-cell">
+              {% with partes=m.ruta%}
+              <span class="ruta-orig">{{ m.ruta|truncatechars:25 }}</span>
+              {% endwith %}
+            </div>
+          </td>
+          <td>
+            {% if m.camion_display and m.camion_display != "Sin asignar" %}
+              <span class="camion-chip">{{ m.camion_display }}</span>
+            {% else %}
+              <span class="camion-chip sin-asignar">Sin asignar</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="operarios-badge">
+              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              {{ m.total_operarios }}
+            </span>
+          </td>
+          <td>
+            {% if m.senia_pagada %}
+              <span class="senia-ok" title="Seña cobrada">✓</span>
+            {% else %}
+              <span class="senia-pending" title="Seña pendiente">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="{{ m.estado_badge_class }}">{{ m.estado_label }}</span>
+          </td>
+          <td>
+            <a href="/gestion/mudanzas/{{ m.id }}/resumen/" class="ver-link" onclick="event.stopPropagation()">
+              Ver
+              <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── PAGINATION ──────────────────────────────────────────────────────────── #}
+  {% if paginacion.total_paginas > 1 %}
+  <div class="pagination-bar">
+    <span class="pagination-info">
+      Página {{ paginacion.pagina_actual }} de {{ paginacion.total_paginas }}
+      &nbsp;·&nbsp;
+      {{ paginacion.total_registros }} resultado{{ paginacion.total_registros|pluralize }}
+    </span>
+    <div class="pagination-controls">
+      {# Anterior #}
+      {% if paginacion.tiene_anterior %}
+      <a href="?q={{ filtros_activos.q }}&estado={{ filtros_activos.estado }}&page={{ paginacion.pagina_anterior }}" class="page-btn" aria-label="Anterior">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      {% else %}
+      <span class="page-btn disabled" aria-disabled="true">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </span>
+      {% endif %}
+
+      {# Números de página — máximo 5 alrededor de la actual #}
+      {% with p=paginacion.pagina_actual total=paginacion.total_paginas %}
+          {% if i == p %}
+            <span class="page-btn active">{{ i }}</span>
+          {% elif i == 1 or i == total or i >= p|add:"-2" and i <= p|add:"2" %}
+            <a href="?q={{ filtros_activos.q }}&estado={{ filtros_activos.estado }}&page={{ i }}" class="page-btn">{{ i }}</a>
+          {% elif i == p|add:"-3" or i == p|add:"3" %}
+            <span class="page-btn disabled" style="border:none;min-width:16px;">…</span>
+          {% endif %}
+        
+      {% endwith %}
+
+      {# Siguiente #}
+      {% if paginacion.tiene_siguiente %}
+      <a href="?q={{ filtros_activos.q }}&estado={{ filtros_activos.estado }}&page={{ paginacion.pagina_siguiente }}" class="page-btn" aria-label="Siguiente">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      {% else %}
+      <span class="page-btn disabled" aria-disabled="true">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  {# ── EMPTY STATE ─────────────────────────────────────────────────────────── #}
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24">
+      <rect x="1" y="3" width="15" height="13" rx="1"/>
+      <path d="M16 8h4l3 5v3h-7V8z"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/>
+      <circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    {% if filtros_activos.q or filtros_activos.estado %}
+    <p>No se encontraron mudanzas con esos filtros.</p>
+    <a href="?">Ver todas las mudanzas</a>
+    {% else %}
+    <p>Todavía no hay mudanzas registradas.</p>
+    <a href="/gestion/mudanzas/nueva/">Crear la primera mudanza</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Enviar form al cambiar el select de estado
+  document.querySelector('[name="estado"]')?.addEventListener('change', function() {
+    this.closest('form').submit();
+  });
+</script>
+{% endblock %}
