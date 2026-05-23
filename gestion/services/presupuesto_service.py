@@ -102,34 +102,36 @@ def _calcular_piso_sin_ascensor(direccion) -> int:
         return 0
 
 
-def _calcular_costos(
-        mudanza: Mudanza,
-        tarifa: TarifaBase,
+def calcular_costos_desde_parametros(
         distancia_km: Decimal,
+        necesita_ayudantes: bool,
+        piso_origen: int,
+        tiene_ascensor_origen: bool,
+        tarifa: TarifaBase,
 ) -> _DesgloseCostos:
-    # Distancia
+    """
+    Cálculo puro de costos sin depender de una instancia Mudanza.
+    Reutilizable desde cualquier flujo (panel admin, landing pública, etc).
+
+    Args:
+        distancia_km:          Kilómetros del trayecto.
+        necesita_ayudantes:    Si se incluye el costo de ayudante.
+        piso_origen:           Número de piso como entero (0 = PB).
+        tiene_ascensor_origen: Si hay ascensor en origen (anula recargo de piso).
+        tarifa:                Instancia TarifaBase activa.
+    """
     costo_distancia = (distancia_km * tarifa.precio_por_km).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
-
-    # Peajes: no existe campo en TarifaBase → se recibe como argumento externo.
-    # Por ahora se persiste el valor que llegue (default 0); puede extenderse.
     costo_peajes = Decimal("0")
-
-    # Ayudantes
-    costo_ayudantes = tarifa.precio_ayudante if mudanza.necesita_ayudantes else Decimal("0")
-
-    # Costo operativo del camión: seguro + ART conductor (costos fijos por servicio)
+    costo_ayudantes = tarifa.precio_ayudante if necesita_ayudantes else Decimal("0")
     costo_camion = (tarifa.seguro_camion + tarifa.empleado_art).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
-
-    # Recargo pisos (origen sin ascensor)
-    pisos_origen = _calcular_piso_sin_ascensor(mudanza.origen)
-    recargo_pisos = (tarifa.recargo_piso * pisos_origen).quantize(
+    pisos = piso_origen if not tiene_ascensor_origen else 0
+    recargo_pisos = (tarifa.recargo_piso * pisos).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
-
     total = (
             costo_distancia + costo_peajes + costo_ayudantes + costo_camion + recargo_pisos
     ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -141,6 +143,23 @@ def _calcular_costos(
         costo_camion=costo_camion,
         recargo_pisos=recargo_pisos,
         total=total,
+    )
+
+def _calcular_costos(
+        mudanza: Mudanza,
+        tarifa: TarifaBase,
+        distancia_km: Decimal,
+) -> _DesgloseCostos:
+    """Wrapper interno: extrae parámetros de la Mudanza y delega al cálculo puro."""
+    pisos_origen = _calcular_piso_sin_ascensor(mudanza.origen)
+    tiene_ascensor = mudanza.origen.tiene_ascensor if mudanza.origen else True
+
+    return calcular_costos_desde_parametros(
+        distancia_km=distancia_km,
+        necesita_ayudantes=mudanza.necesita_ayudantes,
+        piso_origen=pisos_origen,
+        tiene_ascensor_origen=tiene_ascensor,
+        tarifa=tarifa,
     )
 
 # API Publica
