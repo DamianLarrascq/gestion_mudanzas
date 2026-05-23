@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  PYTHON_VERSION: "3.12"
+  python-version: "3.12"
   DJANGO_SETTINGS_MODULE: config.settings
   SECRET_KEY: "ci-secret-key-insecure-only-for-github-actions"
   DEBUG: "True"
