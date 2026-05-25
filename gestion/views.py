@@ -40,7 +40,7 @@ def dashboard(request):
     context = {
         'titulo_pagina': 'Dashboard',
         'seccion_activa': 'dashboard',
-        'fecha_activa': hoy.strftime('%-d de %B de %Y'),
+        'fecha_activa': f"{hoy.day} de {hoy.strftime('%B de %Y')}",
 
         'kpis': obtener_kpis(hoy),
         'mudanzas_hoy': obtener_mudanzas_hoy(hoy),
