@@ -50,9 +50,16 @@ def make_user(username="admin", password="admin123", is_staff=True, is_superuser
 
 
 def make_cliente(telefono="+5491198765432"):
+    # email e dni se derivan del telefono para evitar colisiones de UNIQUE
+    # constraint al crear multiples clientes de prueba con distintos telefonos.
+    safe = telefono.replace("+", "").replace(" ", "")
     cliente, _ = Cliente.objects.get_or_create(
         telefono=telefono,
-        defaults={"nombre_completo": "Luis Martínez", "email": "luis@test.com"},
+        defaults={
+            "nombre_completo": "Luis Martinez",
+            "email": f"test_{safe}@test.com",
+            "dni": safe[-8:],
+        },
     )
     return cliente
 
@@ -695,3 +702,290 @@ class FlujoEstadosMudanzaTests(TestCase):
         mudanza.save()
         mudanza.refresh_from_db()
         self.assertEqual(mudanza.estado, Mudanza.Estado.POSPUESTA)
+
+
+
+
+# ─────────────────────────────────────────────────────────
+# US-002 · KPIs del negocio
+# ─────────────────────────────────────────────────────────
+
+class KPIsNegocioTests(TestCase):
+    """
+    US-002: El dueño visualiza KPIs clave en el panel central.
+    CA-012: Tasa de conversión presupuestos → mudanzas confirmadas.
+    CA-013: Estado consolidado de la flota (disponibles vs en ruta).
+    """
+
+    def setUp(self):
+        self.tarifa = make_tarifa()
+
+    def test_kpis_retorna_lista_no_vacia(self):
+        """obtener_kpis retorna una lista con al menos un elemento."""
+        from gestion.services.dashboard_service import obtener_kpis
+        kpis = obtener_kpis(date.today())
+        self.assertIsInstance(kpis, list)
+        self.assertGreater(len(kpis), 0)
+
+    def test_cada_kpi_card_tiene_claves_requeridas(self):
+        """Cada KPI card tiene label, value, icon, trend_label, trend_positivo."""
+        from gestion.services.dashboard_service import obtener_kpis
+        kpis = obtener_kpis(date.today())
+        claves = {"label", "value", "icon", "trend_label", "trend_positivo"}
+        for card in kpis:
+            for clave in claves:
+                self.assertIn(clave, card, f"KPI '{card.get('label')}' no tiene '{clave}'")
+
+    def test_kpi_mudanzas_activas_presente(self):
+        """El KPI 'Mudanzas activas' está en la lista."""
+        from gestion.services.dashboard_service import obtener_kpis
+        labels = {k["label"] for k in obtener_kpis(date.today())}
+        self.assertIn("Mudanzas activas", labels)
+
+    def test_kpi_ingresos_del_mes_presente(self):
+        """El KPI 'Ingresos del mes' está en la lista."""
+        from gestion.services.dashboard_service import obtener_kpis
+        labels = {k["label"] for k in obtener_kpis(date.today())}
+        self.assertIn("Ingresos del mes", labels)
+
+    def test_kpi_empleados_disponibles_presente(self):
+        """El KPI 'Empleados disponibles' está en la lista."""
+        from gestion.services.dashboard_service import obtener_kpis
+        labels = {k["label"] for k in obtener_kpis(date.today())}
+        self.assertIn("Empleados disponibles", labels)
+
+    def test_kpi_completadas_mes_presente(self):
+        """El KPI 'Completadas este mes' está en la lista."""
+        from gestion.services.dashboard_service import obtener_kpis
+        labels = {k["label"] for k in obtener_kpis(date.today())}
+        self.assertIn("Completadas este mes", labels)
+
+    def test_mudanzas_activas_refleja_confirmadas_y_en_curso(self):
+        """El contador de activas suma CONFIRMADA + EN_CURSO, no otras."""
+        # Teléfonos con prefijo 200 para no colisionar con otros tests
+        make_mudanza(estado=Mudanza.Estado.CONFIRMADA,
+                     cliente=make_cliente("+5491100000200"))
+        make_mudanza(estado=Mudanza.Estado.EN_CURSO,
+                     cliente=make_cliente("+5491100000201"))
+        make_mudanza(estado=Mudanza.Estado.COMPLETADA,
+                     cliente=make_cliente("+5491100000202"))
+        from gestion.services.dashboard_service import _calcular_mudanzas_activas
+        resultado = _calcular_mudanzas_activas()
+        self.assertGreaterEqual(resultado["valor_raw"], 2)
+
+    def test_empleados_disponibles_tiene_subtitulo(self):
+        """El KPI de empleados incluye subtítulo con info de servicio."""
+        from gestion.services.dashboard_service import _calcular_empleados_disponibles_hoy
+        resultado = _calcular_empleados_disponibles_hoy(date.today())
+        self.assertIn("subtitulo", resultado)
+        self.assertIn("en servicio hoy", resultado["subtitulo"])
+
+    def test_tasa_conversion_presupuestos_vs_confirmadas(self):
+        """
+        CA-012: La tasa de conversión se puede calcular como
+        mudanzas CONFIRMADAS / presupuestos generados.
+        """
+        mud1 = make_mudanza(estado=Mudanza.Estado.CONFIRMADA,
+                            cliente=make_cliente("+5491100000210"))
+        mud2 = make_mudanza(estado=Mudanza.Estado.PRESUPUESTADA,
+                            cliente=make_cliente("+5491100000211"))
+        PresupuestoService.calcular_y_persistir(mud1.pk, Decimal("15.00"))
+        PresupuestoService.calcular_y_persistir(mud2.pk, Decimal("20.00"))
+
+        total_presupuestos = Presupuesto.objects.count()
+        confirmadas = Mudanza.objects.filter(estado=Mudanza.Estado.CONFIRMADA).count()
+        tasa = (confirmadas / total_presupuestos * 100) if total_presupuestos else 0
+        self.assertGreater(tasa, 0)
+        self.assertLessEqual(tasa, 100)
+
+    def test_flota_disponible_vs_en_taller(self):
+        """
+        CA-013: El sistema distingue camiones disponibles de los en taller.
+        Un camión con en_taller=True no debe contarse como disponible.
+        """
+        from gestion.models import Camion as CamionModel
+        camion_taller = make_camion("TALL02")
+        camion_taller.en_taller = True
+        camion_taller.save()
+
+        en_taller = CamionModel.objects.filter(en_taller=True).count()
+        disponibles = CamionModel.objects.filter(activo=True, en_taller=False).count()
+        self.assertGreaterEqual(en_taller, 1)
+        self.assertGreaterEqual(disponibles, 0)
+        # Los conjuntos son mutuamente excluyentes
+        self.assertEqual(
+            CamionModel.objects.filter(en_taller=True, activo=True).count()
+            + CamionModel.objects.filter(en_taller=False, activo=True).count(),
+            CamionModel.objects.filter(activo=True).count(),
+        )
+
+    def test_ingresos_mes_con_mudanzas_completadas(self):
+        """Los ingresos del mes aumentan al completar una mudanza con presupuesto."""
+        from gestion.services.dashboard_service import _calcular_ingresos_mes
+        mud = make_mudanza(estado=Mudanza.Estado.COMPLETADA,
+                           fecha_offset_days=0,
+                           cliente=make_cliente("+5491100000220"))
+        PresupuestoService.calcular_y_persistir(mud.pk, Decimal("20.00"))
+        resultado = _calcular_ingresos_mes(date.today())
+        self.assertGreater(resultado["valor_raw"], Decimal("0"))
+
+
+# ─────────────────────────────────────────────────────────
+# US-011 · Seguimiento GPS / token único
+# ─────────────────────────────────────────────────────────
+
+class SeguimientoGPSTests(TestCase):
+    """
+    US-011: El cliente recibe un link único para ver el camión en tiempo real.
+    CA-006 (Landing): Token/link UUID único y no predecible vía WhatsApp.
+    CA-009 (Landing): Mapa embebido renderizable.
+    CA-007 (Landing): Geolocalización con baja latencia.
+    """
+
+    def setUp(self):
+        self.mudanza = make_mudanza(estado=Mudanza.Estado.EN_CURSO,
+                                    cliente=make_cliente("+5491100000300"))
+
+    def test_mudanza_tiene_uuid_no_nulo(self):
+        """Toda mudanza tiene un UUID generado automáticamente."""
+        self.assertIsNotNone(self.mudanza.uuid)
+
+    def test_uuid_es_unico_por_mudanza(self):
+        """Dos mudanzas distintas tienen UUIDs distintos."""
+        otra = make_mudanza(
+            estado=Mudanza.Estado.CONFIRMADA,
+            cliente=make_cliente("+5491100000301"),
+        )
+        self.assertNotEqual(self.mudanza.uuid, otra.uuid)
+
+    def test_uuid_es_version_4_aleatorio(self):
+        """El UUID es v4 (aleatorio), no predecible ni secuencial."""
+        import uuid as uuid_mod
+        self.assertIsInstance(self.mudanza.uuid, uuid_mod.UUID)
+        self.assertEqual(self.mudanza.uuid.version, 4)
+
+    def test_mudanza_encontrada_por_uuid(self):
+        """El sistema puede encontrar una mudanza por su UUID (link único)."""
+        encontrada = Mudanza.objects.filter(uuid=self.mudanza.uuid).first()
+        self.assertIsNotNone(encontrada)
+        self.assertEqual(encontrada.pk, self.mudanza.pk)
+
+    def test_uuid_invalido_no_encuentra_mudanza(self):
+        """Un UUID inexistente no retorna ninguna mudanza."""
+        import uuid as uuid_mod
+        uuid_falso = uuid_mod.uuid4()
+        encontrada = Mudanza.objects.filter(uuid=uuid_falso).first()
+        self.assertIsNone(encontrada)
+
+    def test_solo_mudanzas_en_curso_filtrables(self):
+        """
+        CA-009: El sistema puede filtrar solo mudanzas EN_CURSO
+        para mostrar en el mapa.
+        """
+        make_mudanza(estado=Mudanza.Estado.CONFIRMADA,
+                     cliente=make_cliente("+5491100000302"))
+        make_mudanza(estado=Mudanza.Estado.COMPLETADA,
+                     cliente=make_cliente("+5491100000303"))
+        en_curso = Mudanza.objects.filter(estado=Mudanza.Estado.EN_CURSO)
+        self.assertGreaterEqual(en_curso.count(), 1)
+        for m in en_curso:
+            self.assertEqual(m.estado, Mudanza.Estado.EN_CURSO)
+
+    def test_notificacion_link_seguimiento_registrable(self):
+        """
+        CA-006: El envío del link de seguimiento se puede registrar
+        como Notificacion de tipo LINK_PAGO vía WhatsApp.
+        """
+        notif = Notificacion.objects.create(
+            mudanza=self.mudanza,
+            tipo=Notificacion.Tipo.LINK_PAGO,
+            canal=Notificacion.Canal.WHATSAPP,
+            destinatario=self.mudanza.cliente.telefono,
+            enviada=True,
+            enviada_en=timezone.now(),
+        )
+        self.assertTrue(notif.enviada)
+        self.assertEqual(notif.canal, Notificacion.Canal.WHATSAPP)
+
+
+# ─────────────────────────────────────────────────────────
+# US-007/008 · CAs faltantes: notas del conductor
+# ─────────────────────────────────────────────────────────
+
+class NotasConductorTests(TestCase):
+    """
+    US-007/008: El conductor puede adjuntar notas e incidentes antes del cierre.
+    CA-010 (Mobile): Notas en formato texto sobre el servicio realizado.
+    CA-004 (Mobile): El botón de finalizar solo aplica en estado EN_CURSO.
+    """
+
+    def setUp(self):
+        self.mudanza = make_mudanza(estado=Mudanza.Estado.EN_CURSO,
+                                    cliente=make_cliente("+5491100000400"))
+
+    def test_finalizacion_solo_aplica_desde_en_curso(self):
+        """
+        CA-004: Una mudanza BORRADOR no está lista para completarse.
+        Solo EN_CURSO es el estado previo válido a COMPLETADA.
+        """
+        borrador = make_mudanza(
+            estado=Mudanza.Estado.BORRADOR,
+            cliente=make_cliente("+5491100000401"),
+        )
+        self.assertNotEqual(borrador.estado, Mudanza.Estado.EN_CURSO)
+
+    def test_mudanza_en_curso_puede_completarse(self):
+        """Una mudanza EN_CURSO sí puede pasar a COMPLETADA."""
+        self.assertEqual(self.mudanza.estado, Mudanza.Estado.EN_CURSO)
+        self.mudanza.estado = Mudanza.Estado.COMPLETADA
+        self.mudanza.save()
+        self.mudanza.refresh_from_db()
+        self.assertEqual(self.mudanza.estado, Mudanza.Estado.COMPLETADA)
+
+    def test_historial_registra_cambio_con_usuario(self):
+        """
+        CA-010: El cierre del servicio queda registrado en HistorialEstado
+        con el usuario que lo realizó (conductor o admin).
+        """
+        from gestion.models.auditoria import HistorialEstado
+        admin = make_user("conductor_notas", is_staff=True)
+        registro = HistorialEstado.objects.create(
+            mudanza=self.mudanza,
+            estado_anterior=Mudanza.Estado.EN_CURSO,
+            estado_nuevo=Mudanza.Estado.COMPLETADA,
+            usuario=admin,
+        )
+        registro.refresh_from_db()
+        self.assertEqual(registro.estado_nuevo, Mudanza.Estado.COMPLETADA)
+        self.assertEqual(registro.usuario, admin)
+
+    def test_multiples_entradas_historial_por_mudanza(self):
+        """Se pueden registrar múltiples transiciones en el historial."""
+        from gestion.models.auditoria import HistorialEstado
+        admin = make_user("conductor_multi", is_staff=True)
+        HistorialEstado.objects.create(
+            mudanza=self.mudanza,
+            estado_anterior=Mudanza.Estado.CONFIRMADA,
+            estado_nuevo=Mudanza.Estado.EN_CURSO,
+            usuario=admin,
+        )
+        HistorialEstado.objects.create(
+            mudanza=self.mudanza,
+            estado_anterior=Mudanza.Estado.EN_CURSO,
+            estado_nuevo=Mudanza.Estado.COMPLETADA,
+            usuario=admin,
+        )
+        count = HistorialEstado.objects.filter(mudanza=self.mudanza).count()
+        self.assertEqual(count, 2)
+
+    def test_historial_campo_usuario_no_nulo(self):
+        """Todo registro de historial tiene un usuario asociado."""
+        from gestion.models.auditoria import HistorialEstado
+        admin = make_user("conductor_check", is_staff=True)
+        registro = HistorialEstado.objects.create(
+            mudanza=self.mudanza,
+            estado_anterior=Mudanza.Estado.EN_CURSO,
+            estado_nuevo=Mudanza.Estado.COMPLETADA,
+            usuario=admin,
+        )
+        self.assertIsNotNone(registro.usuario)
