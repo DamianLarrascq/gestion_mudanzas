@@ -1,0 +1,430 @@
+{% extends "base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --dash-bg:           #0f1117;
+    --dash-surface:      #181c27;
+    --dash-surface-2:    #1e2334;
+    --dash-border:       rgba(255,255,255,0.07);
+    --dash-accent:       #4f7cff;
+    --dash-accent-light: #7a9dff;
+    --dash-green:        #22c97b;
+    --dash-red:          #ff4f6b;
+    --dash-yellow:       #f5b942;
+    --dash-text:         #e8eaf0;
+    --dash-muted:        #6e7891;
+    --dash-radius:       14px;
+  }
+
+  .detalle-page {
+    padding: 32px 36px 48px;
+    max-width: 1200px;
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--dash-text);
+  }
+
+  /* ── Breadcrumb ───────────────────────────────────────────────── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--dash-muted);
+    margin-bottom: 22px;
+  }
+  .breadcrumb a { color: var(--dash-accent-light); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { width: 12px; height: 12px; stroke: var(--dash-muted); fill: none; stroke-width: 2.5; }
+
+  /* ── Header perfil ────────────────────────────────────────────── */
+  .profile-header {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius);
+    padding: 28px 30px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+    animation: fadeUp .3s ease both;
+  }
+
+  .profile-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b5bdb 0%, #7950f2 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+    margin: 0 0 4px;
+    line-height: 1.2;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .profile-id-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--dash-muted);
+    background: var(--dash-surface-2);
+    border: 1px solid var(--dash-border);
+    padding: 2px 8px;
+    border-radius: 5px;
+    letter-spacing: .04em;
+  }
+  .profile-since { font-size: 0.8rem; color: var(--dash-muted); margin-bottom: 16px; }
+
+  .profile-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+  }
+  .profile-field {}
+  .profile-field-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--dash-muted);
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .profile-field-value {
+    font-size: 0.88rem;
+    color: var(--dash-text);
+    font-weight: 500;
+  }
+  .profile-field-value a {
+    color: var(--dash-accent-light);
+    text-decoration: none;
+  }
+  .profile-field-value a:hover { text-decoration: underline; }
+
+  /* ── Tarjetas resumen ─────────────────────────────────────────── */
+  .resumen-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 800px) { .resumen-row { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 460px) { .resumen-row { grid-template-columns: 1fr; } }
+
+  .resumen-card {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    animation: fadeUp .35s ease both;
+  }
+  .resumen-card:nth-child(1) { animation-delay: .08s; }
+  .resumen-card:nth-child(2) { animation-delay: .13s; }
+  .resumen-card:nth-child(3) { animation-delay: .18s; }
+  .resumen-card:nth-child(4) { animation-delay: .23s; }
+
+  .resumen-card-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--dash-muted);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .resumen-card-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .resumen-card-value.green { color: var(--dash-green); }
+  .resumen-card-value.red   { color: var(--dash-red); }
+  .resumen-card-value.blue  { color: var(--dash-accent-light); }
+  .resumen-card-sub {
+    font-size: 0.73rem;
+    color: var(--dash-muted);
+    margin-top: 5px;
+  }
+
+  /* Badge activo */
+  .badge-activo {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.72rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    letter-spacing: .04em; text-transform: uppercase;
+    background: rgba(34,201,123,.15); color: var(--dash-green);
+  }
+  .badge-activo::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ── Panel historial ──────────────────────────────────────────── */
+  .panel {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius);
+    overflow: hidden;
+    animation: fadeUp .4s ease .25s both;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 22px; border-bottom: 1px solid var(--dash-border);
+  }
+  .panel-title {
+    font-size: 0.88rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title svg { width: 15px; height: 15px; stroke: var(--dash-accent-light); stroke-width: 2; fill: none; }
+  .panel-count {
+    font-size: 0.75rem; color: var(--dash-muted);
+    background: var(--dash-surface-2); padding: 3px 10px;
+    border-radius: 20px; border: 1px solid var(--dash-border);
+  }
+
+  /* ── Tabla historial ──────────────────────────────────────────── */
+  .historial-table { width: 100%; border-collapse: collapse; }
+  .historial-table thead th {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--dash-muted); padding: 11px 20px; font-weight: 600;
+    text-align: left; background: var(--dash-surface-2);
+    border-bottom: 1px solid var(--dash-border); white-space: nowrap;
+  }
+  .historial-table tbody tr { border-bottom: 1px solid var(--dash-border); transition: background .12s; }
+  .historial-table tbody tr:last-child { border-bottom: none; }
+  .historial-table tbody tr:hover { background: rgba(255,255,255,.025); }
+  .historial-table td { padding: 13px 20px; font-size: 0.84rem; vertical-align: middle; color: var(--dash-text); }
+
+  .fecha-cell { font-size: 0.8rem; color: var(--dash-muted); white-space: nowrap; }
+
+  .ruta-text { font-size: 0.84rem; color: var(--dash-text); white-space: nowrap; }
+
+  .camion-pill {
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    background: var(--dash-surface-2);
+    border: 1px solid var(--dash-border);
+    padding: 3px 8px; border-radius: 5px;
+    color: var(--dash-text); letter-spacing: .06em;
+  }
+  .sin-asignar { color: var(--dash-muted); font-size: 0.8rem; font-style: italic; }
+
+  .monto-cell { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--dash-text); }
+  .monto-none { color: var(--dash-muted); }
+
+  .senia-icon { font-size: 1rem; }
+
+  .btn-detalle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--dash-accent-light);
+    background: rgba(79,124,255,.1);
+    border: 1px solid rgba(79,124,255,.2);
+    border-radius: 7px; padding: 5px 11px; text-decoration: none;
+    white-space: nowrap; transition: background .15s, border-color .15s, transform .1s;
+  }
+  .btn-detalle:hover { background: rgba(79,124,255,.2); border-color: rgba(79,124,255,.4); transform: translateY(-1px); }
+  .btn-detalle svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Badges ───────────────────────────────────────────────────── */
+  .badge-secondary { background: rgba(110,120,145,.18); color: #9aa3b8; }
+  .badge-info      { background: rgba(56,182,255,.15);  color: #56c2ff; }
+  .badge-primary   { background: rgba(79,124,255,.18);  color: var(--dash-accent-light); }
+  .badge-warning   { background: rgba(245,185,66,.15);  color: var(--dash-yellow); }
+  .badge-success   { background: rgba(34,201,123,.15);  color: var(--dash-green); }
+  .badge-danger    { background: rgba(255,79,107,.15);  color: var(--dash-red); }
+  .badge-dark      { background: rgba(40,40,60,.5);     color: #7a8199; }
+  [class^="badge-"] {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.72rem; font-weight: 700;
+    padding: 3px 9px; border-radius: 20px;
+    letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  }
+  [class^="badge-"]::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+  }
+
+  /* ── Empty state ──────────────────────────────────────────────── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px 24px; gap: 12px; color: var(--dash-muted);
+  }
+  .empty-state svg { width: 36px; height: 36px; stroke: var(--dash-muted); opacity: .3; fill: none; stroke-width: 1.5; }
+  .empty-state p { font-size: 0.85rem; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="detalle-page">
+
+  {# ── Breadcrumb ───────────────────────────────────────────────── #}
+  <div class="breadcrumb">
+    <a href="{% url 'gestion:cliente_list' %}">Clientes</a>
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>{{ cliente.nombre_completo }}</span>
+  </div>
+
+  {# ── Perfil del cliente ───────────────────────────────────────── #}
+  <div class="profile-header">
+    <div class="profile-avatar">
+      {{ cliente.nombre_completo|slice:":1"|upper }}{% with words=cliente.nombre_completo|split:" " %}{% if words|length > 1 %}{{ words.1|slice:":1"|upper }}{% endif %}{% endwith %}
+    </div>
+    <div class="profile-info">
+      <h1 class="profile-name">
+        {{ cliente.nombre_completo }}
+        <span class="profile-id-tag">#{{ cliente.id }}</span>
+        {% if resumen.activa_ahora %}
+          <span class="badge-activo">Activo</span>
+        {% endif %}
+      </h1>
+      <p class="profile-since">Cliente desde {{ cliente.cliente_desde_display }}</p>
+
+      <div class="profile-fields">
+        <div class="profile-field">
+          <div class="profile-field-label">DNI</div>
+          <div class="profile-field-value">{{ cliente.dni }}</div>
+        </div>
+        <div class="profile-field">
+          <div class="profile-field-label">Teléfono</div>
+          <div class="profile-field-value">
+            <a href="tel:{{ cliente.telefono }}">{{ cliente.telefono }}</a>
+          </div>
+        </div>
+        <div class="profile-field">
+          <div class="profile-field-label">Email</div>
+          <div class="profile-field-value">
+            {% if cliente.email != "-" %}
+              <a href="mailto:{{ cliente.email }}">{{ cliente.email }}</a>
+            {% else %}
+              <span style="color: var(--dash-muted);">—</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if cliente.fecha_nacimiento_display != "-" %}
+        <div class="profile-field">
+          <div class="profile-field-label">Fecha de nacimiento</div>
+          <div class="profile-field-value">{{ cliente.fecha_nacimiento_display }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Resumen estadístico ──────────────────────────────────────── #}
+  <div class="resumen-row">
+
+    <div class="resumen-card">
+      <div class="resumen-card-label">Total mudanzas</div>
+      <div class="resumen-card-value blue">{{ resumen.total_mudanzas }}</div>
+      <div class="resumen-card-sub">historial completo</div>
+    </div>
+
+    <div class="resumen-card">
+      <div class="resumen-card-label">Completadas</div>
+      <div class="resumen-card-value green">{{ resumen.completadas }}</div>
+      <div class="resumen-card-sub">servicios finalizados</div>
+    </div>
+
+    <div class="resumen-card">
+      <div class="resumen-card-label">Canceladas</div>
+      <div class="resumen-card-value {% if resumen.canceladas > 0 %}red{% endif %}">{{ resumen.canceladas }}</div>
+      <div class="resumen-card-sub">servicios cancelados</div>
+    </div>
+
+    <div class="resumen-card">
+      <div class="resumen-card-label">Inversión total</div>
+      <div class="resumen-card-value green" style="font-size: 1.2rem;">{{ resumen.inversion_total_display }}</div>
+      <div class="resumen-card-sub">en mudanzas completadas</div>
+    </div>
+
+  </div>
+
+  {# ── Historial de mudanzas ────────────────────────────────────── #}
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Historial de mudanzas
+      </span>
+      <span class="panel-count">{{ historial|length }} registro{{ historial|length|pluralize }}</span>
+    </div>
+
+    {% if historial %}
+    <table class="historial-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Ruta</th>
+          <th>Camión</th>
+          <th>Monto</th>
+          <th>Seña</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in historial %}
+        <tr>
+          <td class="fecha-cell">#{{ m.id }}</td>
+          <td class="fecha-cell">{{ m.fecha_display }}</td>
+          <td>
+            <span class="ruta-text">{{ m.ruta }}</span>
+          </td>
+          <td>
+            {% if m.camion_display == "Sin asignar" %}
+              <span class="sin-asignar">Sin asignar</span>
+            {% else %}
+              <span class="camion-pill">{{ m.camion_display }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.monto_display != "-" %}
+              <span class="monto-cell">{{ m.monto_display }}</span>
+            {% else %}
+              <span class="monto-none">—</span>
+            {% endif %}
+          </td>
+          <td class="senia-icon">
+            {% if m.senia_pagada %}
+              <span title="Seña pagada" style="color: var(--dash-green);">✓</span>
+            {% else %}
+              <span title="Seña pendiente" style="color: var(--dash-muted);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="{{ m.estado_badge_class }}">{{ m.estado_label }}</span>
+          </td>
+          <td>
+            <a href="{{ m.url_detalle }}" class="btn-detalle">
+              Ver
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% else %}
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      <p>Este cliente aún no tiene mudanzas registradas.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}
