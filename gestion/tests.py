@@ -179,12 +179,32 @@ class DashboardTests(TestCase):
         )
 
     def test_kpis_retornan_dict_con_claves_esperadas(self):
-        """La función obtener_kpis devuelve las claves que usa el template."""
+        """
+        obtener_kpis retorna una lista de cards, cada una con las claves
+        que el template necesita renderizar.
+        """
         from gestion.services.dashboard_service import obtener_kpis
         kpis = obtener_kpis(date.today())
-        for clave in ("mudanzas_activas", "ingresos_mes", "empleados_disponibles",
-                      "cancelaciones_mes"):
-            self.assertIn(clave, kpis, f"Falta KPI '{clave}'")
+
+        # Debe ser una lista no vacía
+        self.assertIsInstance(kpis, list)
+        self.assertGreater(len(kpis), 0)
+
+        # Cada card debe tener las claves requeridas por el template
+        claves_requeridas = {"label", "value", "icon", "trend_label", "trend_positivo"}
+        for card in kpis:
+            for clave in claves_requeridas:
+                self.assertIn(
+                    clave, card,
+                    f"KPI card '{card.get('label')}' no tiene la clave '{clave}'"
+                )
+
+        # Los labels del negocio deben estar presentes
+        labels = {card["label"] for card in kpis}
+        self.assertIn("Mudanzas activas",      labels)
+        self.assertIn("Ingresos del mes",      labels)
+        self.assertIn("Empleados disponibles", labels)
+        self.assertIn("Completadas este mes",  labels)
 
     def test_todos_los_estados_definidos(self):
         """El modelo Mudanza contiene todos los estados esperados del flujo."""
