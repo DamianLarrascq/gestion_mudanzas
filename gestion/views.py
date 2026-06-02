@@ -95,12 +95,22 @@ class MudanzaCreateView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs) -> dict:
         ctx = super().get_context_data(**kwargs)
+        fecha = self._parse_fecha_filtro()
         ctx.update(_obtener_contexto_formulario())
         ctx['titulo_pagina'] = 'Nueva Mudanza'
         ctx['seccion_activa'] = 'mudanzas'
         ctx['errors'] = None
         ctx['valores'] = {}
         return ctx
+
+    def _parse_fecha_filtro(self):
+        raw = self.request.GET.get('fecha_hora', '').strip()
+        if not raw:
+            return None
+        try:
+            return datetime.date.fromisoformat(raw[:10])
+        except ValueError:
+            return None
 
     def post(self, request, *args, **kwargs):
         raw = request.POST
@@ -650,7 +660,7 @@ def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
         capacidad_ascensor_kg=int(raw[f"{prefijo}_capacidad_ascensor_kg"]) if raw.get(f"{prefijo}_capacidad_ascensor_kg") else None,
     )
 
-def _obtener_contexto_formulario() -> dict:
+def _obtener_contexto_formulario(fecha: date | None = None) -> dict:
     """
     Carga los selectores necesarios para el formulario de nueva mudanza.
     Dos queries simples, sin logica en el template.
@@ -658,13 +668,18 @@ def _obtener_contexto_formulario() -> dict:
 
     from gestion.models.clientes import Cliente
     from gestion.models.catalogo import CatalogoItem
+    from gestion.services.flota_service import obtener_camiones_disponibles_para_fecha
 
     clientes= list(
         Cliente.objects.order_by("nombre_completo").values('id', 'nombre_completo', 'telefono')
     )
-    camiones = list(
-        Camion.objects.filter(activo=True).order_by('patente').values('id', 'patente', 'modelo', 'categoria')
-    )
+    if fecha is not None:
+        camiones = obtener_camiones_disponibles_para_fecha(fecha)
+    else:
+        camiones = list(
+            Camion.objects.filter(activo=True).order_by('patente').values('id', 'patente', 'modelo', 'categoria_label')
+        )
+
     empleados = list(
         Empleado.objects.filter(disponible=True).order_by('nombre').values('id', 'nombre', 'rol')
     )
@@ -676,6 +691,7 @@ def _obtener_contexto_formulario() -> dict:
     return {
         'clientes_disponibles': clientes,
         "camiones_disponibles": camiones,
+        'fecha_filtro_camiones': fecha.isoformat() if fecha else None,
         'empleados_disponibles': empleados,
         'catalogo_items': catalogo,
         'opciones_rol': roles,
