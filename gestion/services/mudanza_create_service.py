@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -9,7 +9,6 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from gestion.models import Cliente
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.clientes import Cliente
 from gestion.models.direcciones import Direccion
@@ -56,6 +55,35 @@ class MudanzaCreateInput:
     inventario: list[ItemInventarioInput] = field(default_factory=list)
 
 # Validaciones
+
+_ANTICIPACION_MINIMA_HORAS = 24
+_LIMITE_MAXIMO_DIAS = 365
+
+def _validar_fecha_hora(fecha_hora: datetime) -> datetime:
+    """
+    Reglas:
+        1. Debe ser timezone-aware.
+        2. Minimo 24 horas desde ahora.
+        3. Maximo 365 dias desde hoy.
+
+    Raises:
+        ValidationError con mensaje legible.
+    """
+    ahora = timezone.now()
+
+    anticipacion_minima = timedelta(hours=_ANTICIPACION_MINIMA_HORAS)
+    if fecha_hora < ahora + anticipacion_minima:
+        raise ValidationError(
+            f"La fecha y hora debe ser al menos {_ANTICIPACION_MINIMA_HORAS} horas"
+            f"desde ahora. Minimo: {(ahora + anticipacion_minima).strftime('%d/%m/%Y %H:%M')}."
+        )
+
+    limite_maximo = ahora + timedelta(days=_LIMITE_MAXIMO_DIAS)
+    if fecha_hora > limite_maximo:
+        raise ValidationError(
+            f"La fecha y hora no puede ser mayor a {_LIMITE_MAXIMO_DIAS} dias desde hoy."
+            f"Maximo: {limite_maximo.strftime('%d/%m/%Y')}."
+        )
 
 def _validar_cliente(cliente_id: int) -> Cliente:
     try:
@@ -219,6 +247,7 @@ class MudanzaCreateService:
 
         # Validaciones previas (fuera de la transaccion)
         cliente = _validar_cliente(data.cliente_id)
+        _validar_fecha_hora(data.fecha_hora)
         camion = None
 
         if data.camion_id is not None:
