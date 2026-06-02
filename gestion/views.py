@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from gestion.models import Empleado
+from gestion.models import Empleado, Camion
 from gestion.services.dashboard_service import (
     obtener_actividad_reciente,
     obtener_kpis,
@@ -13,6 +13,8 @@ from gestion.services.dashboard_service import (
 from gestion.services.empleados_service import FiltrosEmpleado, obtener_empleados_listado, \
     validar_disponibilidad_para_fecha
 from gestion.services.flota_service import obtener_estado_flota
+from gestion.services.mudanza_create_service import MudanzaCreateService, MudanzaCreateInput, AsignacionInput, \
+    ItemInventarioInput, DireccionInput
 from gestion.services.mudanzas_list_service import FiltrosMudanza, obtener_mudanzas_filtradas
 from gestion.models.clientes import Cliente
 from gestion.services.clientes_service import (
@@ -77,6 +79,46 @@ class MudanzaListView(LoginRequiredMixin, TemplateView):
         except (ValueError, TypeError):
             return 1
 
+
+class MudanzaCreateView(LoginRequiredMixin, TemplateView):
+    """
+    GET /gestion/mudanzas/nueva/
+        Renderiza el formulario con los selectores pre-cargados.
+
+    POST /gestion/mudanzas/nueva/
+        Crea la mudanza y redirige al detalle.
+
+    Contexto GET:
+        Ver _obtener_contexto_formulario()
+    """
+    template_name = 'gestion/mudanzas/nueva.html'
+
+    def get_context_data(self, **kwargs) -> dict:
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(_obtener_contexto_formulario())
+        ctx['titulo_pagina'] = 'Nueva Mudanza'
+        ctx['seccion_activa'] = 'mudanzas'
+        ctx['errors'] = None
+        ctx['valores'] = {}
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        raw = request.POST
+
+        try:
+            data = _parsear_input(raw)
+            resultado = MudanzaCreateService.crear(data, usuario=request.user)
+        except ValidationError as exc:
+            ctx = self.get_context_data(**kwargs)
+            ctx['errors'] = exc.messages
+            ctx['valores'] = raw
+            return self.render_to_response(ctx)
+
+        messages.success(
+            request,
+            f"Mudanza #{resultado['id']} creada correctamente."
+        )
+        return redirect(resultado['url_detalle'])
 
 # Clientes
 
@@ -507,3 +549,134 @@ def _build_form_schema(form: TarifaBaseForm) -> list[dict]:
         })
 
     return schema
+
+def _parsear_input(raw) -> MudanzaCreateInput:
+    """
+    Convierte POST crudo en MudanzaCreateInput.
+    Lanza ValidationError si los campos obligatorios faltan o tienen formato invalido.
+    """
+    from decimal import Decimal, InvalidOperation
+
+    errores = []
+
+    # cliente_id
+    try:
+        cliente_id = int(raw['cliente_id'])
+    except (KeyError, ValueError):
+        errores.append('cliente_id es obligatorio y debe ser un entero.')
+        cliente_id = None
+
+    # fecha_hora
+    try:
+        fecha_hora = timezone.make_aware(
+            datetime.datetime.fromisoformat(raw['fecha_hora'])
+        )
+    except (KeyError, ValueError):
+        errores.append('fecha_hora es obligatoria (formato ISO: YYYY-MM-DDTHH:MM).')
+        fecha_hora = None
+
+    if errores:
+        raise ValidationError(errores)
+
+    # camion_id (opcional)
+    camion_id = None
+    if raw.get('camion_id'):
+        try:
+            camion_id = int(raw['camion_id'])
+        except ValueError:
+            raise ValidationError('camion_id debe ser un entero valido.')
+
+    # monto_senia (opcional)
+    monto_senia = None
+    if raw.get('monto_senia'):
+        try:
+            monto_senia = Decimal(raw['monto_senia'])
+        except InvalidOperation:
+            raise ValidationError('monto_senia debe ser un numero valido.')
+
+    # Direcciones
+    origen = _parsear_direccion(raw, prefijo='origen')
+    destino = _parsear_direccion(raw, prefijo='destino')
+
+    # asignaciones: empleados_ids[] + roles[]
+    empleado_ids = raw.getlist('empleado_ids[]')
+    roles = raw.getlist('roles[]')
+    asignaciones = [
+        AsignacionInput(empleado_id=int(eid), rol=rol)
+        for eid, rol in zip(empleado_ids, roles)
+            if eid and rol
+    ]
+
+    # inventario: catalogo_item_ids[] + cantidades[] + descripciones[]
+    catalogo_ids = raw.getlist('catalogo_item_ids[]')
+    cantidades = raw.getlist('cantidades[]')
+    descripciones = raw.getlist('descripciones[]')
+    inventario = [
+        ItemInventarioInput(
+            catalogo_item_id=int(cid) if cid else None,
+            cantidad=int(cant),
+            descripcion=desc,
+        )
+        for cid, cant, desc in zip(catalogo_ids, cantidades, descripciones)
+        if cant and int(cant) > 0
+    ]
+
+    return MudanzaCreateInput(
+        cliente_id=cliente_id,
+        fecha_hora=fecha_hora,
+        necesita_ayudantes=raw.get('necesita_ayudantes') == '1',
+        camion_id=camion_id,
+        monto_senia=monto_senia,
+        origen=origen,
+        destino=destino,
+        asignaciones=asignaciones,
+        inventario=inventario,
+    )
+
+def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
+    calle = raw.get(f"{prefijo}_calle", "").strip()
+    if not calle:
+        return None
+    return DireccionInput(
+        calle=calle,
+        numero=raw.get(f"{prefijo}_numero", "").strip(),
+        localicad=raw.get(f"{prefijo}_localidad", "").strip(),
+        provincia=raw.get(f"{prefijo}_provincia", "").strip(),
+        codigo_postal=raw.get(f"{prefijo}_codigo_postal", "").strip(),
+        piso=raw.get(f"{prefijo}_piso", "").strip(),
+        departamento=raw.get(f"{prefijo}_departamento", "").strip(),
+        tiene_ascensor=raw.get(f"{prefijo}_tiene_ascensor") == '1',
+        ascensor_grande=raw.get(f"{prefijo}_ascensor_grande") == '1',
+        capacidad_ascensor_kg=int(raw[f"{prefijo}_capacidad_ascensor_kg"]) if raw.get(f"{prefijo}_capacidad_ascensor_kg") else None,
+    )
+
+def _obtener_contexto_formulario() -> dict:
+    """
+    Carga los selectores necesarios para el formulario de nueva mudanza.
+    Dos queries simples, sin logica en el template.
+    """
+
+    from gestion.models.clientes import Cliente
+    from gestion.models.catalogo import CatalogoItem
+
+    clientes= list(
+        Cliente.objects.order_by("nombre_completo").values('id', 'nombre_completo', 'telefono')
+    )
+    camiones = list(
+        Camion.objects.filter(activo=True).order_by('patente').values('id', 'patente', 'modelo', 'categoria')
+    )
+    empleados = list(
+        Empleado.objects.filter(disponible=True).order_by('nombre').values('id', 'nombre', 'rol')
+    )
+    catalogo = list(
+        CatalogoItem.objects.order_by('nombre').values('id', 'nombre', 'volumen_m3', 'peso_estimado_kg')
+    )
+    roles = [{'valor': r.value, 'label': r.label} for r in Empleado.Rol]
+
+    return {
+        'clientes_disponibles': clientes,
+        "camiones_disponibles": camiones,
+        'empleados_disponibles': empleados,
+        'catalogo_items': catalogo,
+        'opciones_rol': roles,
+    }
