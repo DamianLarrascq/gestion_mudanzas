@@ -1,5 +1,6 @@
 from django.urls import path
 from gestion import views
+from gestion.views import MudanzaCreateView
 
 app_name = 'gestion'
 
@@ -10,6 +11,7 @@ urlpatterns = [
     # Mudanzas
     path('mudanzas/', views.MudanzaListView.as_view(), name='mudanza_list'),
     path('mudanzas/<int:pk>/resumen/', views.ResumenMudanzaView.as_view(), name='mudanza_resumen'),
+    path('mudanzas/nueva/', MudanzaCreateView.as_view(), name='mudanza_nueva'),
 
     # Clientes
     path('clientes/', views.ClienteListView.as_view(), name='cliente_list'),
