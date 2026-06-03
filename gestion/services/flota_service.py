@@ -80,8 +80,6 @@ def _resolver_estado_operativo(camion: Camion, patentes_en_servicio: set[int]) -
       2. mudanza EN_CURSO → EN_SERVICIO
       3. resto → DISPONIBLE
     """
-    if camion.en_taller:
-        return 'EN_TALLER'
     if camion.pk in patentes_en_servicio:
         return "EN_SERVICIO"
     return "DISPONIBLE"
@@ -192,4 +190,60 @@ def obtener_estado_flota(hoy: date | None = None) -> dict:
             "en_taller": len(grupos["EN_TALLER"]),
             "con_alerta_documentacion": con_alerta_doc,
         },
+    }
+
+def obtener_camiones_disponibles_para_fecha(fecha: date) -> list[dict]:
+    """
+    Retorna camiones aptos para asignar a una mudanza en la fecha dada.
+
+    Un camion es elegible si cumple TODAS estas condiciones:
+        1. activo=True
+        2. No tiene una mudanza CONFIRMADA o EN_CURSO en esa fecha
+
+    Args:
+        fecha: Fecha de la mudanza a crear.
+
+    Returns:
+        Lista de dicts listos para poblar el <select> del formulario.
+    """
+
+    hoy = timezone.localdate()
+
+    ocupados_ids = set[int] = set(
+        Mudanza.objects.filter(
+            fecha_hora__date=fecha,
+            estado__in=[Mudanza.Estado.CONFIRMADA, Mudanza.Estado.EN_CURSO],
+            camion_isnull=False,
+        ).values_list('camion_id', flat=True)
+    )
+
+    camiones = Camion.objects.filter(activo=True).order_by('patente')
+
+    return [
+        _serializar_camion_selector(c, c.pk in ocupados_ids, hoy) for c in camiones
+    ]
+
+def _serializar_camion_selector(camion: Camion, ocupado: bool, hoy: date) -> dict:
+    """
+    Version reducida de _serializar_camion para el selector del formulario.
+    Incluye solo lo que necesita el frontend para mostrar la opcion y advertir.
+    """
+
+    vtv = _evaluar_documento(camion.vtv_fecha_vencimiento, hoy, 'VTV')
+    seguro = _evaluar_documento(camion.seguro_fecha_vencimiento, hoy, 'Seguro')
+    patente_doc = _evaluar_documento(camion.patente_fecha_vencimiento, hoy, 'Patente')
+    doc_critica = _documentacion_critica([vtv, seguro, patente_doc])
+
+    return {
+        'id': camion.pk,
+        'patente': camion.patente,
+        'categoria_label': camion.get_categoria_display(),
+        'capacidad_volumen_m3': str(camion.capacidad_volumen_m3),
+        'capacidad_peso_kg': str(camion.capacidad_peso_kg),
+        'disponible': not ocupado,
+        'disponible_label': 'Disponible' if not ocupado else 'Ocupado ese dia',
+        'disponible_badge': 'badge-success' if not ocupado else 'badge-danger',
+        'documentacion_alerta': doc_critica.estado in ('VENCIDO', 'POR_VENCER'),
+        'documentacion_label': doc_critica.label,
+        'documentacion_badge': doc_critica.badge,
     }
