@@ -19,6 +19,7 @@ from gestion.services.clientes_service import (
     FiltrosCliente, obtener_clientes_filtrados, obtener_detalle_cliente
 )
 import datetime
+from datetime import date
 from gestion.models.mudanzas import Mudanza
 from gestion.services.presupuesto_service import PresupuestoService, construir_contexto_presupuesto
 from gestion.services.mercadopago_service import MercadoPagoService
