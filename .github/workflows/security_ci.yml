@@ -56,14 +56,7 @@ jobs:
       - name: 📦 Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          # requirements.txt tiene encoding UTF-16 — normalizar antes de instalar
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
+          pip install -r requirements.txt
           pip install pytest pytest-django pytest-cov coverage
 
       - name: ✅ Verificar Redis
@@ -226,13 +219,7 @@ jobs:
       - name: 📦 Instalar dependencias (para análisis de imports)
         run: |
           python -m pip install --upgrade pip
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
+          pip install -r requirements.txt
 
       - name: 🏗️ Autobuild (CodeQL rastrea imports y flujo)
         uses: github/codeql-action/autobuild@v3
@@ -264,18 +251,12 @@ jobs:
       - name: 📦 Instalar dependencias y pip-audit
         run: |
           python -m pip install --upgrade pip pip-audit
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
+          pip install -r requirements.txt
 
       - name: 🔍 Auditar vulnerabilidades conocidas (CVEs)
         run: |
           pip-audit \
-            --requirement requirements_clean.txt \
+            --requirement requirements.txt \
             --format=json \
             --output=reports/pip-audit.json \
             --desc || true
@@ -287,7 +268,7 @@ jobs:
         if: always()
         run: |
           pip-audit \
-            --requirement requirements_clean.txt \
+            --requirement requirements.txt \
             --desc 2>&1 | tail -30 || true
 
       - name: 📤 Subir reporte de auditoría
@@ -318,13 +299,7 @@ jobs:
       - name: 📦 Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          python -c "
-          with open('requirements.txt', 'rb') as f:
-              raw = f.read()
-          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
-              f.write(raw.decode('utf-16'))
-          "
-          pip install -r requirements_clean.txt
+          pip install -r requirements.txt
 
       - name: 🗄️ Migraciones
         run: python manage.py migrate --no-input
