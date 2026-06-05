@@ -1,0 +1,577 @@
+{% extends "base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+
+{# ── Estilos específicos del dashboard ─────────────────────────────── #}
+<style>
+  /* ── Paleta ──────────────────────────────── */
+  :root {
+    --dash-bg:           #0f1117;
+    --dash-surface:      #181c27;
+    --dash-surface-2:    #1e2334;
+    --dash-border:       rgba(255,255,255,0.07);
+    --dash-accent:       #4f7cff;
+    --dash-accent-light: #7a9dff;
+    --dash-green:        #22c97b;
+    --dash-red:          #ff4f6b;
+    --dash-yellow:       #f5b942;
+    --dash-text:         #e8eaf0;
+    --dash-muted:        #6e7891;
+    --dash-radius:       14px;
+  }
+
+  /* ── Layout wrapper ──────────────────────── */
+  .dash-page {
+    padding: 32px 36px 48px;
+    max-width: 1440px;
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--dash-text);
+  }
+
+  /* ── Header ──────────────────────────────── */
+  .dash-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .dash-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #fff;
+    margin: 0;
+    line-height: 1;
+  }
+  .dash-header .dash-date {
+    font-size: 0.85rem;
+    color: var(--dash-muted);
+    margin-top: 6px;
+  }
+  .dash-header .dash-live {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+    color: var(--dash-green);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .dash-live .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--dash-green);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,201,123,.4); }
+    50%       { opacity: .8; box-shadow: 0 0 0 6px rgba(34,201,123,0); }
+  }
+
+  /* ── KPI grid ────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 600px)  { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .kpi-card {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius);
+    padding: 24px 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.35);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(79,124,255,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .kpi-icon-wrap {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    background: rgba(79,124,255,.15);
+  }
+  .kpi-icon-wrap svg {
+    width: 20px; height: 20px;
+    stroke: var(--dash-accent-light);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .kpi-label {
+    font-size: 0.78rem;
+    color: var(--dash-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .kpi-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .kpi-trend.up   { background: rgba(34,201,123,.12); color: var(--dash-green); }
+  .kpi-trend.down { background: rgba(255,79,107,.12);  color: var(--dash-red);   }
+  .kpi-trend.neutral { background: rgba(110,120,145,.15); color: var(--dash-muted); }
+  .kpi-subtitulo {
+    font-size: 0.74rem;
+    color: var(--dash-muted);
+    margin-top: 8px;
+  }
+
+  /* ── Two-col layout ──────────────────────── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) { .dash-grid { grid-template-columns: 1fr; } }
+
+  /* ── Panel compartido ────────────────────── */
+  .panel {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius);
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--dash-border);
+  }
+  .panel-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title svg {
+    width: 16px; height: 16px;
+    stroke: var(--dash-accent-light);
+    stroke-width: 2;
+    fill: none;
+    flex-shrink: 0;
+  }
+  .panel-count {
+    font-size: 0.75rem;
+    color: var(--dash-muted);
+    background: var(--dash-surface-2);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--dash-border);
+  }
+
+  /* ── Tabla mudanzas ──────────────────────── */
+  .mudanzas-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .mudanzas-table thead th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--dash-muted);
+    padding: 12px 22px;
+    font-weight: 600;
+    text-align: left;
+    background: var(--dash-surface-2);
+    border-bottom: 1px solid var(--dash-border);
+  }
+  .mudanzas-table tbody tr {
+    border-bottom: 1px solid var(--dash-border);
+    transition: background .12s;
+  }
+  .mudanzas-table tbody tr:last-child { border-bottom: none; }
+  .mudanzas-table tbody tr:hover { background: rgba(255,255,255,.025); }
+  .mudanzas-table td {
+    padding: 14px 22px;
+    font-size: 0.84rem;
+    vertical-align: middle;
+    color: var(--dash-text);
+  }
+
+  .hora-pill {
+    display: inline-block;
+    background: var(--dash-surface-2);
+    border: 1px solid var(--dash-border);
+    color: var(--dash-accent-light);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: .02em;
+  }
+
+  .cliente-name {
+    font-weight: 600;
+    color: #fff;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .cliente-tel {
+    font-size: 0.75rem;
+    color: var(--dash-muted);
+  }
+
+  .ruta-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ruta-orig { font-size: 0.8rem; color: var(--dash-text); }
+  .ruta-arrow { font-size: 0.7rem; color: var(--dash-muted); margin: 1px 0; }
+  .ruta-dest { font-size: 0.8rem; color: var(--dash-muted); }
+
+  .senia-icon { font-size: 1rem; }
+
+  /* Camión con patente pill */
+  .patente {
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    background: var(--dash-surface-2);
+    border: 1px solid var(--dash-border);
+    padding: 3px 8px;
+    border-radius: 5px;
+    color: var(--dash-text);
+    letter-spacing: .06em;
+  }
+  .sin-asignar { color: var(--dash-muted); font-size: 0.8rem; font-style: italic; }
+
+  /* ── Badges ──────────────────────────────── */
+  .badge-secondary { background: rgba(110,120,145,.18); color: #9aa3b8; }
+  .badge-info      { background: rgba(56,182,255,.15);  color: #56c2ff; }
+  .badge-primary   { background: rgba(79,124,255,.18);  color: var(--dash-accent-light); }
+  .badge-warning   { background: rgba(245,185,66,.15);  color: var(--dash-yellow); }
+  .badge-success   { background: rgba(34,201,123,.15);  color: var(--dash-green); }
+  .badge-danger    { background: rgba(255,79,107,.15);  color: var(--dash-red); }
+  .badge-dark      { background: rgba(40,40,60,.5);     color: #7a8199; }
+
+  [class^="badge-"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  [class^="badge-"]::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Empty state ─────────────────────────── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 24px;
+    gap: 12px;
+    color: var(--dash-muted);
+  }
+  .empty-state svg {
+    width: 40px; height: 40px;
+    stroke: var(--dash-muted);
+    opacity: .35;
+  }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* ── Feed actividad ──────────────────────── */
+  .activity-feed { padding: 8px 0; }
+
+  .activity-item {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--dash-border);
+    transition: background .12s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item:hover { background: rgba(255,255,255,.025); }
+
+  .activity-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b5bdb 0%, #7950f2 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .activity-body { min-width: 0; }
+
+  .activity-line {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--dash-text);
+    margin-bottom: 5px;
+  }
+  .activity-line strong { color: #fff; }
+  .activity-mudanza-link {
+    color: var(--dash-accent-light);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .activity-mudanza-link:hover { text-decoration: underline; }
+
+  .activity-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .activity-time {
+    font-size: 0.72rem;
+    color: var(--dash-muted);
+  }
+
+  /* ── Animaciones de entrada ──────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .kpi-card         { animation: fadeUp .35s ease both; }
+  .kpi-card:nth-child(1) { animation-delay: .05s; }
+  .kpi-card:nth-child(2) { animation-delay: .10s; }
+  .kpi-card:nth-child(3) { animation-delay: .15s; }
+  .kpi-card:nth-child(4) { animation-delay: .20s; }
+  .panel            { animation: fadeUp .4s ease .22s both; }
+
+  /* ── Link detalle ────────────────────────── */
+  .detalle-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--dash-accent-light);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .detalle-link:hover { text-decoration: underline; }
+  .detalle-link svg {
+    width: 12px; height: 12px;
+    stroke: currentColor; fill: none; stroke-width: 2.5;
+  }
+</style>
+
+<div class="dash-page">
+
+  {# ── Header ─────────────────────────────────────────────────── #}
+  <div class="dash-header">
+    <div>
+      <h1>{{ titulo_pagina }}</h1>
+      <p class="dash-date">{{ fecha_activa }}</p>
+    </div>
+    <div class="dash-live">
+      <span class="dot"></span>
+      En vivo
+    </div>
+  </div>
+
+  {# ── KPIs ────────────────────────────────────────────────────── #}
+  <div class="kpi-grid">
+    {% for kpi in kpis %}
+    <div class="kpi-card">
+
+      <div class="kpi-icon-wrap">
+        {# Iconos Heroicons outline inline #}
+        {% if kpi.icon == 'currency-dollar' %}
+          <svg viewBox="0 0 24 24"><path d="M12 2v2m0 16v2M6.34 6.34l-1.42-1.42M19.08 19.08l-1.42-1.42M2 12h2m16 0h2M6.34 17.66l-1.42 1.42M19.08 4.92l-1.42 1.42"/><circle cx="12" cy="12" r="4"/></svg>
+        {% elif kpi.icon == 'truck' %}
+          <svg viewBox="0 0 24 24"><path d="M1 3h13v13H1zM14 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        {% elif kpi.icon == 'users' %}
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        {% elif kpi.icon == 'check-circle' %}
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        {% else %}
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+        {% endif %}
+      </div>
+
+      <div class="kpi-value">{{ kpi.value }}</div>
+      <div class="kpi-label">{{ kpi.label }}</div>
+
+      {% if kpi.trend_label %}
+        <span class="kpi-trend {% if kpi.trend_positivo %}up{% else %}down{% endif %}">
+          {% if kpi.trend_positivo %}▲{% else %}▼{% endif %}
+          {{ kpi.trend_label }}
+        </span>
+      {% endif %}
+
+      {% if kpi.subtitulo %}
+        <p class="kpi-subtitulo">{{ kpi.subtitulo }}</p>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Grid principal ──────────────────────────────────────────── #}
+  <div class="dash-grid">
+
+    {# ── Mudanzas de hoy ───────────────────────────────────────── #}
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">
+          <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          Mudanzas de hoy
+        </span>
+        <span class="panel-count">{{ mudanzas_hoy|length }} servicio{{ mudanzas_hoy|length|pluralize }}</span>
+      </div>
+
+      {% if mudanzas_hoy %}
+      <table class="mudanzas-table">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Cliente</th>
+            <th>Ruta</th>
+            <th>Camión</th>
+            <th>Estado</th>
+            <th>Seña</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in mudanzas_hoy %}
+          <tr>
+            <td><span class="hora-pill">{{ m.hora }}</span></td>
+            <td>
+              <span class="cliente-name">{{ m.cliente_nombre }}</span>
+              <span class="cliente-tel">{{ m.cliente_tel }}</span>
+            </td>
+            <td>
+              <div class="ruta-wrap">
+                <span class="ruta-orig">{{ m.origen }}</span>
+                <span class="ruta-arrow">↓</span>
+                <span class="ruta-dest">{{ m.destino }}</span>
+              </div>
+            </td>
+            <td>
+              {% if m.camion_patente == "Sin asignar" %}
+                <span class="sin-asignar">Sin asignar</span>
+              {% else %}
+                <span class="patente">{{ m.camion_patente }}</span>
+              {% endif %}
+            </td>
+            <td><span class="{{ m.estado_badge }}">{{ m.estado_label }}</span></td>
+            <td class="senia-icon">
+              {% if m.senia_pagada %}
+                <span title="Seña pagada" style="color: var(--dash-green);">✓</span>
+              {% else %}
+                <span title="Seña pendiente" style="color: var(--dash-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ m.url_detalle }}" class="detalle-link">
+                Ver
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% else %}
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <p>No hay mudanzas programadas para hoy.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Actividad reciente ────────────────────────────────────── #}
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Actividad reciente
+        </span>
+        <span class="panel-count">{{ actividad_reciente|length }} eventos</span>
+      </div>
+
+      {% if actividad_reciente %}
+      <div class="activity-feed">
+        {% for ev in actividad_reciente %}
+        <a href="{{ ev.mudanza_url }}" class="activity-item">
+          <div class="activity-avatar">
+            {{ ev.usuario_nombre|slice:":1"|upper }}{{ ev.usuario_nombre|slice:"ev.usuario_nombre|wordcount:1,1:2"|upper|default:"" }}
+          </div>
+          <div class="activity-body">
+            <p class="activity-line">
+              <strong>{{ ev.usuario_nombre }}</strong> cambió
+              <a class="activity-mudanza-link" href="{{ ev.mudanza_url }}">#{{ ev.mudanza_id }}</a>
+              de <em>{{ ev.estado_anterior }}</em> a
+              <span class="{{ ev.estado_nuevo_badge }}">{{ ev.estado_nuevo }}</span>
+            </p>
+            <div class="activity-meta">
+              <span class="activity-time">{{ ev.fecha_humanizada }}</span>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <p>Sin actividad reciente.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>{# /dash-grid #}
+
+</div>{# /dash-page #}
+
+{% endblock %}

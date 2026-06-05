@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin - EM Mudanzas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Estilos Base del Administrador ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'DM Sans', sans-serif; 
+    background-color: #f4f7f6; /* Un gris muy claro para diferenciar del sitio público */
+    color: #1a1a18; 
+    display: flex; 
+    min-height: 100vh;
+  }
+
+  /* ── Menú Lateral (Sidebar) ── */
+  .sidebar {
+    width: 260px;
+    background-color: #1a1a18;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+  }
+  .sidebar h2 {
+    font-size: 20px;
+    margin-bottom: 40px;
+    color: #fff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 16px;
+  }
+  .nav-menu { list-style: none; flex-grow: 1; }
+  .nav-menu li { margin-bottom: 8px; }
+  .nav-menu a {
+    text-decoration: none;
+    color: #a0a09f;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .nav-menu a:hover, .nav-menu a.active {
+    background-color: #1a5fcc;
+    color: #ffffff;
+  }
+
+  /* ── Contenido Principal ── */
+  .main-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+  }
+  .header-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  .header-dashboard h1 { font-size: 28px; }
+
+  /* ── Tarjetas y Tabla ── */
+  .card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  th, td {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+  }
+  th {
+    color: #4a4a46;
+    font-weight: 600;
+    font-size: 14px;
+    background-color: #fafaf7;
+  }
+  tr:last-child td { border-bottom: none; }
+  
+  /* ── Etiquetas de Estado ── */
+  .badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-disponible { background-color: #e6f4ea; color: #137333; }
+  .badge-viaje { background-color: #fef7e0; color: #b06000; }
+  .badge-inactivo { background-color: #fce8e6; color: #c5221f; }
+
+  /* ── Botón simple ── */
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-outline:hover { background: #f4f7f6; border-color: #ccc; }
+
+</style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <h2>EM Admin</h2>
+    <ul class="nav-menu">
+      <li><a href="#">📋 Solicitudes Nuevas</a></li>
+      <li><a href="#" class="active">🚚 Flota y Choferes</a></li>
+      <li><a href="#">⚙️ Configuración</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+    <div class="header-dashboard">
+      <h1>Flota y Choferes</h1>

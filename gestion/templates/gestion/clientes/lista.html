@@ -1,0 +1,447 @@
+{% extends "base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --dash-bg:           #0f1117;
+    --dash-surface:      #181c27;
+    --dash-surface-2:    #1e2334;
+    --dash-border:       rgba(255,255,255,0.07);
+    --dash-accent:       #4f7cff;
+    --dash-accent-light: #7a9dff;
+    --dash-green:        #22c97b;
+    --dash-red:          #ff4f6b;
+    --dash-yellow:       #f5b942;
+    --dash-text:         #e8eaf0;
+    --dash-muted:        #6e7891;
+    --dash-radius:       14px;
+  }
+
+  .clientes-page {
+    padding: 32px 36px 48px;
+    max-width: 1440px;
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--dash-text);
+  }
+
+  /* ── Header ───────────────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .page-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #fff;
+    margin: 0;
+    line-height: 1;
+  }
+  .page-header .page-subtitle {
+    font-size: 0.84rem;
+    color: var(--dash-muted);
+    margin-top: 6px;
+  }
+
+  /* ── Métricas ─────────────────────────────────────────────────── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 900px) { .metrics-row { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 500px) { .metrics-row { grid-template-columns: 1fr; } }
+
+  .metric-chip {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: fadeUp .35s ease both;
+  }
+  .metric-chip:nth-child(1) { animation-delay: .05s; }
+  .metric-chip:nth-child(2) { animation-delay: .10s; }
+  .metric-chip:nth-child(3) { animation-delay: .15s; }
+  .metric-chip:nth-child(4) { animation-delay: .20s; }
+
+  .metric-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .metric-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; }
+  .metric-icon.total     { background: rgba(79,124,255,.15); } .metric-icon.total svg     { stroke: var(--dash-accent-light); }
+  .metric-icon.activos   { background: rgba(34,201,123,.15); } .metric-icon.activos svg   { stroke: var(--dash-green); }
+  .metric-icon.potenc    { background: rgba(245,185,66,.15); } .metric-icon.potenc svg    { stroke: var(--dash-yellow); }
+  .metric-icon.historial { background: rgba(110,120,145,.15);} .metric-icon.historial svg { stroke: var(--dash-muted); }
+
+  .metric-body { min-width: 0; }
+  .metric-value { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -0.5px; }
+  .metric-label { font-size: 0.73rem; color: var(--dash-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-top: 4px; }
+
+  /* ── Toolbar ──────────────────────────────────────────────────── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 380px;
+  }
+  .search-wrap svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; stroke: var(--dash-muted); stroke-width: 2; fill: none; pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    padding: 9px 12px 9px 36px;
+    font-size: 0.84rem;
+    color: var(--dash-text);
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+  }
+  .search-input::placeholder { color: var(--dash-muted); }
+  .search-input:focus { border-color: var(--dash-accent); }
+
+  .filter-select {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    padding: 9px 32px 9px 12px;
+    font-size: 0.84rem;
+    color: var(--dash-text);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e7891' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color .15s;
+  }
+  .filter-select:focus { border-color: var(--dash-accent); }
+
+  .btn-filter {
+    background: var(--dash-accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-filter:hover { opacity: .88; transform: translateY(-1px); }
+
+  .btn-clear {
+    background: transparent;
+    color: var(--dash-muted);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.84rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color .15s, border-color .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-clear:hover { color: var(--dash-text); border-color: rgba(255,255,255,.2); }
+  .btn-clear svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Panel ────────────────────────────────────────────────────── */
+  .panel {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius);
+    overflow: hidden;
+    animation: fadeUp .4s ease .18s both;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 22px; border-bottom: 1px solid var(--dash-border);
+  }
+  .panel-title {
+    font-size: 0.88rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title svg { width: 15px; height: 15px; stroke: var(--dash-accent-light); stroke-width: 2; fill: none; }
+  .panel-count {
+    font-size: 0.75rem; color: var(--dash-muted);
+    background: var(--dash-surface-2); padding: 3px 10px;
+    border-radius: 20px; border: 1px solid var(--dash-border);
+  }
+
+  /* ── Tabla ────────────────────────────────────────────────────── */
+  .clientes-table { width: 100%; border-collapse: collapse; }
+  .clientes-table thead th {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--dash-muted); padding: 11px 20px; font-weight: 600;
+    text-align: left; background: var(--dash-surface-2);
+    border-bottom: 1px solid var(--dash-border); white-space: nowrap;
+  }
+  .clientes-table tbody tr { border-bottom: 1px solid var(--dash-border); transition: background .12s; }
+  .clientes-table tbody tr:last-child { border-bottom: none; }
+  .clientes-table tbody tr:hover { background: rgba(255,255,255,.025); }
+  .clientes-table td { padding: 13px 20px; font-size: 0.84rem; vertical-align: middle; color: var(--dash-text); }
+
+  .cliente-nombre { font-weight: 600; color: #fff; display: block; margin-bottom: 2px; }
+  .cliente-tel { font-size: 0.75rem; color: var(--dash-muted); }
+
+  .inversion-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--dash-green); font-size: 0.9rem; }
+  .inversion-zero { color: var(--dash-muted); }
+
+  .mudanza-counts { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; }
+  .count-total { color: var(--dash-text); font-weight: 600; }
+  .count-sep { color: var(--dash-muted); font-size: 0.7rem; }
+  .count-comp { color: var(--dash-green); font-size: 0.75rem; }
+
+  .fecha-cell { font-size: 0.8rem; color: var(--dash-muted); white-space: nowrap; }
+
+  .btn-detalle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--dash-accent-light);
+    background: rgba(79,124,255,.1);
+    border: 1px solid rgba(79,124,255,.2);
+    border-radius: 7px; padding: 6px 12px; text-decoration: none;
+    white-space: nowrap; transition: background .15s, border-color .15s, transform .1s;
+  }
+  .btn-detalle:hover { background: rgba(79,124,255,.2); border-color: rgba(79,124,255,.4); transform: translateY(-1px); }
+  .btn-detalle svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Paginación ───────────────────────────────────────────────── */
+  .pagination-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-top: 1px solid var(--dash-border);
+    font-size: 0.8rem; color: var(--dash-muted); flex-wrap: wrap; gap: 10px;
+  }
+  .pagination-controls { display: flex; align-items: center; gap: 6px; }
+  .page-btn {
+    background: var(--dash-surface-2); border: 1px solid var(--dash-border);
+    border-radius: 7px; padding: 6px 13px; font-size: 0.8rem; font-weight: 600;
+    color: var(--dash-text); cursor: pointer; text-decoration: none;
+    transition: background .12s, border-color .12s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .page-btn:hover:not(.disabled) { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); }
+  .page-btn.disabled { opacity: .35; pointer-events: none; cursor: default; }
+  .page-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+  .page-current { padding: 6px 13px; font-size: 0.8rem; color: var(--dash-text); font-weight: 600; }
+
+  /* ── Empty state ──────────────────────────────────────────────── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 56px 24px; gap: 12px; color: var(--dash-muted);
+  }
+  .empty-state svg { width: 40px; height: 40px; stroke: var(--dash-muted); opacity: .3; fill: none; stroke-width: 1.5; }
+  .empty-state p { font-size: 0.85rem; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="clientes-page">
+
+  {# ── Header ─────────────────────────────────────────────────── #}
+  <div class="page-header">
+    <div>
+      <h1>{{ titulo_pagina }}</h1>
+      <p class="page-subtitle">Gestión de clientes y su historial comercial</p>
+    </div>
+  </div>
+
+  {# ── Métricas ─────────────────────────────────────────────────── #}
+  <div class="metrics-row">
+
+    <div class="metric-chip">
+      <div class="metric-icon total">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">{{ metricas.total }}</div>
+        <div class="metric-label">Total clientes</div>
+      </div>
+    </div>
+
+    <div class="metric-chip">
+      <div class="metric-icon activos">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">{{ metricas.activos }}</div>
+        <div class="metric-label">Activos ahora</div>
+      </div>
+    </div>
+
+    <div class="metric-chip">
+      <div class="metric-icon potenc">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">{{ metricas.potenciales }}</div>
+        <div class="metric-label">Potenciales</div>
+      </div>
+    </div>
+
+    <div class="metric-chip">
+      <div class="metric-icon historial">
+        <svg viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4"/><polyline points="3 3 3 7 7 7"/></svg>
+      </div>
+      <div class="metric-body">
+        <div class="metric-value">{{ metricas.con_historial }}</div>
+        <div class="metric-label">Con historial</div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Toolbar ──────────────────────────────────────────────────── #}
+  <form method="get" action="">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input
+          class="search-input"
+          type="text"
+          name="q"
+          placeholder="Buscar por nombre, DNI, teléfono, email…"
+          value="{{ filtros_activos.q }}"
+          autocomplete="off"
+        >
+      </div>
+
+      <select class="filter-select" name="segmento">
+        <option value="">Todos los segmentos</option>
+        {% for opt in opciones_segmento %}
+          <option value="{{ opt.valor }}" {% if filtros_activos.segmento == opt.valor %}selected{% endif %}>{{ opt.label }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn-filter">Filtrar</button>
+
+      {% if filtros_activos.q or filtros_activos.segmento %}
+        <a href="{% url 'gestion:cliente_list' %}" class="btn-clear">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Limpiar
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# ── Panel tabla ──────────────────────────────────────────────── #}
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Clientes
+      </span>
+      <span class="panel-count">{{ paginacion.total_registros }} registro{{ paginacion.total_registros|pluralize }}</span>
+    </div>
+
+    {% if clientes %}
+    <table class="clientes-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Email</th>
+          <th>Mudanzas</th>
+          <th>Inversión total</th>
+          <th>Cliente desde</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr>
+          <td>
+            <span class="cliente-nombre">{{ c.nombre_completo }}</span>
+            <span class="cliente-tel">{{ c.telefono }}</span>
+          </td>
+          <td class="fecha-cell">{{ c.email }}</td>
+          <td>
+            <div class="mudanza-counts">
+              <span class="count-total">{{ c.total_mudanzas }}</span>
+              {% if c.mudanzas_completadas > 0 %}
+                <span class="count-sep">·</span>
+                <span class="count-comp">{{ c.mudanzas_completadas }} completadas</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% if c.inversion_total_raw > 0 %}
+              <span class="inversion-amount">{{ c.inversion_total_display }}</span>
+            {% else %}
+              <span class="inversion-zero">—</span>
+            {% endif %}
+          </td>
+          <td class="fecha-cell">{{ c.creado_en_display }}</td>
+          <td>
+            <a href="{{ c.url_detalle }}" class="btn-detalle">
+              Ver perfil
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="pagination-bar">
+      <span>
+        Página {{ paginacion.pagina_actual }} de {{ paginacion.total_paginas }}
+        &nbsp;·&nbsp; {{ paginacion.total_registros }} registro{{ paginacion.total_registros|pluralize }}
+      </span>
+      <div class="pagination-controls">
+        <a
+          href="?q={{ filtros_activos.q }}&segmento={{ filtros_activos.segmento }}&page={{ paginacion.pagina_anterior }}"
+          class="page-btn {% if not paginacion.tiene_anterior %}disabled{% endif %}"
+          aria-disabled="{% if not paginacion.tiene_anterior %}true{% endif %}"
+        >
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Anterior
+        </a>
+        <span class="page-current">{{ paginacion.pagina_actual }}</span>
+        <a
+          href="?q={{ filtros_activos.q }}&segmento={{ filtros_activos.segmento }}&page={{ paginacion.pagina_siguiente }}"
+          class="page-btn {% if not paginacion.tiene_siguiente %}disabled{% endif %}"
+          aria-disabled="{% if not paginacion.tiene_siguiente %}true{% endif %}"
+        >
+          Siguiente
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <p>No se encontraron clientes con los filtros aplicados.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}
