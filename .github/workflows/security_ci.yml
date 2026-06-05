@@ -60,7 +60,8 @@ jobs:
           pip install pytest pytest-django pytest-cov coverage
 
       - name: ✅ Verificar Redis
-        run: redis-cli -h localhost ping
+        run: |
+          python3 -c "import redis; r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=5); r.ping(); print('Redis OK')" 
 
       - name: 🗄️ Ejecutar migraciones
         run: python manage.py migrate --no-input
