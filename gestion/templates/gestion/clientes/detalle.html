@@ -278,7 +278,7 @@
   {# ── Perfil del cliente ───────────────────────────────────────── #}
   <div class="profile-header">
     <div class="profile-avatar">
-      {{ cliente.nombre_completo|slice:":1"|upper }}{% with words=cliente.nombre_completo|split:" " %}{% if words|length > 1 %}{{ words.1|slice:":1"|upper }}{% endif %}{% endwith %}
+     {{ iniciales }}
     </div>
     <div class="profile-info">
       <h1 class="profile-name">

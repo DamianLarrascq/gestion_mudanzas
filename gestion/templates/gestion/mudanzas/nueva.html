@@ -1,0 +1,1461 @@
+{% extends "base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Variables ─────────────────────────────────────────────── */
+  :root {
+    --nm-bg:          #0d1117;
+    --nm-surface:     #161b22;
+    --nm-surface-2:   #1c2330;
+    --nm-surface-3:   #21293a;
+    --nm-border:      rgba(255,255,255,0.08);
+    --nm-border-2:    rgba(255,255,255,0.13);
+    --nm-accent:      #3b82f6;
+    --nm-accent-h:    #60a5fa;
+    --nm-green:       #22c55e;
+    --nm-red:         #ef4444;
+    --nm-yellow:      #f59e0b;
+    --nm-text:        #e2e8f0;
+    --nm-muted:       #64748b;
+    --nm-muted-2:     #94a3b8;
+    --nm-radius:      12px;
+    --nm-radius-sm:   8px;
+    --nm-shadow:      0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  /* ── Page layout ───────────────────────────────────────────── */
+  .nm-page {
+    padding: 28px 32px 64px;
+    max-width: 1100px;
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    color: var(--nm-text);
+  }
+
+  /* ── Page header ───────────────────────────────────────────── */
+  .nm-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .nm-header-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--nm-border-2);
+    background: var(--nm-surface);
+    color: var(--nm-muted-2);
+    text-decoration: none;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .nm-header-back:hover { background: var(--nm-surface-2); color: var(--nm-text); }
+  .nm-header-back svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.5; }
+  .nm-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    letter-spacing: -0.4px;
+  }
+  .nm-header p { margin: 3px 0 0; font-size: .82rem; color: var(--nm-muted); }
+
+  /* ── Error banner ──────────────────────────────────────────── */
+  .nm-errors {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.35);
+    border-radius: var(--nm-radius);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .nm-errors-title {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; color: #fca5a5; font-size: .88rem;
+    margin-bottom: 10px;
+  }
+  .nm-errors-title svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; }
+  .nm-errors ul { margin:0; padding-left:18px; }
+  .nm-errors ul li { font-size:.83rem; color:#fca5a5; margin-bottom:4px; }
+
+  /* ── Card / Section ────────────────────────────────────────── */
+  .nm-card {
+    background: var(--nm-surface);
+    border: 1px solid var(--nm-border);
+    border-radius: var(--nm-radius);
+    margin-bottom: 20px;
+    overflow: hidden;
+    animation: nmFadeUp .35s ease both;
+  }
+  .nm-card:nth-child(1) { animation-delay: .04s; }
+  .nm-card:nth-child(2) { animation-delay: .08s; }
+  .nm-card:nth-child(3) { animation-delay: .12s; }
+  .nm-card:nth-child(4) { animation-delay: .16s; }
+  .nm-card:nth-child(5) { animation-delay: .20s; }
+
+  @keyframes nmFadeUp {
+    from { opacity:0; transform: translateY(12px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .nm-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--nm-border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .nm-card-header[data-static] { cursor: default; }
+  .nm-card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(59,130,246,.12);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .nm-card-icon svg { width:15px; height:15px; stroke:#93c5fd; fill:none; stroke-width:2; }
+  .nm-card-title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+  }
+  .nm-card-subtitle { font-size:.75rem; color: var(--nm-muted); margin-top:1px; }
+  .nm-card-chevron {
+    width:16px; height:16px;
+    stroke:var(--nm-muted); fill:none; stroke-width:2.5;
+    transition: transform .22s ease;
+    flex-shrink: 0;
+  }
+  .nm-card-header.collapsed .nm-card-chevron { transform: rotate(-90deg); }
+
+  .nm-card-body { padding: 22px; }
+  .nm-card-body.collapsible { display: block; }
+  .nm-card-body.collapsible.hidden { display: none; }
+
+  /* ── Form controls ─────────────────────────────────────────── */
+  .nm-row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .nm-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .nm-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .nm-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 768px) {
+    .nm-row.cols-2, .nm-row.cols-3, .nm-row.cols-4 { grid-template-columns: 1fr; }
+  }
+
+  .nm-field { display: flex; flex-direction: column; gap: 6px; }
+  .nm-label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--nm-muted-2);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .nm-label .req { color: var(--nm-accent-h); margin-left: 2px; }
+
+  .nm-input,
+  .nm-select,
+  .nm-textarea {
+    background: var(--nm-surface-2);
+    border: 1px solid var(--nm-border-2);
+    border-radius: var(--nm-radius-sm);
+    color: var(--nm-text);
+    padding: 10px 13px;
+    font-size: .85rem;
+    font-family: inherit;
+    width: 100%;
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .nm-input:focus, .nm-select:focus, .nm-textarea:focus {
+    border-color: var(--nm-accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+  }
+  .nm-select { appearance: none; cursor: pointer; }
+  .nm-select-wrap { position: relative; }
+  .nm-select-wrap::after {
+    content: '';
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--nm-muted);
+    pointer-events: none;
+  }
+
+  /* Checkbox custom */
+  .nm-check-wrap {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--nm-surface-2);
+    border: 1px solid var(--nm-border-2);
+    border-radius: var(--nm-radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s;
+  }
+  .nm-check-wrap:hover { border-color: var(--nm-accent); }
+  .nm-check-wrap input[type=checkbox] { display:none; }
+  .nm-check-box {
+    width:18px; height:18px;
+    border-radius:4px;
+    border:2px solid var(--nm-muted);
+    background: transparent;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    transition: all .15s;
+  }
+  .nm-check-wrap input:checked + .nm-check-box {
+    background: var(--nm-accent);
+    border-color: var(--nm-accent);
+  }
+  .nm-check-box svg { width:10px; height:10px; stroke:#fff; fill:none; stroke-width:3; opacity:0; transition:opacity .1s; }
+  .nm-check-wrap input:checked + .nm-check-box svg { opacity:1; }
+  .nm-check-label { font-size:.84rem; color:var(--nm-text); }
+
+  /* ── Camion info badge ─────────────────────────────────────── */
+  .camion-info-panel {
+    display: none;
+    margin-top: 12px;
+    background: var(--nm-surface-3);
+    border: 1px solid var(--nm-border);
+    border-radius: var(--nm-radius-sm);
+    padding: 12px 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .camion-info-panel.visible { display: flex; }
+  .camion-badge {
+    display: inline-flex; align-items:center; gap:5px;
+    font-size:.72rem; font-weight:700;
+    padding:3px 10px; border-radius:20px;
+    letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
+  }
+  .camion-badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  .badge-success { background:rgba(34,197,94,.15); color:#4ade80; }
+  .badge-danger  { background:rgba(239,68,68,.15);  color:#f87171; }
+  .badge-warning { background:rgba(245,158,11,.15); color:#fbbf24; }
+  .badge-secondary { background:rgba(100,116,139,.18); color:#94a3b8; }
+  .badge-info    { background:rgba(56,189,248,.15);  color:#38bdf8; }
+  .camion-info-sep { color:var(--nm-muted); font-size:.75rem; }
+  .camion-info-text { font-size:.78rem; color:var(--nm-muted-2); }
+
+  /* ── Dynamic table (empleados) ─────────────────────────────── */
+  .nm-dyn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .83rem;
+  }
+  .nm-dyn-table thead th {
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.07em;
+    color:var(--nm-muted); padding:8px 12px; font-weight:600;
+    background:var(--nm-surface-2);
+    border-bottom: 1px solid var(--nm-border);
+    text-align:left;
+  }
+  .nm-dyn-table tbody tr { border-bottom: 1px solid var(--nm-border); }
+  .nm-dyn-table tbody tr:last-child { border-bottom:none; }
+  .nm-dyn-table td { padding: 10px 12px; vertical-align:middle; }
+
+  .nm-dyn-empty {
+    display: flex; flex-direction:column; align-items:center;
+    padding: 32px 20px; color:var(--nm-muted); gap:8px;
+    font-size:.82rem;
+  }
+  .nm-dyn-empty svg { width:32px; height:32px; stroke:var(--nm-muted); fill:none; opacity:.3; }
+
+  .nm-dyn-footer {
+    padding: 14px 16px;
+    border-top: 1px solid var(--nm-border);
+    background: var(--nm-surface-2);
+  }
+
+  /* ── Buttons ───────────────────────────────────────────────── */
+  .nm-btn {
+    display: inline-flex; align-items:center; justify-content:center; gap:7px;
+    padding: 9px 18px;
+    border-radius: var(--nm-radius-sm);
+    font-size: .83rem; font-weight:600; font-family:inherit;
+    cursor: pointer; border: none; transition: all .15s;
+    text-decoration: none; white-space: nowrap;
+  }
+  .nm-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.2; }
+
+  .nm-btn-primary {
+    background: var(--nm-accent);
+    color: #fff;
+  }
+  .nm-btn-primary:hover { background: #2563eb; }
+
+  .nm-btn-ghost {
+    background: transparent;
+    border: 1px solid var(--nm-border-2);
+    color: var(--nm-muted-2);
+  }
+  .nm-btn-ghost:hover { background: var(--nm-surface-2); color:var(--nm-text); border-color:var(--nm-accent); }
+
+  .nm-btn-danger {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.25);
+    color: #f87171;
+  }
+  .nm-btn-danger:hover { background: rgba(239,68,68,.2); }
+
+  .nm-btn-sm { padding:5px 12px; font-size:.76rem; }
+
+  /* Submit bar */
+  .nm-submit-bar {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--nm-bg) 60%, transparent);
+    padding: 16px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  /* Divider between dir sections */
+  .nm-divider { border:none; border-top:1px solid var(--nm-border); margin:20px 0; }
+
+  /* Section label inside card */
+  .nm-section-label {
+    font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--nm-accent-h); margin-bottom:14px; display:flex; align-items:center; gap:6px;
+  }
+  .nm-section-label::after {
+    content:''; flex:1; height:1px; background:var(--nm-border);
+  }
+
+  /* ── INVENTARIO VISUAL (catálogo) ──────────────────────────── */
+  .inv-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 720px) { .inv-grid { grid-template-columns: 1fr; } }
+
+  /* Items list */
+  .inv-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .inv-items-list::-webkit-scrollbar { width: 4px; }
+  .inv-items-list::-webkit-scrollbar-track { background: transparent; }
+  .inv-items-list::-webkit-scrollbar-thumb { background: var(--nm-border-2); border-radius: 2px; }
+
+  /* Category group header */
+  .inv-cat-header {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--nm-muted);
+    padding: 8px 0 4px;
+    border-bottom: 1px solid var(--nm-border);
+    margin-bottom: 4px;
+  }
+
+  .inv-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--nm-surface-2);
+    border: 1px solid var(--nm-border);
+    border-radius: var(--nm-radius-sm);
+    padding: 10px 13px;
+    transition: border-color .15s;
+  }
+  .inv-item-row.has-items {
+    border-color: rgba(59,130,246,.35);
+    background: rgba(59,130,246,.06);
+  }
+  .inv-item-info { flex: 1; min-width: 0; }
+  .inv-item-name {
+    font-size: .83rem;
+    font-weight: 500;
+    color: var(--nm-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .inv-item-meta {
+    font-size: .7rem;
+    color: var(--nm-muted);
+    margin-top: 2px;
+  }
+  .inv-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .inv-counter-btn {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--nm-border-2);
+    background: var(--nm-surface-3);
+    color: var(--nm-muted-2);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+    line-height: 1;
+    padding: 0;
+  }
+  .inv-counter-btn:hover {
+    border-color: var(--nm-accent);
+    color: var(--nm-accent);
+    background: rgba(59,130,246,.12);
+  }
+  .inv-counter-val {
+    font-size: .88rem;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    color: var(--nm-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Visual truck panel */
+  .inv-truck-panel {
+    background: var(--nm-surface-2);
+    border: 1px solid var(--nm-border);
+    border-radius: var(--nm-radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 20px;
+  }
+  .truck-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    background: var(--nm-surface-3);
+    color: var(--nm-muted-2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--nm-border-2);
+    text-align: center;
+    transition: all .25s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .truck-label.has-load {
+    background: rgba(59,130,246,.12);
+    color: var(--nm-accent-h);
+    border-color: rgba(59,130,246,.3);
+  }
+  .truck-label.big-load {
+    background: rgba(34,197,94,.12);
+    color: #4ade80;
+    border-color: rgba(34,197,94,.3);
+  }
+  .truck-label.huge-load {
+    background: rgba(239,68,68,.12);
+    color: #f87171;
+    border-color: rgba(239,68,68,.3);
+  }
+
+  .truck-svg-wrap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 88px;
+  }
+
+  .truck-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .truck-metric {
+    background: var(--nm-surface-3);
+    border: 1px solid var(--nm-border);
+    border-radius: var(--nm-radius-sm);
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .truck-metric-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+  .truck-metric-lbl {
+    font-size: .66rem;
+    color: var(--nm-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .truck-items-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+  .truck-items-list::-webkit-scrollbar { width: 3px; }
+  .truck-items-list::-webkit-scrollbar-thumb { background: var(--nm-border-2); }
+
+  .truck-item-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .72rem;
+    background: rgba(59,130,246,.1);
+    color: var(--nm-accent-h);
+    padding: 4px 9px;
+    border-radius: 5px;
+    border: 1px solid rgba(59,130,246,.2);
+  }
+  .truck-empty-msg {
+    font-size: .75rem;
+    color: var(--nm-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  /* Notas extra */
+  .inv-notas-wrap { margin-top: 16px; }
+
+  /* ── Ref pill for empleados ─────────────────────────────────── */
+  .inv-ref {
+    font-size:.73rem; color:var(--nm-muted); white-space:nowrap;
+    background:var(--nm-surface-2); border:1px solid var(--nm-border);
+    border-radius:5px; padding:3px 8px; display:inline-block; min-width:110px;
+    transition: opacity .15s;
+  }
+  .inv-ref.hidden { opacity:0; }
+</style>
+
+<div class="nm-page">
+
+  {# ── Header ─────────────────────────────────────────────────── #}
+  <div class="nm-header">
+    <a href="{% url 'gestion:mudanza_list' %}" class="nm-header-back" title="Volver al listado">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <div>
+      <h1>{{ titulo_pagina }}</h1>
+      <p>Completá los datos para registrar un nuevo servicio de mudanza.</p>
+    </div>
+  </div>
+
+  {# ── Error banner ────────────────────────────────────────────── #}
+  {% if errors %}
+  <div class="nm-errors">
+    <div class="nm-errors-title">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Se encontraron errores — revisá los siguientes campos:
+    </div>
+    <ul>
+      {% for err in errors %}
+      <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="{% url 'gestion:mudanza_nueva' %}" id="nm-form" novalidate>
+    {% csrf_token %}
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 1 — Cliente (creación inline)                     #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" data-static>
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Datos del Cliente</div>
+          <div class="nm-card-subtitle">Se creará un cliente nuevo o se usará uno existente por teléfono</div>
+        </div>
+      </div>
+      <div class="nm-card-body">
+
+        <div class="nm-row cols-2">
+          <div class="nm-field">
+            <label class="nm-label" for="id_cliente_nombre">Nombre completo <span class="req">*</span></label>
+            <input class="nm-input" type="text" name="cliente_nombre" id="id_cliente_nombre"
+              placeholder="Ej: María González"
+              value="{{ valores.cliente_nombre|default:'' }}" required>
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_cliente_telefono">Teléfono / WhatsApp <span class="req">*</span></label>
+            <input class="nm-input" type="tel" name="cliente_telefono" id="id_cliente_telefono"
+              placeholder="Ej: 1123456789"
+              value="{{ valores.cliente_telefono|default:'' }}" required>
+          </div>
+        </div>
+
+        <div class="nm-row cols-2">
+          <div class="nm-field">
+            <label class="nm-label" for="id_cliente_email">Email <span style="font-weight:400;color:var(--nm-muted);">(opcional)</span></label>
+            <input class="nm-input" type="email" name="cliente_email" id="id_cliente_email"
+              placeholder="cliente@email.com"
+              value="{{ valores.cliente_email|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_cliente_dni">DNI <span style="font-weight:400;color:var(--nm-muted);">(opcional)</span></label>
+            <input class="nm-input" type="text" name="cliente_dni" id="id_cliente_dni"
+              placeholder="Ej: 30123456"
+              value="{{ valores.cliente_dni|default:'' }}">
+          </div>
+        </div>
+
+        <div style="background:rgba(59,130,246,.07); border:1px solid rgba(59,130,246,.2); border-radius:var(--nm-radius-sm); padding:10px 14px; font-size:.78rem; color:var(--nm-muted-2); display:flex; align-items:center; gap:8px; margin-top:4px;">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#60a5fa;fill:none;stroke-width:2;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Si ya existe un cliente con ese teléfono, se asociará la mudanza automáticamente sin duplicar el registro.
+        </div>
+
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 2 — Información General del servicio              #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" data-static>
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Información General</div>
+          <div class="nm-card-subtitle">Fecha, monto de seña y ayudantes</div>
+        </div>
+      </div>
+      <div class="nm-card-body">
+
+        <div class="nm-row cols-2">
+          {# Fecha y Hora #}
+          <div class="nm-field">
+            <label class="nm-label" for="id_fecha_hora">Fecha y Hora <span class="req">*</span></label>
+            <input class="nm-input" type="datetime-local" name="fecha_hora" id="id_fecha_hora"
+              required value="{{ valores.fecha_hora|default:'' }}">
+          </div>
+
+          {# Monto seña #}
+          <div class="nm-field">
+            <label class="nm-label" for="id_monto_senia">Monto de Seña (ARS)</label>
+            <input class="nm-input" type="number" name="monto_senia" id="id_monto_senia"
+              step="0.01" min="0" placeholder="ej: 15000.00"
+              value="{{ valores.monto_senia|default:'' }}">
+          </div>
+        </div>
+
+        <div class="nm-row cols-2">
+          {# Checkbox ayudantes #}
+          <div class="nm-field">
+            <label class="nm-label">Ayudantes</label>
+            <label class="nm-check-wrap" for="id_necesita_ayudantes">
+              <input type="checkbox" name="necesita_ayudantes" id="id_necesita_ayudantes" value="1"
+                {% if valores.necesita_ayudantes == "1" or valores.necesita_ayudantes is True %}checked{% endif %}>
+              <span class="nm-check-box">
+                <svg viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
+              </span>
+              <span class="nm-check-label">Necesita ayudantes de carga</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 3 — Camión                                        #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" data-static>
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Asignación de Camión</div>
+          <div class="nm-card-subtitle">Opcional — se puede asignar después</div>
+        </div>
+      </div>
+      <div class="nm-card-body">
+
+        <div class="nm-field" style="max-width:480px;">
+          <label class="nm-label" for="id_camion_id">Camión</label>
+          <div class="nm-select-wrap">
+            <select class="nm-select" name="camion_id" id="id_camion_id">
+              <option value="">Sin asignar</option>
+              {% for cam in camiones_disponibles %}
+              <option
+                value="{{ cam.id }}"
+                {% if not cam.disponible %}disabled{% endif %}
+                {% if valores.camion_id == cam.id|stringformat:"s" %}selected{% endif %}
+                data-disponible="{{ cam.disponible|yesno:'true,false' }}"
+                data-disponible-label="{{ cam.disponible_label }}"
+                data-disponible-badge="{{ cam.disponible_badge }}"
+                data-doc-alerta="{{ cam.documentacion_alerta|yesno:'true,false' }}"
+                data-doc-label="{{ cam.documentacion_label }}"
+                data-doc-badge="{{ cam.documentacion_badge }}"
+                data-volumen="{{ cam.capacidad_volumen_m3 }}"
+                data-peso="{{ cam.capacidad_peso_kg }}"
+                data-categoria="{{ cam.categoria_label }}"
+              >
+                {{ cam.patente }} — {{ cam.modelo }} ({{ cam.categoria_label }}){% if not cam.disponible %} ✗ Ocupado{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {# Camion info panel (populated by JS) #}
+        <div class="camion-info-panel" id="camion-info-panel">
+          <span class="camion-badge" id="camion-disp-badge"></span>
+          <span class="camion-info-sep">·</span>
+          <span class="camion-badge" id="camion-doc-badge"></span>
+          <span class="camion-info-sep">·</span>
+          <span class="camion-info-text" id="camion-cap-text"></span>
+        </div>
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 4 — Direcciones                                   #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" id="addr-header">
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Direcciones</div>
+          <div class="nm-card-subtitle">Origen y destino del servicio (opcional)</div>
+        </div>
+        <svg class="nm-card-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="nm-card-body collapsible" id="addr-body">
+
+        {# ── Origen ── #}
+        <div class="nm-section-label">Dirección de Origen</div>
+        <div class="nm-row cols-3">
+          <div class="nm-field" style="grid-column:1/3;">
+            <label class="nm-label" for="id_origen_calle">Calle</label>
+            <input class="nm-input" type="text" name="origen_calle" id="id_origen_calle"
+              placeholder="Av. Corrientes" value="{{ valores.origen_calle|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_numero">Número</label>
+            <input class="nm-input" type="text" name="origen_numero" id="id_origen_numero"
+              placeholder="1234" value="{{ valores.origen_numero|default:'' }}">
+          </div>
+        </div>
+        <div class="nm-row cols-3">
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_localidad">Localidad</label>
+            <input class="nm-input" type="text" name="origen_localidad" id="id_origen_localidad"
+              placeholder="CABA" value="{{ valores.origen_localidad|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_provincia">Provincia</label>
+            <input class="nm-input" type="text" name="origen_provincia" id="id_origen_provincia"
+              placeholder="Buenos Aires" value="{{ valores.origen_provincia|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_codigo_postal">Código Postal</label>
+            <input class="nm-input" type="text" name="origen_codigo_postal" id="id_origen_codigo_postal"
+              placeholder="1043" value="{{ valores.origen_codigo_postal|default:'' }}">
+          </div>
+        </div>
+        <div class="nm-row cols-4">
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_piso">Piso</label>
+            <input class="nm-input" type="text" name="origen_piso" id="id_origen_piso"
+              placeholder="PB" value="{{ valores.origen_piso|default:'PB' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_departamento">Depto.</label>
+            <input class="nm-input" type="text" name="origen_departamento" id="id_origen_departamento"
+              placeholder="B" value="{{ valores.origen_departamento|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_origen_capacidad_ascensor_kg">Cap. ascensor (kg)</label>
+            <input class="nm-input" type="number" name="origen_capacidad_ascensor_kg"
+              id="id_origen_capacidad_ascensor_kg" placeholder="300" min="0"
+              value="{{ valores.origen_capacidad_ascensor_kg|default:'' }}">
+          </div>
+          <div class="nm-field" style="justify-content:flex-end;">
+            <label class="nm-label">Opciones</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label class="nm-check-wrap">
+                <input type="checkbox" name="origen_tiene_ascensor" value="1"
+                  {% if valores.origen_tiene_ascensor == "1" %}checked{% endif %}>
+                <span class="nm-check-box"><svg viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg></span>
+                <span class="nm-check-label" style="font-size:.78rem;">Tiene ascensor</span>
+              </label>
+              <label class="nm-check-wrap">
+                <input type="checkbox" name="origen_ascensor_grande" value="1"
+                  {% if valores.origen_ascensor_grande == "1" %}checked{% endif %}>
+                <span class="nm-check-box"><svg viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg></span>
+                <span class="nm-check-label" style="font-size:.78rem;">Entra colchón/sofá</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <hr class="nm-divider">
+
+        {# ── Destino ── #}
+        <div class="nm-section-label">Dirección de Destino</div>
+        <div class="nm-row cols-3">
+          <div class="nm-field" style="grid-column:1/3;">
+            <label class="nm-label" for="id_destino_calle">Calle</label>
+            <input class="nm-input" type="text" name="destino_calle" id="id_destino_calle"
+              placeholder="Belgrano" value="{{ valores.destino_calle|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_numero">Número</label>
+            <input class="nm-input" type="text" name="destino_numero" id="id_destino_numero"
+              placeholder="789" value="{{ valores.destino_numero|default:'' }}">
+          </div>
+        </div>
+        <div class="nm-row cols-3">
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_localidad">Localidad</label>
+            <input class="nm-input" type="text" name="destino_localidad" id="id_destino_localidad"
+              placeholder="Vicente López" value="{{ valores.destino_localidad|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_provincia">Provincia</label>
+            <input class="nm-input" type="text" name="destino_provincia" id="id_destino_provincia"
+              placeholder="Buenos Aires" value="{{ valores.destino_provincia|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_codigo_postal">Código Postal</label>
+            <input class="nm-input" type="text" name="destino_codigo_postal" id="id_destino_codigo_postal"
+              placeholder="1638" value="{{ valores.destino_codigo_postal|default:'' }}">
+          </div>
+        </div>
+        <div class="nm-row cols-4">
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_piso">Piso</label>
+            <input class="nm-input" type="text" name="destino_piso" id="id_destino_piso"
+              placeholder="PB" value="{{ valores.destino_piso|default:'PB' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_departamento">Depto.</label>
+            <input class="nm-input" type="text" name="destino_departamento" id="id_destino_departamento"
+              placeholder="A" value="{{ valores.destino_departamento|default:'' }}">
+          </div>
+          <div class="nm-field">
+            <label class="nm-label" for="id_destino_capacidad_ascensor_kg">Cap. ascensor (kg)</label>
+            <input class="nm-input" type="number" name="destino_capacidad_ascensor_kg"
+              id="id_destino_capacidad_ascensor_kg" placeholder="300" min="0"
+              value="{{ valores.destino_capacidad_ascensor_kg|default:'' }}">
+          </div>
+          <div class="nm-field" style="justify-content:flex-end;">
+            <label class="nm-label">Opciones</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label class="nm-check-wrap">
+                <input type="checkbox" name="destino_tiene_ascensor" value="1"
+                  {% if valores.destino_tiene_ascensor == "1" %}checked{% endif %}>
+                <span class="nm-check-box"><svg viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg></span>
+                <span class="nm-check-label" style="font-size:.78rem;">Tiene ascensor</span>
+              </label>
+              <label class="nm-check-wrap">
+                <input type="checkbox" name="destino_ascensor_grande" value="1"
+                  {% if valores.destino_ascensor_grande == "1" %}checked{% endif %}>
+                <span class="nm-check-box"><svg viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg></span>
+                <span class="nm-check-label" style="font-size:.78rem;">Entra colchón/sofá</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 5 — Empleados                                     #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" data-static>
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Asignación de Empleados</div>
+          <div class="nm-card-subtitle">Opcional — conductor y ayudantes del servicio</div>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="nm-dyn-table" id="emp-table">
+          <thead>
+            <tr>
+              <th style="width:50%;">Empleado</th>
+              <th style="width:35%;">Rol</th>
+              <th style="width:15%;"></th>
+            </tr>
+          </thead>
+          <tbody id="emp-tbody">
+            {% if valores %}
+              {% for eid in emp_ids %}
+              <tr class="emp-row">
+                <td>
+                  <div class="nm-select-wrap">
+                    <select class="nm-select" name="empleado_ids[]">
+                      {% for emp in empleados_disponibles %}
+                      <option value="{{ emp.id }}" {% if eid == emp.id|stringformat:"s" %}selected{% endif %}>
+                        {{ emp.nombre }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </td>
+                <td>
+                  <div class="nm-select-wrap">
+                    <select class="nm-select" name="roles[]">
+                      {% for rol in opciones_rol %}
+                      <option value="{{ rol.valor }}"
+                        {% if emp_roles|slice:forloop.parentloop.counter0|first == rol.valor %}selected{% endif %}>
+                        {{ rol.label }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </td>
+                <td>
+                  <button type="button" class="nm-btn nm-btn-danger nm-btn-sm emp-remove-btn">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+        <div class="nm-dyn-empty" id="emp-empty" {% if valores %}style="display:none"{% endif %}>
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Sin empleados asignados todavía.</span>
+        </div>
+      </div>
+
+      <div class="nm-dyn-footer">
+        <button type="button" class="nm-btn nm-btn-ghost nm-btn-sm" id="emp-add-btn">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar empleado
+        </button>
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# SECCIÓN 6 — Inventario (visual con catálogo)              #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-card">
+      <div class="nm-card-header" data-static>
+        <div class="nm-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <div>
+          <div class="nm-card-title">Inventario</div>
+          <div class="nm-card-subtitle">Seleccioná los ítems del catálogo — el sistema calcula volumen y peso</div>
+        </div>
+      </div>
+
+      <div class="nm-card-body">
+        <div class="inv-grid">
+
+          {# ── Lista de ítems del catálogo con contadores ── #}
+          <div>
+            <div class="inv-items-list" id="inv-items-list">
+              {# Generado por JS desde el catálogo Django #}
+            </div>
+            <div class="inv-notas-wrap">
+              <div class="nm-field" style="margin-top:16px;">
+                <label class="nm-label" for="id_inv_notas">Notas adicionales del inventario</label>
+                <textarea class="nm-input nm-textarea" id="id_inv_notas" name="inv_notas"
+                  rows="2" placeholder="Ej: 10 cajas medianas, TV de 55 pulgadas, bicicleta..."
+                  style="resize:vertical;">{{ valores.inv_notas|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+
+          {# ── Panel visual del camión ── #}
+          <div class="inv-truck-panel">
+            <div class="truck-label" id="truck-label">Sin artículos seleccionados</div>
+
+            <div class="truck-svg-wrap">
+              <svg id="truck-svg" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:80px;width:auto;transition:all .3s ease;">
+                {# Carrocería #}
+                <rect id="truck-cargo-box" x="18" y="22" width="100" height="40" fill="#2d3748" stroke="#4a5568" stroke-width="1.5" rx="2"/>
+                {# Cabina #}
+                <path d="M118 35 H142 L154 52 V62 H118 Z" fill="#2563eb"/>
+                <rect x="128" y="39" width="16" height="11" fill="#93c5fd" rx="1"/>
+                {# Chasis #}
+                <rect x="10" y="62" width="148" height="8" rx="2" fill="#374151"/>
+                {# Ruedas #}
+                <circle cx="42" cy="74" r="9" fill="#111827" stroke="#4b5563" stroke-width="2"/>
+                <circle cx="42" cy="74" r="4" fill="#374151"/>
+                <circle cx="130" cy="74" r="9" fill="#111827" stroke="#4b5563" stroke-width="2"/>
+                <circle cx="130" cy="74" r="4" fill="#374151"/>
+                {# Carga visual (dinámica por JS) #}
+                <rect id="truck-load-fill" x="19" y="61" width="0" height="0" fill="rgba(59,130,246,0.4)" rx="1"/>
+              </svg>
+            </div>
+
+            <div class="truck-metrics">
+              <div class="truck-metric">
+                <span class="truck-metric-val" id="metric-items">0</span>
+                <span class="truck-metric-lbl">Artículos</span>
+              </div>
+              <div class="truck-metric">
+                <span class="truck-metric-val" id="metric-vol">0.00</span>
+                <span class="truck-metric-lbl">m³ total</span>
+              </div>
+            </div>
+
+            <div class="truck-items-list" id="truck-items-list">
+              <div class="truck-empty-msg" id="truck-empty-msg">Sin artículos aún.</div>
+            </div>
+          </div>
+        </div>
+
+        {# Hidden inputs generados dinámicamente por JS para el POST #}
+        <div id="inv-hidden-inputs" style="display:none;"></div>
+      </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════ #}
+    {# Submit bar                                                #}
+    {# ══════════════════════════════════════════════════════════ #}
+    <div class="nm-submit-bar">
+      <a href="{% url 'gestion:mudanza_list' %}" class="nm-btn nm-btn-ghost">
+        Cancelar
+      </a>
+      <button type="submit" class="nm-btn nm-btn-primary" id="nm-submit-btn">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Crear Mudanza
+      </button>
+    </div>
+
+  </form>
+</div>
+
+{# ══════════════════════════════════════════════════════════════ #}
+{# DATA — Pasar datos del contexto Django a JS de forma segura   #}
+{# ══════════════════════════════════════════════════════════════ #}
+<script id="nm-context-data" type="application/json">
+{
+  "empleados": [
+    {% for emp in empleados_disponibles %}
+    {"id": {{ emp.id }}, "nombre": "{{ emp.nombre|escapejs }}", "rol": "{{ emp.rol|escapejs }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "roles": [
+    {% for r in opciones_rol %}
+    {"valor": "{{ r.valor|escapejs }}", "label": "{{ r.label|escapejs }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "catalogo": [
+    {% for item in catalogo_items %}
+    {"id": {{ item.id }}, "nombre": "{{ item.nombre|escapejs }}", "volumen_m3": "{{ item.volumen_m3 }}", "peso_estimado_kg": "{{ item.peso_estimado_kg }}", "categoria": "{{ item.categoria|escapejs }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<script>
+'use strict';
+(function () {
+
+  const CTX = JSON.parse(document.getElementById('nm-context-data').textContent);
+
+  /* ── Colapsable de direcciones ──────────────────────────── */
+  const addrHeader = document.getElementById('addr-header');
+  const addrBody   = document.getElementById('addr-body');
+  if (addrHeader && addrBody) {
+    const hasAddrData = addrBody.querySelector('input[name="origen_calle"]')?.value?.trim();
+    if (!hasAddrData) {
+      addrBody.classList.add('hidden');
+      addrHeader.classList.add('collapsed');
+    }
+    addrHeader.addEventListener('click', () => {
+      const isHidden = addrBody.classList.toggle('hidden');
+      addrHeader.classList.toggle('collapsed', isHidden);
+    });
+  }
+
+  /* ── Camión info panel ──────────────────────────────────── */
+  const camionSelect = document.getElementById('id_camion_id');
+  const infoPanel    = document.getElementById('camion-info-panel');
+  const dispBadge    = document.getElementById('camion-disp-badge');
+  const docBadge     = document.getElementById('camion-doc-badge');
+  const capText      = document.getElementById('camion-cap-text');
+
+  function updateCamionInfo() {
+    const opt = camionSelect.options[camionSelect.selectedIndex];
+    if (!opt || !opt.value) { infoPanel.classList.remove('visible'); return; }
+    const d = opt.dataset;
+    dispBadge.className = 'camion-badge ' + (d.disponibleBadge || 'badge-secondary');
+    dispBadge.textContent = d.disponibleLabel || '';
+    docBadge.className = 'camion-badge ' + (d.docBadge || 'badge-secondary');
+    docBadge.textContent = d.docLabel || '';
+    capText.textContent = `Vol: ${d.volumen} m³ · Peso: ${parseFloat(d.peso).toLocaleString('es-AR')} kg`;
+    infoPanel.classList.add('visible');
+  }
+
+  if (camionSelect) {
+    camionSelect.addEventListener('change', updateCamionInfo);
+    updateCamionInfo();
+  }
+
+  /* ── Empleados dinámicos ────────────────────────────────── */
+  const empTbody  = document.getElementById('emp-tbody');
+  const empEmpty  = document.getElementById('emp-empty');
+  const empAddBtn = document.getElementById('emp-add-btn');
+
+  function buildEmpOptions(selectedId) {
+    return CTX.empleados.map(e =>
+      `<option value="${e.id}" ${String(e.id) === String(selectedId) ? 'selected' : ''}>${escHtml(e.nombre)}</option>`
+    ).join('');
+  }
+
+  function buildRolOptions(selectedVal) {
+    return CTX.roles.map(r =>
+      `<option value="${r.valor}" ${r.valor === selectedVal ? 'selected' : ''}>${escHtml(r.label)}</option>`
+    ).join('');
+  }
+
+  function addEmpRow(selEmpId = '', selRol = '') {
+    const tr = document.createElement('tr');
+    tr.className = 'emp-row';
+    tr.innerHTML = `
+      <td>
+        <div class="nm-select-wrap">
+          <select class="nm-select" name="empleado_ids[]">
+            ${buildEmpOptions(selEmpId)}
+          </select>
+        </div>
+      </td>
+      <td>
+        <div class="nm-select-wrap">
+          <select class="nm-select" name="roles[]">
+            ${buildRolOptions(selRol)}
+          </select>
+        </div>
+      </td>
+      <td>
+        <button type="button" class="nm-btn nm-btn-danger nm-btn-sm emp-remove-btn">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </td>
+    `;
+    empTbody.appendChild(tr);
+    syncEmpEmpty();
+  }
+
+  function syncEmpEmpty() {
+    const rows = empTbody.querySelectorAll('.emp-row');
+    empEmpty.style.display = rows.length ? 'none' : '';
+  }
+
+  empAddBtn.addEventListener('click', () => addEmpRow());
+  empTbody.addEventListener('click', e => {
+    const btn = e.target.closest('.emp-remove-btn');
+    if (!btn) return;
+    btn.closest('.emp-row').remove();
+    syncEmpEmpty();
+  });
+  syncEmpEmpty();
+
+  /* ══════════════════════════════════════════════════════════
+     INVENTARIO VISUAL — catálogo con contadores
+  ══════════════════════════════════════════════════════════ */
+
+  // Estado: { catalogoItemId: cantidad }
+  const invState = {};
+
+  // Categorías en español para agrupar visualmente
+  const CAT_LABELS = {
+    'LIVING':     'Living / Comedor',
+    'COCINA':     'Cocina y Lavadero',
+    'DORMITORIO': 'Dormitorio',
+    'OFICINA':    'Oficina',
+    'VARIOS':     'Varios',
+  };
+
+  // Agrupar catálogo por categoría
+  function groupByCat(items) {
+    const groups = {};
+    items.forEach(item => {
+      // Inferir categoría desde el nombre si no viene del backend
+      // (el catálogo de Django tiene categorías en los modelos)
+      // Como el contexto solo tiene id/nombre/volumen/peso, usamos una heurística simple
+      // basada en el nombre para mostrar agrupado. Agrupamos todos bajo VARIOS si no hay categoría.
+      const cat = item.categoria || 'VARIOS';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    return groups;
+  }
+
+  function renderCatalogo() {
+    const list = document.getElementById('inv-items-list');
+    list.innerHTML = '';
+
+    // Intentar agrupar por categoría; si no viene en el contexto, mostrar todo junto
+    const hasCat = CTX.catalogo.some(i => i.categoria);
+    
+    if (hasCat) {
+      const groups = groupByCat(CTX.catalogo);
+      const catOrder = ['LIVING', 'COCINA', 'DORMITORIO', 'OFICINA', 'VARIOS'];
+      catOrder.forEach(cat => {
+        if (!groups[cat]) return;
+        const header = document.createElement('div');
+        header.className = 'inv-cat-header';
+        header.textContent = CAT_LABELS[cat] || cat;
+        list.appendChild(header);
+        groups[cat].forEach(item => list.appendChild(buildItemRow(item)));
+      });
+    } else {
+      // Sin categoría — agrupar manualmente por palabras clave comunes del catálogo
+      const catMap = detectCats(CTX.catalogo);
+      const catOrder = ['LIVING', 'COCINA', 'DORMITORIO', 'OFICINA', 'VARIOS'];
+      catOrder.forEach(cat => {
+        const items = catMap[cat];
+        if (!items || !items.length) return;
+        const header = document.createElement('div');
+        header.className = 'inv-cat-header';
+        header.textContent = CAT_LABELS[cat] || cat;
+        list.appendChild(header);
+        items.forEach(item => list.appendChild(buildItemRow(item)));
+      });
+    }
+  }
+
+  // Detección de categoría por palabras clave en el nombre (sin campo categoria en CTX)
+  function detectCats(items) {
+    const map = { LIVING: [], COCINA: [], DORMITORIO: [], OFICINA: [], VARIOS: [] };
+    const kw = {
+      LIVING:     ['sillón', 'sofá', 'mesa de comedor', 'mesa ratona', 'mueble tv', 'biblioteca'],
+      COCINA:     ['heladera', 'lavarropas', 'cocina', 'lavavajillas', 'microondas'],
+      DORMITORIO: ['sommier', 'cama', 'placard', 'mesita', 'cómoda', 'cajonera'],
+      OFICINA:    ['escritorio', 'silla de oficina'],
+    };
+    items.forEach(item => {
+      const n = item.nombre.toLowerCase();
+      let assigned = false;
+      for (const [cat, words] of Object.entries(kw)) {
+        if (words.some(w => n.includes(w))) {
+          map[cat].push(item);
+          assigned = true;
+          break;
+        }
+      }
+      if (!assigned) map.VARIOS.push(item);
+    });
+    return map;
+  }
+
+  function buildItemRow(item) {
+    const div = document.createElement('div');
+    div.className = 'inv-item-row';
+    div.dataset.itemId = item.id;
+
+    const vol  = parseFloat(item.volumen_m3);
+    const peso = parseFloat(item.peso_estimado_kg);
+
+    div.innerHTML = `
+      <div class="inv-item-info">
+        <div class="inv-item-name">${escHtml(item.nombre)}</div>
+        <div class="inv-item-meta">${vol.toFixed(2)} m³ · ${peso.toFixed(0)} kg/u</div>
+      </div>
+      <div class="inv-counter">
+        <button type="button" class="inv-counter-btn" data-dir="-1">−</button>
+        <span class="inv-counter-val" id="inv-cnt-${item.id}">0</span>
+        <button type="button" class="inv-counter-btn" data-dir="1">+</button>
+      </div>
+    `;
+
+    div.querySelectorAll('.inv-counter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dir = parseInt(btn.dataset.dir);
+        const curr = invState[item.id] || 0;
+        const next = Math.max(0, curr + dir);
+        invState[item.id] = next;
+        document.getElementById(`inv-cnt-${item.id}`).textContent = next;
+        div.classList.toggle('has-items', next > 0);
+        syncTruck();
+        syncHiddenInputs();
+      });
+    });
+
+    return div;
+  }
+
+  /* Sincronizar panel del camión */
+  function syncTruck() {
+    let totalItems = 0;
+    let totalVol   = 0;
+
+    const chips    = [];
+
+    CTX.catalogo.forEach(item => {
+      const cnt = invState[item.id] || 0;
+      if (cnt > 0) {
+        totalItems += cnt;
+        totalVol   += parseFloat(item.volumen_m3) * cnt;
+        chips.push({ nombre: item.nombre, cnt });
+      }
+    });
+
+    document.getElementById('metric-items').textContent = totalItems;
+    document.getElementById('metric-vol').textContent   = totalVol.toFixed(2);
+
+    // Actualizar chips en el panel
+    const chipList = document.getElementById('truck-items-list');
+    const emptyMsg = document.getElementById('truck-empty-msg');
+    chipList.innerHTML = '';
+    if (chips.length === 0) {
+      emptyMsg.style.display = '';
+    } else {
+      emptyMsg.style.display = 'none';
+      chips.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'truck-item-chip';
+        el.innerHTML = `<span>${escHtml(c.nombre)}</span><strong>×${c.cnt}</strong>`;
+        chipList.appendChild(el);
+      });
+    }
+
+    // Actualizar label y color del camión
+    const label = document.getElementById('truck-label');
+    const svg   = document.getElementById('truck-svg');
+    const fill  = document.getElementById('truck-load-fill');
+
+    if (totalItems === 0) {
+      label.className = 'truck-label';
+      label.textContent = 'Sin artículos seleccionados';
+      fill.setAttribute('width', '0');
+      fill.setAttribute('height', '0');
+    } else if (totalVol <= 4) {
+      label.className = 'truck-label has-load';
+      label.textContent = `Vehículo sugerido: Utilitario / Furgón`;
+      animateCargo(fill, totalVol, 4, '#3b82f6');
+    } else if (totalVol <= 10) {
+      label.className = 'truck-label big-load';
+      label.textContent = `Vehículo sugerido: Camión Mediano`;
+      animateCargo(fill, totalVol, 10, '#22c55e');
+    } else {
+      label.className = 'truck-label huge-load';
+      label.textContent = `Vehículo sugerido: Camión de Gran Porte`;
+      animateCargo(fill, totalVol, 16, '#ef4444');
+    }
+  }
+
+  function animateCargo(fillEl, vol, maxVol, color) {
+    const BOX_H = 39; // altura del rect de carga en el SVG
+    const BOX_W = 99;
+    const BOX_X = 19;
+    const BOX_Y_BOTTOM = 61; // y base del cajón
+
+    const pct    = Math.min(vol / maxVol, 1);
+    const h      = Math.round(BOX_H * pct);
+    const y      = BOX_Y_BOTTOM - h;
+
+    fillEl.setAttribute('x',      BOX_X);
+    fillEl.setAttribute('y',      y);
+    fillEl.setAttribute('width',  BOX_W);
+    fillEl.setAttribute('height', h);
+    fillEl.setAttribute('fill',   color.replace(')', ',0.45)').replace('rgb', 'rgba').replace('#', 'rgba(').replace('rgba(', 'rgba('));
+    // Fallback simple:
+    fillEl.setAttribute('fill', color + '70'); // hex + opacity hex
+  }
+
+  /* Sincronizar hidden inputs para el POST */
+  function syncHiddenInputs() {
+    const container = document.getElementById('inv-hidden-inputs');
+    container.innerHTML = '';
+
+    CTX.catalogo.forEach(item => {
+      const cnt = invState[item.id] || 0;
+      if (cnt <= 0) return;
+
+      const cidInput  = document.createElement('input');
+      cidInput.type   = 'hidden';
+      cidInput.name   = 'catalogo_item_ids[]';
+      cidInput.value  = item.id;
+
+      const cantInput = document.createElement('input');
+      cantInput.type  = 'hidden';
+      cantInput.name  = 'cantidades[]';
+      cantInput.value = cnt;
+
+      const descInput = document.createElement('input');
+      descInput.type  = 'hidden';
+      descInput.name  = 'descripciones[]';
+      descInput.value = '';
+
+      container.appendChild(cidInput);
+      container.appendChild(cantInput);
+      container.appendChild(descInput);
+    });
+  }
+
+  /* ── Submit — feedback visual ───────────────────────────── */
+  const form      = document.getElementById('nm-form');
+  const submitBtn = document.getElementById('nm-submit-btn');
+  form.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" style="animation:nmSpin .8s linear infinite;">
+        <path d="M21 12a9 9 0 11-6.219-8.56" fill="none" stroke="currentColor" stroke-width="2.5"/>
+      </svg>
+      Guardando...
+    `;
+  });
+
+  /* ── Helpers ────────────────────────────────────────────── */
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(str || ''));
+    return d.innerHTML;
+  }
+
+  /* ── Init ───────────────────────────────────────────────── */
+  renderCatalogo();
+  syncTruck();
+
+})();
+</script>
+
+<style>
+  @keyframes nmSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+{% endblock %}
