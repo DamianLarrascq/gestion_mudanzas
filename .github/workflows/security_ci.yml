@@ -25,7 +25,6 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────────
   security-tests:
     name: Tests de Seguridad (Python ${{ matrix.python-version }})
-    run: pytest tests/security/ --junitxml=reports/security_report.xml
     runs-on: ubuntu-latest
 
     strategy:
