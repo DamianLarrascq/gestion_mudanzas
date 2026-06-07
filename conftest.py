@@ -1,14 +1,23 @@
+import os
+import django
+import pytest
+from decimal import Decimal
+from datetime import date
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("SECRET_KEY", "ci-test-secret-key-only-for-github-actions")
+os.environ.setdefault("DEBUG", "True")
+os.environ.setdefault("DB_ENGINE", "sqlite")
+os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
+os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "True")
+
 """
 Fixtures globales — tests/
 Archivo: tests/conftest.py
 
 Disponibles en todos los tiers: security/, integration/, e2e/
 """
-
-import pytest
-from decimal import Decimal
-from datetime import date
-
 
 @pytest.fixture
 def tarifa_activa(db):
@@ -52,3 +61,4 @@ def sistema_user(db):
     user.is_active = False
     user.save()
     return user
+
