@@ -53,8 +53,7 @@ jobs:
         # garantizando que los pasos de reporte siempre se ejecuten.
         continue-on-error: true
         run: |
-            pytest tests/unit/
-            --tb=short \
+            pytest tests/unit/ --tb=short \ 
             --no-header \
             -v \
             --cov=gestion --cov=notificaciones --cov=webhook --cov=public \
