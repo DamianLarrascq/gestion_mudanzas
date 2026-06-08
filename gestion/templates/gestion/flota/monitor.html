@@ -1,0 +1,713 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Variables ── */
+  :root {
+    --flota-bg: #0f1117;
+    --flota-surface: #181c27;
+    --flota-card: #1e2336;
+    --flota-border: rgba(255,255,255,0.07);
+    --flota-text: #e8eaf0;
+    --flota-muted: #6b7280;
+    --flota-accent: #3b7aff;
+
+    --badge-success-bg: #0f3d2e;
+    --badge-success-text: #34d399;
+    --badge-success-border: #1a5c44;
+
+    --badge-warning-bg: #3d2a0a;
+    --badge-warning-text: #fbbf24;
+    --badge-warning-border: #6b4c12;
+
+    --badge-danger-bg: #3d0f0f;
+    --badge-danger-text: #f87171;
+    --badge-danger-border: #6b1a1a;
+
+    --badge-secondary-bg: #1e2336;
+    --badge-secondary-text: #9ca3af;
+    --badge-secondary-border: #374151;
+
+    --badge-info-bg: #0d2a4a;
+    --badge-info-text: #60a5fa;
+    --badge-info-border: #1e4a7a;
+  }
+
+  /* ── KPI Strip ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 480px) {
+    .kpi-strip { grid-template-columns: 1fr; }
+  }
+
+  .kpi-chip {
+    background: var(--flota-card);
+    border: 1px solid var(--flota-border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeSlideIn 0.4s ease both;
+  }
+
+  .kpi-chip:nth-child(1) { animation-delay: 0.05s; }
+  .kpi-chip:nth-child(2) { animation-delay: 0.1s; }
+  .kpi-chip:nth-child(3) { animation-delay: 0.15s; }
+  .kpi-chip:nth-child(4) { animation-delay: 0.2s; }
+
+  .kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+  }
+
+  .kpi-icon.total   { background: rgba(59, 122, 255, 0.15); color: #3b7aff; }
+  .kpi-icon.disp    { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+  .kpi-icon.serv    { background: rgba(251, 191, 36, 0.15);  color: #fbbf24; }
+  .kpi-icon.taller  { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+  .kpi-body { flex: 1; min-width: 0; }
+
+  .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--flota-text);
+    font-family: 'DM Mono', 'Fira Mono', monospace;
+  }
+
+  .kpi-label {
+    font-size: 0.72rem;
+    color: var(--flota-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .kpi-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--badge-warning-bg);
+    color: var(--badge-warning-text);
+    border: 1px solid var(--badge-warning-border);
+    margin-top: 5px;
+    white-space: nowrap;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    animation: fadeSlideIn 0.35s ease both;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--flota-text);
+    letter-spacing: -0.02em;
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .page-title svg { opacity: 0.7; }
+
+  /* ── Section groups ── */
+  .grupo-flota {
+    margin-bottom: 1.5rem;
+    animation: fadeSlideIn 0.4s ease both;
+  }
+
+  .grupo-flota:nth-child(1) { animation-delay: 0.1s; }
+  .grupo-flota:nth-child(2) { animation-delay: 0.2s; }
+  .grupo-flota:nth-child(3) { animation-delay: 0.3s; }
+
+  .grupo-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--flota-surface);
+    border: 1px solid var(--flota-border);
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.18s;
+  }
+
+  .grupo-header:hover { background: var(--flota-card); }
+
+  .grupo-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+  }
+
+  .grupo-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--flota-text);
+    letter-spacing: 0.01em;
+  }
+
+  .grupo-count {
+    font-size: 0.75rem;
+    color: var(--flota-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .grupo-chevron {
+    color: var(--flota-muted);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .grupo-chevron.collapsed { transform: rotate(-90deg); }
+
+  .grupo-body {
+    border: 1px solid var(--flota-border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 1rem;
+    background: var(--flota-bg);
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.25s ease;
+  }
+
+  .grupo-body.collapsed {
+    max-height: 0;
+    padding: 0 1rem;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .grupo-body.expanded {
+    max-height: 2000px;
+    opacity: 1;
+  }
+
+  /* ── Empty group ── */
+  .grupo-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--flota-muted);
+    font-size: 0.82rem;
+    font-style: italic;
+  }
+
+  /* ── Card grid ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  /* ── Camion card ── */
+  .camion-card {
+    background: var(--flota-card);
+    border: 1px solid var(--flota-border);
+    border-radius: 10px;
+    padding: 1.1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .camion-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .camion-card.estado-DISPONIBLE::before { background: var(--badge-success-text); }
+  .camion-card.estado-EN_SERVICIO::before { background: var(--badge-warning-text); }
+  .camion-card.estado-EN_TALLER::before { background: var(--badge-danger-text); }
+
+  .camion-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+  }
+
+  /* Card: head */
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .card-title-block { flex: 1; min-width: 0; }
+
+  .card-patente {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--flota-text);
+    letter-spacing: 0.04em;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-modelo {
+    font-size: 0.75rem;
+    color: var(--flota-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-year {
+    font-size: 0.7rem;
+    color: var(--flota-muted);
+    opacity: 0.7;
+  }
+
+  /* Card: alert banner */
+  .alerta-doc-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 7px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--badge-warning-text);
+    line-height: 1.3;
+  }
+
+  /* Card: capacidad */
+  .card-capacidad {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .cap-item {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--flota-border);
+    border-radius: 7px;
+    padding: 0.4rem 0.6rem;
+    text-align: center;
+  }
+
+  .cap-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--flota-text);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cap-label {
+    font-size: 0.63rem;
+    color: var(--flota-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1px;
+  }
+
+  /* Card: docs */
+  .doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .doc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .doc-name {
+    font-size: 0.72rem;
+    color: var(--flota-muted);
+    font-weight: 500;
+    flex-shrink: 0;
+    min-width: 48px;
+  }
+
+  .doc-label-text {
+    font-size: 0.72rem;
+    color: var(--flota-text);
+    flex: 1;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Card: footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--flota-border);
+  }
+
+  .card-categoria {
+    font-size: 0.68rem;
+    color: var(--flota-muted);
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-detalle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--flota-accent);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(59,122,255,0.3);
+    transition: background 0.18s, border-color 0.18s;
+    white-space: nowrap;
+  }
+
+  .btn-detalle:hover {
+    background: rgba(59,122,255,0.12);
+    border-color: rgba(59,122,255,0.6);
+    text-decoration: none;
+    color: var(--flota-accent);
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-success {
+    background: var(--badge-success-bg);
+    color: var(--badge-success-text);
+    border: 1px solid var(--badge-success-border);
+  }
+  .badge-warning {
+    background: var(--badge-warning-bg);
+    color: var(--badge-warning-text);
+    border: 1px solid var(--badge-warning-border);
+  }
+  .badge-danger {
+    background: var(--badge-danger-bg);
+    color: var(--badge-danger-text);
+    border: 1px solid var(--badge-danger-border);
+  }
+  .badge-secondary {
+    background: var(--badge-secondary-bg);
+    color: var(--badge-secondary-text);
+    border: 1px solid var(--badge-secondary-border);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- {# ══════════════════════════════════════════════════════════
+   PAGE HEADER
+══════════════════════════════════════════════════════════ #} -->
+<div class="page-header">
+  <h1 class="page-title">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+         viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+    </svg>
+    {{ titulo_pagina }}
+  </h1>
+</div>
+
+<!-- {# ══════════════════════════════════════════════════════════
+   KPI STRIP
+══════════════════════════════════════════════════════════ #} -->
+<div class="kpi-strip">
+
+  {# Total activos #}
+  <div class="kpi-chip">
+    <div class="kpi-icon total">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <div class="kpi-value">{{ resumen.total_activos }}</div>
+      <div class="kpi-label">Total en flota</div>
+      {% if resumen.con_alerta_documentacion > 0 %}
+        <span class="kpi-alert-badge">
+          ⚠ {{ resumen.con_alerta_documentacion }} con alerta doc.
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Disponibles #}
+  <div class="kpi-chip">
+    <div class="kpi-icon disp">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <div class="kpi-value">{{ resumen.disponibles }}</div>
+      <div class="kpi-label">Disponibles</div>
+    </div>
+  </div>
+
+  {# En servicio #}
+  <div class="kpi-chip">
+    <div class="kpi-icon serv">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <div class="kpi-value">{{ resumen.en_servicio }}</div>
+      <div class="kpi-label">En servicio</div>
+    </div>
+  </div>
+
+  {# En taller #}
+  <div class="kpi-chip">
+    <div class="kpi-icon taller">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z"/>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <div class="kpi-value">{{ resumen.en_taller }}</div>
+      <div class="kpi-label">En taller</div>
+    </div>
+  </div>
+
+</div>{# /kpi-strip #}
+
+<!-- {# ══════════════════════════════════════════════════════════
+   GRUPOS DE FLOTA
+══════════════════════════════════════════════════════════ #} -->
+{% for grupo in grupos_flota %}
+<div class="grupo-flota">
+
+  {# ── Group header (collapsible) ── #}
+  <div class="grupo-header" onclick="toggleGrupo(this)"
+       aria-expanded="true" role="button">
+    <div class="grupo-header-left">
+      <span class="badge {{ grupo.estado_operativo_badge }}">
+        {{ grupo.estado_operativo_label }}
+      </span>
+      <span class="grupo-label">{{ grupo.estado_operativo_label }}</span>
+      <span class="grupo-count">({{ grupo.cantidad }})</span>
+    </div>
+    <svg class="grupo-chevron" xmlns="http://www.w3.org/2000/svg"
+         width="16" height="16" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+    </svg>
+  </div>
+
+  {# ── Group body ── #}
+  <div class="grupo-body expanded">
+
+    {% if grupo.camiones %}
+      <div class="card-grid">
+        {% for camion in grupo.camiones %}
+
+        <div class="camion-card estado-{{ camion.estado_operativo }}">
+
+          {# Card head: patente + modelo + estado badge #}
+          <div class="card-head">
+            <div class="card-title-block">
+              <div class="card-patente">{{ camion.patente }}</div>
+              <div class="card-modelo">{{ camion.modelo }}</div>
+              {% if camion.anio != "—" %}
+                <div class="card-year">{{ camion.anio }}</div>
+              {% endif %}
+            </div>
+            <span class="badge {{ camion.estado_operativo_badge }}">
+              {{ camion.estado_operativo_label }}
+            </span>
+          </div>
+
+          {# Alerta documental #}
+          {% if camion.documentacion_tiene_alerta %}
+          <div class="alerta-doc-banner">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+            </svg>
+            {{ camion.estado_documentacion }}
+          </div>
+          {% endif %}
+
+          {# Capacidad #}
+          <div class="card-capacidad">
+            <div class="cap-item">
+              <div class="cap-value">{{ camion.capacidad_volumen_m3 }} m³</div>
+              <div class="cap-label">Volumen</div>
+            </div>
+            <div class="cap-item">
+              <div class="cap-value">{{ camion.capacidad_peso_kg }} kg</div>
+              <div class="cap-label">Peso máx.</div>
+            </div>
+          </div>
+
+          {# Documentación por ítem #}
+          <div class="doc-list">
+            <div class="doc-row">
+              <span class="doc-name">VTV</span>
+              <span class="doc-label-text">{{ camion.vtv_label }}</span>
+              <span class="badge {{ camion.vtv_badge }}">
+                {% if camion.vtv_badge == 'badge-success' %}OK
+                {% elif camion.vtv_badge == 'badge-warning' %}⚠
+                {% elif camion.vtv_badge == 'badge-danger' %}✕
+                {% else %}—{% endif %}
+              </span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-name">Seguro</span>
+              <span class="doc-label-text">{{ camion.seguro_label }}</span>
+              <span class="badge {{ camion.seguro_badge }}">
+                {% if camion.seguro_badge == 'badge-success' %}OK
+                {% elif camion.seguro_badge == 'badge-warning' %}⚠
+                {% elif camion.seguro_badge == 'badge-danger' %}✕
+                {% else %}—{% endif %}
+              </span>
+            </div>
+            <div class="doc-row">
+              <span class="doc-name">Patente</span>
+              <span class="doc-label-text">{{ camion.patente_doc_label }}</span>
+              <span class="badge {{ camion.patente_doc_badge }}">
+                {% if camion.patente_doc_badge == 'badge-success' %}OK
+                {% elif camion.patente_doc_badge == 'badge-warning' %}⚠
+                {% elif camion.patente_doc_badge == 'badge-danger' %}✕
+                {% else %}—{% endif %}
+              </span>
+            </div>
+          </div>
+
+          {# Card footer: categoría + botón detalle #}
+          <div class="card-footer">
+            <span class="card-categoria" title="{{ camion.categoria_label }}">
+              {{ camion.categoria_label }}
+            </span>
+            <a href="{{ camion.url_detalle }}" class="btn-detalle">
+              Ver detalle
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+              </svg>
+            </a>
+          </div>
+
+        </div>{# /camion-card #}
+        {% endfor %}
+      </div>{# /card-grid #}
+
+    {% else %}
+      <div class="grupo-empty">
+        Sin vehículos en este estado.
+      </div>
+    {% endif %}
+
+  </div>{# /grupo-body #}
+</div>{# /grupo-flota #}
+{% endfor %}
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  /**
+   * Toggle colapsado de un grupo de flota.
+   * Alterna las clases 'expanded' / 'collapsed' en el body
+   * y rota el chevron.
+   */
+  function toggleGrupo(headerEl) {
+    const grupoEl  = headerEl.closest('.grupo-flota');
+    const bodyEl   = grupoEl.querySelector('.grupo-body');
+    const chevron  = headerEl.querySelector('.grupo-chevron');
+    const isOpen   = bodyEl.classList.contains('expanded');
+
+    if (isOpen) {
+      bodyEl.classList.replace('expanded', 'collapsed');
+      chevron.classList.add('collapsed');
+      headerEl.setAttribute('aria-expanded', 'false');
+    } else {
+      bodyEl.classList.replace('collapsed', 'expanded');
+      chevron.classList.remove('collapsed');
+      headerEl.setAttribute('aria-expanded', 'true');
+    }
+  }
+</script>
+{% endblock %}

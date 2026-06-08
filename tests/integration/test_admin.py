@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.utils import timezone
 
-from tests.test_models import (
+from tests.unit.test_models.py import (
     make_cliente, make_camion, make_user,
     make_empleado, make_direccion, make_mudanza,
 )
