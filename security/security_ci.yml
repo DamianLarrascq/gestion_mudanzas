@@ -14,7 +14,7 @@ env:
   SECRET_KEY: "ci-security-secret-key-only-for-github-actions-not-for-prod"
   DEBUG: "True"
   DB_ENGINE: "sqlite"
-  ALLOWED_HOSTS: "scruz.pythonanywhere.com,localhost,127.0.0.1"
+  ALLOWED_HOSTS: "localhost,127.0.0.1"
   CELERY_BROKER_URL: "redis://localhost:6379/0"
   CELERY_TASK_ALWAYS_EAGER: "True"
 
@@ -45,10 +45,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: 🐍 Configurar Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
@@ -56,18 +56,24 @@ jobs:
       - name: 📦 Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # requirements.txt tiene encoding UTF-16 — normalizar antes de instalar
+          python -c "
+          with open('requirements.txt', 'rb') as f:
+              raw = f.read()
+          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
+              f.write(raw.decode('utf-16'))
+          "
+          pip install -r requirements_clean.txt
           pip install pytest pytest-django pytest-cov coverage
 
       - name: ✅ Verificar Redis
-        run: |
-          python3 -c "import redis; r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=5); r.ping(); print('Redis OK')" 
+        run: redis-cli -h localhost ping
 
       - name: 🗄️ Ejecutar migraciones
         run: python manage.py migrate --no-input
 
       - name: 🔍 Django system check
-        run: python manage.py check
+        run: python manage.py check --no-input
 
       - name: 👤 Crear usuarios de prueba de seguridad
         run: |
@@ -175,7 +181,7 @@ jobs:
             | grep "::" | sed 's/^/  /' || true
 
       - name: 📤 Subir reportes de seguridad
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-reports-py${{ matrix.python-version }}
@@ -201,10 +207,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: 🔎 Inicializar CodeQL
-        uses: github/codeql-action/init@v3.28.16
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
           # Consultas de seguridad extendidas — incluye CWE-022, CWE-078,
@@ -212,7 +218,7 @@ jobs:
           queries: security-extended
 
       - name: 🐍 Configurar Python
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
@@ -220,13 +226,19 @@ jobs:
       - name: 📦 Instalar dependencias (para análisis de imports)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -c "
+          with open('requirements.txt', 'rb') as f:
+              raw = f.read()
+          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
+              f.write(raw.decode('utf-16'))
+          "
+          pip install -r requirements_clean.txt
 
       - name: 🏗️ Autobuild (CodeQL rastrea imports y flujo)
-        uses: github/codeql-action/autobuild@v3.28.16
+        uses: github/codeql-action/autobuild@v3
 
       - name: 📤 Ejecutar análisis CodeQL
-        uses: github/codeql-action/analyze@v3.28.16
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
           # Los resultados quedan en la pestaña "Security" → "Code scanning alerts"
@@ -241,10 +253,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: 🐍 Configurar Python
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
@@ -252,13 +264,18 @@ jobs:
       - name: 📦 Instalar dependencias y pip-audit
         run: |
           python -m pip install --upgrade pip pip-audit
-          pip install -r requirements.txt
+          python -c "
+          with open('requirements.txt', 'rb') as f:
+              raw = f.read()
+          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
+              f.write(raw.decode('utf-16'))
+          "
+          pip install -r requirements_clean.txt
 
       - name: 🔍 Auditar vulnerabilidades conocidas (CVEs)
         run: |
-          mkdir -p reports
           pip-audit \
-            --requirement requirements.txt \
+            --requirement requirements_clean.txt \
             --format=json \
             --output=reports/pip-audit.json \
             --desc || true
@@ -270,11 +287,11 @@ jobs:
         if: always()
         run: |
           pip-audit \
-            --requirement requirements.txt \
+            --requirement requirements_clean.txt \
             --desc 2>&1 | tail -30 || true
 
       - name: 📤 Subir reporte de auditoría
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: dependency-audit-report
@@ -290,10 +307,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: 🐍 Configurar Python
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
@@ -301,7 +318,13 @@ jobs:
       - name: 📦 Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -c "
+          with open('requirements.txt', 'rb') as f:
+              raw = f.read()
+          with open('requirements_clean.txt', 'w', encoding='utf-8') as f:
+              f.write(raw.decode('utf-16'))
+          "
+          pip install -r requirements_clean.txt
 
       - name: 🗄️ Migraciones
         run: python manage.py migrate --no-input
@@ -312,15 +335,14 @@ jobs:
         # continue-on-error: true porque en CI el entorno es dev (DEBUG=True).
         # En el pipeline de producción esto debe fallar el build.
         run: |
-          mkdir -p reports
-          python manage.py check --deploy 2>&1 | tee reports/django-deploy-check.txt || true
+          python manage.py check --deploy --no-input 2>&1 | tee reports/django-deploy-check.txt || true
 
       - name: 📋 Mostrar advertencias de seguridad de Django
         if: always()
         run: cat reports/django-deploy-check.txt || true
 
       - name: 📤 Subir reporte de deploy check
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: django-security-check

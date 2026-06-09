@@ -53,7 +53,7 @@ jobs:
         # garantizando que los pasos de reporte siempre se ejecuten.
         continue-on-error: true
         run: |
-          pytest tests/unit/ \
+          python -m pytest \
             --tb=short \
             --no-header \
             -v \
