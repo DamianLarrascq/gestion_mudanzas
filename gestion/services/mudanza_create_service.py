@@ -295,7 +295,7 @@ class MudanzaCreateService:
             HistorialEstado.objects.create(
                 mudanza=mudanza,
                 estado_anterior=Mudanza.Estado.BORRADOR,
-                estado_nuev=Mudanza.Estado.BORRADOR,
+                estado_nuevo=Mudanza.Estado.BORRADOR,
                 usuario=usuario,
             )
 

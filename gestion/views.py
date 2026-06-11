@@ -650,7 +650,7 @@ def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
     return DireccionInput(
         calle=calle,
         numero=raw.get(f"{prefijo}_numero", "").strip(),
-        localicad=raw.get(f"{prefijo}_localidad", "").strip(),
+        localidad=raw.get(f"{prefijo}_localidad", "").strip(),
         provincia=raw.get(f"{prefijo}_provincia", "").strip(),
         codigo_postal=raw.get(f"{prefijo}_codigo_postal", "").strip(),
         piso=raw.get(f"{prefijo}_piso", "").strip(),
@@ -660,7 +660,7 @@ def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
         capacidad_ascensor_kg=int(raw[f"{prefijo}_capacidad_ascensor_kg"]) if raw.get(f"{prefijo}_capacidad_ascensor_kg") else None,
     )
 
-def _obtener_contexto_formulario(fecha: date | None = None) -> dict:
+def _obtener_contexto_formulario(fecha=None) -> dict:
     """
     Carga los selectores necesarios para el formulario de nueva mudanza.
     Dos queries simples, sin logica en el template.

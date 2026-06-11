@@ -29,8 +29,10 @@ class Mudanza(models.Model):
                             null=True, blank=True)
     senia_pagada      = models.BooleanField(default=False)
     mp_preference_id  = models.CharField(max_length=200, blank=True)
+    notificacion_seguimiento_enviada = models.BooleanField(default=False)
+    notificacion_24h_enviada = models.BooleanField(default=False)
     creado_en         = models.DateTimeField(auto_now_add=True)
-    actualizado_en    = models.DateTimeField(auto_now=True)  
+    actualizado_en    = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Mudanza'
