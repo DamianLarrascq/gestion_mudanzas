@@ -151,18 +151,18 @@ CELERY_BEAT_SCHEDULE = {
 # Chatbot
 CHATBOT_NOMBRE_EMPRESA = "Tu Empresa de Mudanzas"
 CHATBOT_NOMBRE_BOT = "Movi"  # nombre del asistente virtual
-CHATBOT_URL_FORMULARIO = "https://tudominio.com/cotizar/"
-CHATBOT_URL_WEB_PRINCIPAL = "https://tudominio.com/"
-"""
+CHATBOT_URL_FORMULARIO = ""
+CHATBOT_URL_WEB_PRINCIPAL = ""
+
 # Twilio / Whatsapp
-TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_FROM = env("TWILIO_WHATSAPP_FROM")
-TWILIO_SANDBOX = env.bool("TWILIO_SANDBOX", default=True)
+TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM")
+TWILIO_SANDBOX = config.bool("TWILIO_SANDBOX", default=True)
 # URL pública de este servidor, usada para validar la firma de Twilio.
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
-SITE_BASE_URL = env("SITE_BASE_URL")
-"""
+SITE_BASE_URL = config("SITE_BASE_URL")
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

@@ -4,6 +4,8 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+
+from gestion.mixins import StaffRequiredMixin, MudanzaOwnerMixin, staff_required
 from gestion.models import Empleado, Camion
 from gestion.services.dashboard_service import (
     obtener_actividad_reciente,
@@ -35,7 +37,7 @@ from gestion.services.tarifa_config_service import (
 )
 
 
-@login_required
+@@staff_required
 def dashboard(request):
     hoy = timezone.localdate()
 
@@ -54,7 +56,7 @@ def dashboard(request):
 
 # Mudanzas
 
-class MudanzaListView(LoginRequiredMixin, TemplateView):
+class MudanzaListView(StaffRequiredMixin, TemplateView):
     template_name = 'gestion/mudanzas/lista.html'
 
     def get_context_data(self, **kwargs):
@@ -80,7 +82,7 @@ class MudanzaListView(LoginRequiredMixin, TemplateView):
             return 1
 
 
-class MudanzaCreateView(LoginRequiredMixin, TemplateView):
+class MudanzaCreateView(StaffRequiredMixin, TemplateView):
     """
     GET /gestion/mudanzas/nueva/
         Renderiza el formulario con los selectores pre-cargados.
@@ -130,9 +132,10 @@ class MudanzaCreateView(LoginRequiredMixin, TemplateView):
         )
         return redirect(resultado['url_detalle'])
 
+
 # Clientes
 
-class ClienteListView(LoginRequiredMixin, TemplateView):
+class ClienteListView(StaffRequiredMixin, TemplateView):
     template_name = 'gestion/clientes/lista.html'
 
     def get_context_data(self, **kwargs):
@@ -157,7 +160,7 @@ class ClienteListView(LoginRequiredMixin, TemplateView):
             return 1
 
 
-class ClienteDetailView(LoginRequiredMixin, TemplateView):
+class ClienteDetailView(StaffRequiredMixin, TemplateView):
     template_name = "gestion/clientes/detalle.html"
 
     def get_context_data(self, **kwargs):
@@ -174,7 +177,7 @@ class ClienteDetailView(LoginRequiredMixin, TemplateView):
 
 # Empleados
 
-class EmpleadoListView(LoginRequiredMixin, TemplateView):
+class EmpleadoListView(StaffRequiredMixin, TemplateView):
     template_name = "gestion/empleados/lista.html"
 
     def get_context_data(self, **kwargs):
@@ -234,7 +237,7 @@ def api_validar_disponibilidad(request, empleado_id: int):
 
 # Flota
 
-class FlotaMonitorView(LoginRequiredMixin, TemplateView):
+class FlotaMonitorView(StaffRequiredMixin, TemplateView):
     template_name = "gestion/flota/monitor.html"
 
     def get_context_data(self, **kwargs):
@@ -247,7 +250,7 @@ class FlotaMonitorView(LoginRequiredMixin, TemplateView):
 
 # Resumen mudanza y mp
 
-class ResumenMudanzaView(LoginRequiredMixin, TemplateView):
+class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
     """
     GET  /gestion/mudanzas/<pk>/resumen/
          Muestra el resumen calculado (si ya existe presupuesto).
@@ -367,7 +370,7 @@ def _recuperar_init_point(preference_id: str) -> str | None:
 
 # Configuracion de tarifas
 
-class ConfiguracionTarifaView(LoginRequiredMixin, TemplateView):
+class ConfiguracionTarifaView(StaffRequiredMixin, TemplateView):
     """
     GET  /gestion/configuracion/tarifas/
         → Contexto con tarifa_activa + historial.
@@ -389,7 +392,7 @@ class ConfiguracionTarifaView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class TarifaCreateView(LoginRequiredMixin, CreateView):
+class TarifaCreateView(StaffRequiredMixin, CreateView):
     """
     GET  /gestion/configuracion/tarifas/nueva/
         → form_schema en contexto para renderizado dinámico.
@@ -431,7 +434,7 @@ class TarifaCreateView(LoginRequiredMixin, CreateView):
         return redirect("gestion:config_tarifas")
 
 
-class TarifaUpdateView(LoginRequiredMixin, UpdateView):
+class TarifaUpdateView(StaffRequiredMixin, UpdateView):
     """
     GET  /gestion/configuracion/tarifas/<pk>/editar/
     POST /gestion/configuracion/tarifas/<pk>/editar/
@@ -467,7 +470,7 @@ class TarifaUpdateView(LoginRequiredMixin, UpdateView):
         return redirect("gestion:config_tarifas")
 
 
-@login_required
+@staff_required
 def api_validar_capacidad_camion(request, mudanza_id: int):
     """
     GET /gestion/mudanzas/<id>/validar-capacidad/
@@ -560,6 +563,7 @@ def _build_form_schema(form: TarifaBaseForm) -> list[dict]:
 
     return schema
 
+
 def _parsear_input(raw) -> MudanzaCreateInput:
     """
     Convierte POST crudo en MudanzaCreateInput.
@@ -614,7 +618,7 @@ def _parsear_input(raw) -> MudanzaCreateInput:
     asignaciones = [
         AsignacionInput(empleado_id=int(eid), rol=rol)
         for eid, rol in zip(empleado_ids, roles)
-            if eid and rol
+        if eid and rol
     ]
 
     # inventario: catalogo_item_ids[] + cantidades[] + descripciones[]
@@ -643,6 +647,7 @@ def _parsear_input(raw) -> MudanzaCreateInput:
         inventario=inventario,
     )
 
+
 def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
     calle = raw.get(f"{prefijo}_calle", "").strip()
     if not calle:
@@ -657,8 +662,10 @@ def _parsear_direccion(raw, prefijo: str) -> DireccionInput | None:
         departamento=raw.get(f"{prefijo}_departamento", "").strip(),
         tiene_ascensor=raw.get(f"{prefijo}_tiene_ascensor") == '1',
         ascensor_grande=raw.get(f"{prefijo}_ascensor_grande") == '1',
-        capacidad_ascensor_kg=int(raw[f"{prefijo}_capacidad_ascensor_kg"]) if raw.get(f"{prefijo}_capacidad_ascensor_kg") else None,
+        capacidad_ascensor_kg=int(raw[f"{prefijo}_capacidad_ascensor_kg"]) if raw.get(
+            f"{prefijo}_capacidad_ascensor_kg") else None,
     )
+
 
 def _obtener_contexto_formulario(fecha=None) -> dict:
     """
@@ -670,7 +677,7 @@ def _obtener_contexto_formulario(fecha=None) -> dict:
     from gestion.models.catalogo import CatalogoItem
     from gestion.services.flota_service import obtener_camiones_disponibles_para_fecha
 
-    clientes= list(
+    clientes = list(
         Cliente.objects.order_by("nombre_completo").values('id', 'nombre_completo', 'telefono')
     )
     if fecha is not None:
