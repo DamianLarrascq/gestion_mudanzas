@@ -15,13 +15,26 @@ from gestion.models.chatbot import SesionChatbot
 from gestion.services.chatbot_service import ResultadoChatbot, ChatbotHandler
 from twilio.rest import Client
 from twilio.request_validator import RequestValidator
+import re
 
 logger = logging.getLogger(__name__)
+_LOG_SANITIZE_RE = re.compile(r"[\r\n\x00-\x1f\x7f]")
+_LOG_MAX_LEN = 200
 
 # Usuario de sistema para registrar cambios de estado automáticos en HistorialEstado.
 # Debe existir en la DB. Crearlo con:
 #   python manage.py shell -c "from django.contrib.auth.models import User; User.objects.get_or_create(username='sistema', defaults={'is_active': False})"
 _SISTEMA_USERNAME = "sistema"
+
+
+def _sanitize_log(value: object, max_len: int = _LOG_MAX_LEN) -> str:
+    """
+    Elimina caracteres de control de valores externos antes de loguearlos.
+    Previene log injection (CWE-177).
+    """
+    s = str(value)
+    s = _LOG_SANITIZE_RE.sub('', s)
+    return s[:max_len] if len(s) > max_len else s
 
 
 def _get_usuario_sistema() -> User:
@@ -71,7 +84,7 @@ def mp_notificacion(request):
         # Loguear pero retornar 200 igual: no queremos reintentos infinitos
         # de MP por errores internos. El estado queda en PRESUPUESTADA y
         # el admin puede resolver manualmente.
-        logger.exception("webhook/mp: error procesando payment_id=%s — %s", payment_id, exc)
+        logger.exception("webhook/mp: error procesando payment_id=%s — %s", _sanitize_log(payment_id), exc)
 
     return HttpResponse(status=200)
 
@@ -86,7 +99,8 @@ def _procesar_pago(payment_id: str | int) -> None:
     response = sdk.payment().get(payment_id)
 
     if response["status"] != 200:
-        logger.error("webhook/mp: no se pudo obtener payment_id=%s, status=%s", payment_id, response["status"])
+        logger.error("webhook/mp: no se pudo obtener payment_id=%s, status=%s", _sanitize_log(payment_id),
+                     response["status"])
         return
 
     pago = response["response"]
@@ -95,11 +109,11 @@ def _procesar_pago(payment_id: str | int) -> None:
     mudanza_uuid = metadata.get("mudanza_uuid")
 
     if estado_pago != "approved":
-        logger.info("webhook/mp: payment_id=%s estado=%s — ignorado", payment_id, estado_pago)
+        logger.info("webhook/mp: payment_id=%s estado=%s — ignorado", _sanitize_log(payment_id), _sanitize_log(estado_pago))
         return
 
     if not mudanza_uuid:
-        logger.error("webhook/mp: payment_id=%s aprobado pero sin mudanza_uuid en metadata", payment_id)
+        logger.error("webhook/mp: payment_id=%s aprobado pero sin mudanza_uuid en metadata", _sanitize_log(payment_id))
         return
 
     _confirmar_mudanza(mudanza_uuid)
@@ -113,17 +127,17 @@ def _confirmar_mudanza(mudanza_uuid: str) -> None:
     try:
         mudanza = Mudanza.objects.get(uuid=mudanza_uuid)
     except Mudanza.DoesNotExist:
-        logger.error("webhook/mp: Mudanza uuid=%s no encontrada", mudanza_uuid)
+        logger.error("webhook/mp: Mudanza uuid=%s no encontrada", _sanitize_log(mudanza_uuid))
         return
 
     if mudanza.estado == Mudanza.Estado.CONFIRMADA:
-        logger.info("webhook/mp: Mudanza uuid=%s ya estaba CONFIRMADA — sin cambios", mudanza_uuid)
+        logger.info("webhook/mp: Mudanza uuid=%s ya estaba CONFIRMADA — sin cambios", _sanitize_log(mudanza_uuid))
         return
 
     if mudanza.estado != Mudanza.Estado.PRESUPUESTADA:
         logger.warning(
             "webhook/mp: Mudanza uuid=%s está en estado=%s, se esperaba PRESUPUESTADA — igual se confirma",
-            mudanza_uuid,
+            _sanitize_log(mudanza_uuid),
             mudanza.estado,
         )
 
