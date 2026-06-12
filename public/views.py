@@ -71,8 +71,10 @@ def solicitar_presupuesto(request):
             status=422,
         )
     except RuntimeError as exc:
+        logger.exception("Error al generar preferencia MP para solicitud landing.")
         return JsonResponse(
-            {"ok": False, "errores": {"__all__": [str(exc)]}},
+            {"ok": False,
+             "errores": {"__all__": ["No fue posible generar el link de pago. Intentá de nuevo en unos minutos."]}},
             status=502,
         )
 

@@ -35,9 +35,12 @@ from gestion.models.presupuestos import TarifaBase
 from gestion.services.tarifa_config_service import (
     obtener_contexto_config_tarifas
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-@@staff_required
+@staff_required
 def dashboard(request):
     hoy = timezone.localdate()
 
@@ -342,7 +345,9 @@ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
             except (ValueError, RuntimeError) as exc:
                 ctx = self.get_context_data(**kwargs)
                 ctx.update(ctx_presupuesto)
-                ctx["error"] = f"Error al generar link de pago: {exc}"
+                logger.exception("Error al generar preferencia MP para mudanza #%s.", mudanza_pk)
+                ctx["error"] = "No fue posible generar el link de pago. Revisá la configuración de MercadoPago."
+
                 return self.render_to_response(ctx)
 
         ctx_presupuesto["pago_url"] = pago_url

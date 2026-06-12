@@ -1,7 +1,11 @@
 from django.urls import path
-from .views import ChatbotWebView
+from public import views
+
+app_name = 'public'
 
 urlpatterns = [
-    # ... rutas existentes
-    path("api/chatbot/mensaje/", ChatbotWebView.as_view(), name="chatbot_web"),
+    path('', views.landing, name='landing'),
+    path('presupuesto/solicitar/', views.solicitar_presupuesto, name='solicitar_presupuesto'),
+    path('presupuesto/gracias/', views.presupuesto_gracias, name='presupuesto_gracias'),
+    path("api/chatbot/mensaje/", views.ChatbotWebView.as_view(), name="chatbot_web"),
 ]
