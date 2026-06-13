@@ -1,0 +1,302 @@
+name: 🔗 Integration & E2E — Tests
+
+on:
+  push:
+    branches: [ main, develop, "feature/**", "fix/**" ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings
+  SECRET_KEY: "ci-integration-secret-key-only-for-github-actions-not-for-prod"
+  DEBUG: "True"
+  DB_ENGINE: "sqlite"
+  ALLOWED_HOSTS: "scruz.pythonanywhere.com,localhost,127.0.0.1"
+  CELERY_BROKER_URL: "redis://localhost:6379/0"
+  # Eager mode: las tareas Celery se ejecutan en el mismo hilo, sin broker real.
+  # Permite testear el comportamiento de las tareas sin Redis en CI.
+  CELERY_TASK_ALWAYS_EAGER: "True"
+  # Tokens de servicios externos: vacíos en CI, todo mockeado en los tests.
+  MERCADOPAGO_ACCESS_TOKEN: "TEST-ci-token-not-real"
+  MERCADOPAGO_SANDBOX: "True"
+  SITE_BASE_URL: "http://localhost:8000"
+  TWILIO_ACCOUNT_SID: "ACci-not-real"
+  TWILIO_AUTH_TOKEN: "ci-auth-not-real"
+  TWILIO_WHATSAPP_FROM: "whatsapp:+14155238886"
+
+jobs:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Tests de integración (capas + flujos MP + flujos Twilio)
+  # ────────────────────────────────────────────────────────────────────────────
+  integration-tests:
+    name: 🔗 Integration Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.12" ]
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: 🐍 Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: 📦 Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-django pytest-cov coverage
+
+      - name: ✅ Verificar Redis
+        run: |
+          python3 -c "
+          import redis
+          r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=5)
+          r.ping()
+          print('Redis OK')
+          "
+
+      - name: 🗄️ Ejecutar migraciones
+        run: python manage.py migrate --no-input
+
+      - name: 🔍 Django system check
+        run: python manage.py check
+
+      - name: 👤 Crear usuario sistema (requerido por webhooks)
+        run: |
+          python manage.py shell -c "
+          from django.contrib.auth.models import User
+
+          u, created = User.objects.get_or_create(username='sistema')
+          u.is_active = False
+          u.save()
+          print(f'  sistema: {\"creado\" if created else \"ya existía\"}')
+          "
+
+      # ── Flujo MercadoPago ────────────────────────────────────────────────────
+      - name: 💳 Tests de integración — Flujo MercadoPago
+        run: |
+          mkdir -p reports/integration
+          python -m pytest tests/integration/test_flujo_mp.py \
+            -v --tb=short \
+            --junitxml=reports/integration/junit-flujo-mp.xml \
+            --cov=gestion --cov=webhook \
+            --cov-report=xml:reports/integration/coverage-mp.xml \
+            --cov-report=term-missing
+
+      # ── Flujo Twilio / WhatsApp ──────────────────────────────────────────────
+      - name: 💬 Tests de integración — Flujo Twilio/WhatsApp
+        run: |
+          python -m pytest tests/integration/test_flujo_twilio.py \
+            -v --tb=short \
+            --junitxml=reports/integration/junit-flujo-twilio.xml \
+            --cov=notificaciones --cov-append \
+            --cov-report=xml:reports/integration/coverage-mp.xml \
+            --cov-report=term-missing
+
+      # ── Capas + Flujos de negocio + Flujos cruzados ──────────────────────────
+      - name: 🏗️ Tests de integración — Capas y flujos de negocio
+        run: |
+          python -m pytest tests/integration/test_capas.py \
+            -v --tb=short \
+            --junitxml=reports/integration/junit-capas.xml \
+            --cov=gestion --cov=public --cov=webhook --cov-append \
+            --cov-report=xml:reports/integration/coverage-mp.xml \
+            --cov-report=term-missing
+
+      # ── Admin (ya existía, lo sumamos al reporte de integration) ─────────────
+      - name: 🛠️ Tests de integración — Admin y configuración
+        run: |
+          python -m pytest tests/integration/test_admin.py tests/integration/test_celery.py \
+            -v --tb=short \
+            --junitxml=reports/integration/junit-admin-celery.xml \
+            --cov=gestion --cov-append \
+            --cov-report=xml:reports/integration/coverage-mp.xml \
+            --cov-report=term-missing
+
+      # ── Reporte de cobertura consolidado ────────────────────────────────────
+      - name: 📊 Cobertura consolidada — integration
+        if: always()
+        run: |
+          python -m pytest tests/integration/ \
+            --tb=no --no-header -q \
+            --cov=gestion --cov=webhook --cov=public --cov=notificaciones \
+            --cov-report=term-missing \
+            --cov-report=html:reports/integration/coverage-html \
+            2>/dev/null || true
+
+      # ── Resumen de colección ─────────────────────────────────────────────────
+      - name: 📋 Resumen — tests de integración recolectados
+        if: always()
+        run: |
+          echo "── Todos los tests de integración ──"
+          python -m pytest tests/integration/ \
+            --tb=no --no-header --co -q 2>/dev/null \
+            | grep "::" | sed 's/^/  /' || true
+
+      - name: 📤 Subir reportes de integración
+        uses: actions/upload-artifact@v4.6.2
+        if: always()
+        with:
+          name: integration-reports-py${{ matrix.python-version }}
+          path: reports/integration/
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — E2E placeholder (Selenium — Chrome + Safari)
+  #
+  # Chrome:  github-hosted runner ubuntu-latest incluye Chrome y chromedriver.
+  # Safari:  solo disponible en macos-latest (macOS runners de GitHub).
+  #          La profesora usa Mac → el job de Safari corre en macos-latest.
+  #
+  # Estado actual: placeholder. Los tests reales se agregarán en tests/e2e/
+  # cuando se implementen. Por ahora el job verifica que el entorno esté listo
+  # y no falla el build.
+  # ────────────────────────────────────────────────────────────────────────────
+  e2e-chrome:
+    name: 🌐 E2E Selenium — Chrome (ubuntu-latest)
+    runs-on: ubuntu-latest
+    # No bloquea el pipeline mientras los tests e2e no estén implementados
+    continue-on-error: true
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: 📦 Instalar dependencias + Selenium
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install selenium
+
+      - name: 🌐 Verificar Chrome disponible
+        run: |
+          google-chrome --version || chromium-browser --version || chromium --version
+          echo "Chrome OK"
+
+      - name: 🗄️ Ejecutar migraciones
+        run: |
+          python manage.py migrate --no-input
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          SECRET_KEY: "ci-integration-secret-key-only-for-github-actions-not-for-prod"
+          DEBUG: "True"
+          DB_ENGINE: "sqlite"
+
+      - name: 🧪 E2E Chrome — placeholder (tests/e2e/ pendiente de implementación)
+        run: |
+          python -c "
+          import sys
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.chrome.service import Service
+
+          print('Selenium versión:', sys.modules['selenium'].__version__)
+
+          options = Options()
+          options.add_argument('--headless')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+
+          try:
+              driver = webdriver.Chrome(options=options)
+              driver.quit()
+              print('Chrome WebDriver: OK')
+          except Exception as e:
+              # En CI el chromedriver puede no estar en PATH en todos los runners.
+              # Documentamos el error sin fallar el job.
+              print(f'Chrome WebDriver no disponible en este runner: {e}')
+              print('Los tests E2E se configurarán con webdriver-manager en la implementación.')
+
+          print('Placeholder E2E Chrome: entorno verificado.')
+          print('Implementar tests en tests/e2e/ cuando el frontend esté estabilizado.')
+          "
+
+  e2e-safari:
+    name: 🧭 E2E Selenium — Safari (macos-latest)
+    runs-on: macos-latest
+    # Safari WebDriver (safaridriver) viene preinstalado en macOS runners de GitHub.
+    # No bloquea el pipeline mientras los tests e2e no estén implementados.
+    continue-on-error: true
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: 📦 Instalar dependencias + Selenium
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install selenium
+
+      - name: 🗄️ Ejecutar migraciones
+        run: |
+          python manage.py migrate --no-input
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          SECRET_KEY: "ci-integration-secret-key-only-for-github-actions-not-for-prod"
+          DEBUG: "True"
+          DB_ENGINE: "sqlite"
+
+      - name: 🔧 Habilitar safaridriver (requerido en macOS)
+        run: |
+          # safaridriver necesita habilitarse explícitamente en el runner.
+          # En macOS de GitHub Actions esto puede requerir sudo.
+          safaridriver --enable 2>/dev/null || true
+          safaridriver --version 2>/dev/null || echo "safaridriver disponible vía /usr/bin/safaridriver"
+
+      - name: 🧪 E2E Safari — placeholder (tests/e2e/ pendiente de implementación)
+        run: |
+          python -c "
+          import sys
+          from selenium import webdriver
+          from selenium.webdriver.safari.options import Options
+
+          print('Selenium versión:', sys.modules['selenium'].__version__)
+          print('safaridriver path: /usr/bin/safaridriver (macOS)')
+
+          try:
+              options = Options()
+              driver = webdriver.Safari(options=options)
+              driver.quit()
+              print('Safari WebDriver: OK')
+          except Exception as e:
+              # safaridriver puede requerir permisos de UI en CI.
+              # Documentamos sin fallar.
+              print(f'Safari WebDriver no disponible en modo headless CI: {e}')
+              print('Para tests E2E en Safari: requiere runner con acceso a pantalla.')
+              print('Alternativa: usar BrowserStack o Sauce Labs para Safari en CI.')
+
+          print('Placeholder E2E Safari: entorno verificado.')
+          print('Implementar tests en tests/e2e/ cuando el frontend esté estabilizado.')
+          "

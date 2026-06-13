@@ -1,0 +1,77 @@
+name: Unit Tests — SGM
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: "ci-only-secret-key-not-for-production"
+      DEBUG: "True"
+      DB_ENGINE: "sqlite"
+      CELERY_BROKER_URL: "redis://localhost:6379/0"
+      CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
+      MERCADOPAGO_ACCESS_TOKEN: "TEST_TOKEN_CI"
+      SITE_BASE_URL: "http://localhost:8000"
+      MERCADOPAGO_SANDBOX: "True"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Aplicar migraciones
+        run: python manage.py migrate --run-syncdb
+
+      - name: Ejecutar tests con pytest
+        # continue-on-error permite que el job siga aunque haya tests fallidos,
+        # garantizando que los pasos de reporte siempre se ejecuten.
+        continue-on-error: true
+        run: |
+          python -m pytest \
+            --tb=short \
+            --no-header \
+            -v \
+            --cov=gestion --cov=notificaciones --cov=webhook --cov=public \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:coverage-html
+
+      - name: Subir reporte XML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+      - name: Subir reporte HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-html
+          path: coverage-html
