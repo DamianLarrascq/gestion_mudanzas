@@ -203,10 +203,10 @@ def _serializar_mudanza_creada(mudanza: Mudanza) -> dict:
             f'{mudanza.origen.calle} {mudanza.origen.numero}, {mudanza.origen.localidad}'
             if mudanza.origen else "Sin definir"
         ),
-       'destino_display': (
-    f'{mudanza.destino.calle} {mudanza.destino.numero}, {mudanza.destino.localidad}'
-    if mudanza.destino else "Sin definir"
-),
+        'destino_display': (
+            f'{mudanza.destino.calle} {mudanza.destino.numero}, {mudanza.destino.localidad}'
+            if mudanza.destino else "Sin definir"
+        ),
         'necesita_ayudantes': mudanza.necesita_ayudantes,
         'monto_senia_display': (
             f'${mudanza.monto_senia:,.0f}'

@@ -213,7 +213,7 @@ def obtener_camiones_disponibles_para_fecha(fecha: date) -> list[dict]:
         Mudanza.objects.filter(
             fecha_hora__date=fecha,
             estado__in=[Mudanza.Estado.CONFIRMADA, Mudanza.Estado.EN_CURSO],
-            camion_isnull=False,
+            camion__isnull=False,
         ).values_list('camion_id', flat=True)
     )
 

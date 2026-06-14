@@ -1,20 +1,40 @@
 from __future__ import annotations
 import json
 import logging
-from django.http import HttpResponse, JsonResponse
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth.models import User
 from gestion.models.mudanzas import Mudanza
 from gestion.models.auditoria import HistorialEstado
+from gestion.models.chatbot import SesionChatbot
+from gestion.services.chatbot_service import ResultadoChatbot, ChatbotHandler
+from twilio.rest import Client
+from twilio.request_validator import RequestValidator
+import re
 
 logger = logging.getLogger(__name__)
+_LOG_SANITIZE_RE = re.compile(r"[\r\n\x00-\x1f\x7f]")
+_LOG_MAX_LEN = 200
 
 # Usuario de sistema para registrar cambios de estado automáticos en HistorialEstado.
 # Debe existir en la DB. Crearlo con:
 #   python manage.py shell -c "from django.contrib.auth.models import User; User.objects.get_or_create(username='sistema', defaults={'is_active': False})"
 _SISTEMA_USERNAME = "sistema"
+
+
+def _sanitize_log(value: object, max_len: int = _LOG_MAX_LEN) -> str:
+    """
+    Elimina caracteres de control de valores externos antes de loguearlos.
+    Previene log injection (CWE-177).
+    """
+    s = str(value)
+    s = _LOG_SANITIZE_RE.sub('', s)
+    return s[:max_len] if len(s) > max_len else s
 
 
 def _get_usuario_sistema() -> User:
@@ -64,7 +84,7 @@ def mp_notificacion(request):
         # Loguear pero retornar 200 igual: no queremos reintentos infinitos
         # de MP por errores internos. El estado queda en PRESUPUESTADA y
         # el admin puede resolver manualmente.
-        logger.exception("webhook/mp: error procesando payment_id=%s — %s", payment_id, exc)
+        logger.exception("webhook/mp: error procesando payment_id=%s — %s", _sanitize_log(payment_id), exc)
 
     return HttpResponse(status=200)
 
@@ -74,13 +94,13 @@ def _procesar_pago(payment_id: str | int) -> None:
     Consulta el pago en MP y, si está aprobado, confirma la Mudanza.
     """
     from gestion.services.mercadopago_service import _get_sdk
-    from django.conf import settings
 
     sdk = _get_sdk()
     response = sdk.payment().get(payment_id)
 
     if response["status"] != 200:
-        logger.error("webhook/mp: no se pudo obtener payment_id=%s, status=%s", payment_id, response["status"])
+        logger.error("webhook/mp: no se pudo obtener payment_id=%s, status=%s", _sanitize_log(payment_id),
+                     response["status"])
         return
 
     pago = response["response"]
@@ -89,11 +109,11 @@ def _procesar_pago(payment_id: str | int) -> None:
     mudanza_uuid = metadata.get("mudanza_uuid")
 
     if estado_pago != "approved":
-        logger.info("webhook/mp: payment_id=%s estado=%s — ignorado", payment_id, estado_pago)
+        logger.info("webhook/mp: payment_id=%s estado=%s — ignorado", _sanitize_log(payment_id), _sanitize_log(estado_pago))
         return
 
     if not mudanza_uuid:
-        logger.error("webhook/mp: payment_id=%s aprobado pero sin mudanza_uuid en metadata", payment_id)
+        logger.error("webhook/mp: payment_id=%s aprobado pero sin mudanza_uuid en metadata", _sanitize_log(payment_id))
         return
 
     _confirmar_mudanza(mudanza_uuid)
@@ -107,17 +127,17 @@ def _confirmar_mudanza(mudanza_uuid: str) -> None:
     try:
         mudanza = Mudanza.objects.get(uuid=mudanza_uuid)
     except Mudanza.DoesNotExist:
-        logger.error("webhook/mp: Mudanza uuid=%s no encontrada", mudanza_uuid)
+        logger.error("webhook/mp: Mudanza uuid=%s no encontrada", _sanitize_log(mudanza_uuid))
         return
 
     if mudanza.estado == Mudanza.Estado.CONFIRMADA:
-        logger.info("webhook/mp: Mudanza uuid=%s ya estaba CONFIRMADA — sin cambios", mudanza_uuid)
+        logger.info("webhook/mp: Mudanza uuid=%s ya estaba CONFIRMADA — sin cambios", _sanitize_log(mudanza_uuid))
         return
 
     if mudanza.estado != Mudanza.Estado.PRESUPUESTADA:
         logger.warning(
             "webhook/mp: Mudanza uuid=%s está en estado=%s, se esperaba PRESUPUESTADA — igual se confirma",
-            mudanza_uuid,
+            _sanitize_log(mudanza_uuid),
             mudanza.estado,
         )
 
@@ -163,3 +183,132 @@ def mp_pending(request):
         "payment_id": request.GET.get("payment_id"),
         "status": request.GET.get("status"),
     })
+
+
+# ── Cliente Twilio ────────────────────────────────────────────────────────
+
+def _get_twilio_client() -> Client:
+    return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+
+# ── Envío de mensajes ─────────────────────────────────────────────────────
+
+def _enviar_mensaje_whatsapp(telefono: str, texto: str) -> None:
+    """
+    Envía un mensaje de texto vía Twilio WhatsApp.
+
+    Args:
+        telefono: Número destino con prefijo whatsapp:, ej: "whatsapp:+5491123456789".
+                  Si llega sin prefijo, se lo agrega automáticamente.
+        texto:    Cuerpo del mensaje.
+    """
+    if getattr(settings, "TWILIO_SANDBOX", True):
+        logger.info("[TWILIO SANDBOX] → %s: %s", telefono, texto)
+        return
+
+    # Normalizar: Twilio requiere el prefijo "whatsapp:"
+    destino = telefono if telefono.startswith("whatsapp:") else f"whatsapp:{telefono}"
+
+    try:
+        client = _get_twilio_client()
+        message = client.messages.create(
+            from_=settings.TWILIO_WHATSAPP_FROM,
+            to=destino,
+            body=texto,
+        )
+        logger.info("Mensaje enviado vía Twilio. SID: %s", message.sid)
+    except Exception:
+        logger.exception("Error enviando mensaje Twilio a %s.", destino)
+
+
+def _enviar_respuestas(telefono: str, resultado: ResultadoChatbot) -> None:
+    """Despacha cada mensaje del resultado de forma secuencial."""
+    for mensaje in resultado.mensajes:
+        _enviar_mensaje_whatsapp(telefono, mensaje)
+
+
+# ── Validación de firma de Twilio ─────────────────────────────────────────
+
+def _verificar_firma_twilio(request: HttpRequest) -> bool:
+    """
+    Valida que el request provenga realmente de Twilio usando RequestValidator.
+
+    Twilio firma con HMAC-SHA1 sobre: URL completa + parámetros POST ordenados.
+    Docs: https://www.twilio.com/docs/usage/webhooks/webhooks-security
+
+    En modo SANDBOX (desarrollo local) se omite la validación para facilitar
+    pruebas con ngrok u otras herramientas de túnel.
+    """
+    if getattr(settings, "TWILIO_SANDBOX", True):
+        logger.debug("Validación de firma Twilio omitida (modo SANDBOX).")
+        return True
+
+    firma = request.META.get("HTTP_X_TWILIO_SIGNATURE", "")
+    if not firma:
+        logger.warning("Request sin cabecera X-Twilio-Signature.")
+        return False
+
+    # La URL debe ser exactamente la misma que Twilio tiene configurada en su console.
+    url = f"{settings.SITE_BASE_URL.rstrip('/')}/webhook/whatsapp/"
+
+    validator = RequestValidator(settings.TWILIO_AUTH_TOKEN)
+    return validator.validate(url, request.POST, firma)
+
+
+# ── Vista principal ───────────────────────────────────────────────────────
+
+@method_decorator(csrf_exempt, name="dispatch")
+class WhatsAppWebhookView(View):
+    """
+    POST /webhook/whatsapp/
+
+    Twilio no hace un handshake GET de verificación (a diferencia de Meta),
+    por lo que solo implementamos POST.
+
+    Payload relevante de Twilio (form-data):
+        From:    "whatsapp:+5491123456789"
+        Body:    "Hola, quiero pedir un presupuesto para una mudanza."
+        NumMedia: "0"   (si hay adjuntos, > 0)
+    """
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        if not _verificar_firma_twilio(request):
+            logger.warning("Firma Twilio inválida. Request rechazado.")
+            return HttpResponse("Forbidden", status=403)
+
+        telefono_raw = request.POST.get("From", "")
+        texto = request.POST.get("Body", "").strip()
+        num_media = int(request.POST.get("NumMedia", "0"))
+
+        if not telefono_raw:
+            logger.warning("Webhook de Twilio sin campo 'From'.")
+            return HttpResponse(status=400)
+
+        # Normalizar: quitar el prefijo "whatsapp:" para usar como canal_id
+        # Se vuelve a agregar al enviar con _enviar_mensaje_whatsapp.
+        canal_id = (
+            telefono_raw.removeprefix("whatsapp:")
+            if telefono_raw.startswith("whatsapp:")
+            else telefono_raw
+        )
+
+        if num_media > 0:
+            # Mensajes con adjuntos (imágenes, audio, documentos): ignorar por ahora.
+            logger.info("Mensaje con media ignorado (de: %s).", canal_id)
+            return HttpResponse(status=200)
+
+        if not texto:
+            return HttpResponse(status=200)
+
+        logger.info("Mensaje WA recibido de %s: %s", canal_id, texto[:80])
+
+        resultado = ChatbotHandler.procesar(
+            canal_id=canal_id,
+            canal=SesionChatbot.Canal.WHATSAPP,
+            texto=texto,
+        )
+
+        _enviar_respuestas(canal_id, resultado)
+
+        # 200 vacío: Twilio no necesita TwiML cuando respondemos vía REST API.
+        return HttpResponse(status=200)

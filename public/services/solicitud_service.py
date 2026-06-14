@@ -186,6 +186,14 @@ def procesar_solicitud_landing(form_data: dict, inventario_raw: list) -> dict:
     )
     pago_url = MercadoPagoService.generar_preferencia_desde_dato(dato, guardar_en=mudanza)
 
+    # Disparar seguimiento post-formulario con ETA de 4 horas
+    from notificaciones.tasks import enviar_seguimiento_post_formulario
+
+    enviar_seguimiento_post_formulario.apply_async(
+        args=[mudanza.pk],
+        countdown=4 * 60 * 60,  # 4 horas = 14400 segundos
+    )
+
     return {
         "pago_url": pago_url,
         "monto_total": str(costos.total),
