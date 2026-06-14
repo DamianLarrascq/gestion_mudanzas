@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
+from decouple import config, CasterILike
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -158,7 +158,7 @@ CHATBOT_URL_WEB_PRINCIPAL = ""
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM")
-TWILIO_SANDBOX = config.bool("TWILIO_SANDBOX", default=True)
+TWILIO_SANDBOX = config("TWILIO_SANDBOX", default=True, cast=bool)
 # URL pública de este servidor, usada para validar la firma de Twilio.
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
 SITE_BASE_URL = config("SITE_BASE_URL")
