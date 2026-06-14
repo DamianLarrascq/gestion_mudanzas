@@ -16,7 +16,6 @@ from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -27,7 +26,6 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = ['scruz.pythonanywhere.com', 'localhost', '127.0.0.1']
-
 
 # Application definition
 
@@ -92,13 +90,13 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Mudanzas",
-                        "icon":  "local_shipping",
-                        "link":  "/admin/gestion/mudanza/",
+                        "icon": "local_shipping",
+                        "link": "/admin/gestion/mudanza/",
                     },
                     {
                         "title": "Clientes",
-                        "icon":  "people",
-                        "link":  "/admin/gestion/cliente/",
+                        "icon": "people",
+                        "link": "/admin/gestion/cliente/",
                     },
                 ],
             },
@@ -107,13 +105,13 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Camiones",
-                        "icon":  "fire_truck",
-                        "link":  "/admin/gestion/camion/",
+                        "icon": "fire_truck",
+                        "link": "/admin/gestion/camion/",
                     },
                     {
                         "title": "Empleados",
-                        "icon":  "badge",
-                        "link":  "/admin/gestion/empleado/",
+                        "icon": "badge",
+                        "link": "/admin/gestion/empleado/",
                     },
                 ],
             },
@@ -122,8 +120,8 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Tarifas",
-                        "icon":  "payments",
-                        "link":  "/admin/gestion/tarifabase/",
+                        "icon": "payments",
+                        "link": "/admin/gestion/tarifabase/",
                     },
                 ],
             },
@@ -133,12 +131,38 @@ UNFOLD = {
 
 # Celery config
 
-CELERY_BROKER_URL         = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND     = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_ACCEPT_CONTENT     = ["json"]
-CELERY_TASK_SERIALIZER    = "json"
-CELERY_RESULT_SERIALIZER  = "json"
-CELERY_TIMEZONE           = "America/Argentina/Buenos_Aires"
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "America/Argentina/Buenos_Aires"
+CELERY_TASK_TRACK_STARTED = True
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'recordatorio-24h-mudanzas': {
+        'task': 'notificaciones.task.enviar_recordatorio_24h_pendientes',
+        'schedule': crontab(minute='*/15'),
+    }
+}
+
+# Chatbot
+CHATBOT_NOMBRE_EMPRESA = "Tu Empresa de Mudanzas"
+CHATBOT_NOMBRE_BOT = "Movi"  # nombre del asistente virtual
+CHATBOT_URL_FORMULARIO = ""
+CHATBOT_URL_WEB_PRINCIPAL = ""
+
+# Twilio / Whatsapp
+TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM")
+TWILIO_SANDBOX = config.bool("TWILIO_SANDBOX", default=True)
+# URL pública de este servidor, usada para validar la firma de Twilio.
+# Debe coincidir exactamente con la URL configurada en el Twilio Console.
+SITE_BASE_URL = config("SITE_BASE_URL")
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -146,22 +170,22 @@ CELERY_TIMEZONE           = "America/Argentina/Buenos_Aires"
 DB_ENGINE = config('DB_ENGINE', default='sqlite')
 
 if DB_ENGINE == 'postgres':
-    
+
     DATABASES = {
         "default": {
-            "ENGINE":   "django.db.backends.postgresql",
-            "NAME":     config("DB_NAME"),
-            "USER":     config("DB_USER"),
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME"),
+            "USER": config("DB_USER"),
             "PASSWORD": config("DB_PASSWORD"),
-            "HOST":     config("DB_HOST", default="localhost"),
-            "PORT":     config("DB_PORT", default="5432"),
+            "HOST": config("DB_HOST", default="localhost"),
+            "PORT": config("DB_PORT", default="5432"),
         }
     }
 else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME":   BASE_DIR / "db.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -185,7 +209,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -196,7 +219,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
