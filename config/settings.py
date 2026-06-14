@@ -161,7 +161,7 @@ TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM",  default="")
 TWILIO_SANDBOX = config("TWILIO_SANDBOX", default=True, cast=bool)
 # URL pública de este servidor, usada para validar la firma de Twilio.
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
-SITE_BASE_URL = config("SITE_BASE_URL")
+SITE_BASE_URL = config("SITE_BASE_URL", default="")
 
 
 # Database
