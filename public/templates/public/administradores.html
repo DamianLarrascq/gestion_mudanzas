@@ -1,134 +1,361 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Admin - EM Mudanzas</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  /* ── Estilos Base del Administrador ── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { 
-    font-family: 'DM Sans', sans-serif; 
-    background-color: #f4f7f6; /* Un gris muy claro para diferenciar del sitio público */
-    color: #1a1a18; 
-    display: flex; 
-    min-height: 100vh;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login, Registro y Recuperación 3D Neumorfismo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
-  /* ── Menú Lateral Nuevo. (Sidebar) ── */
-  .sidebar {
-    width: 260px;
-    background-color: #1a1a18;
-    color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-  }
-  .sidebar h2 {
-    font-size: 20px;
-    margin-bottom: 40px;
-    color: #fff;
-    border-bottom: 1px solid #333;
-    padding-bottom: 16px;
-  }
-  .nav-menu { list-style: none; flex-grow: 1; }
-  .nav-menu li { margin-bottom: 8px; }
-  .nav-menu a {
-    text-decoration: none;
-    color: #a0a09f;
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    border-radius: 8px;
-    transition: all 0.2s;
-    font-weight: 500;
-  }
-  .nav-menu a:hover, .nav-menu a.active {
-    background-color: #1a5fcc;
-    color: #ffffff;
-  }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
 
-  /* ── Contenido Principal ── */
-  .main-content {
-    flex: 1;
-    padding: 40px;
-    overflow-y: auto;
-  }
-  .header-dashboard {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-  }
-  .header-dashboard h1 { font-size: 28px; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #2b2e38; 
+            padding: 20px;
+        }
 
-  /* ── Tarjetas y Tabla ── */
-  .card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-  }
-  .table-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-  }
-  th, td {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-  }
-  th {
-    color: #4a4a46;
-    font-weight: 600;
-    font-size: 14px;
-    background-color: #fafaf7;
-  }
-  tr:last-child td { border-bottom: none; }
-  
-  /* ── Etiquetas de Estado ── */
-  .badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .badge-disponible { background-color: #e6f4ea; color: #137333; }
-  .badge-viaje { background-color: #fef7e0; color: #b06000; }
-  .badge-inactivo { background-color: #fce8e6; color: #c5221f; }
+        /* Contenedor principal 3D */
+        .box {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            background: #2b2e38;
+            border-radius: 20px;
+            box-shadow: 10px 10px 20px #1d1f26, 
+                       -10px -10px 20px #393d4a;
+            animation: fadeIn 0.4s ease-in-out;
+        }
 
-  /* ── Botón simple ── */
-  .btn-outline {
-    background: transparent;
-    border: 1px solid #ddd;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-  }
-  .btn-outline:hover { background: #f4f7f6; border-color: #ccc; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-</style>
+        .box h2 {
+            color: #ecf0f3;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .box p.subtitle {
+            color: #a0a5b1;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 25px;
+            margin-top: -20px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        /* Fila para poner inputs lado a lado */
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row .input-group {
+            width: 50%;
+        }
+
+        .input-group label {
+            display: block;
+            color: #a0a5b1;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Inputs hundidos 3D */
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            outline: none;
+            background: #2b2e38;
+            border-radius: 10px;
+            color: #ecf0f3;
+            font-size: 14px;
+            box-shadow: inset 5px 5px 10px #1d1f26, 
+                        inset -5px -5px 10px #393d4a;
+            transition: 0.3s ease;
+        }
+
+        .input-group input:focus {
+            box-shadow: inset 7px 7px 12px #1d1f26, 
+                        inset -7px -7px 12px #393d4a;
+        }
+
+        /* Botones 3D */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 5px 5px 10px #1d1f26, 
+                       -5px -5px 10px #393d4a;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-primary {
+            background: #00d2ff;
+            color: #1d1f26;
+        }
+        .btn-primary:hover {
+            background: #00e0ff;
+        }
+
+        .btn-secondary {
+            background: #2b2e38;
+            color: #a0a5b1;
+        }
+        .btn-secondary:hover {
+            color: #ecf0f3;
+        }
+
+        .btn:active {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.3), 
+                        inset -4px -4px 8px rgba(255,255,255,0.05);
+            transform: translateY(2px);
+        }
+
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+
+        .links a {
+            color: #a0a5b1;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.3s ease;
+        }
+
+        .links a:hover {
+            color: #00d2ff;
+        }
+
+        /* Mensajes de error */
+        .error-msg {
+            color: #ff4c4c;
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .row .input-group {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-    <h2>EM Admin</h2>
-    <ul class="nav-menu">
-      <li><a href="#">📋 Solicitudes Nuevas</a></li>
-      <li><a href="#" class="active">🚚 Flota y Choferes</a></li>
-      <li><a href="#">⚙️ Configuración</a></li>
-    </ul>
-  </aside>
+    <!-- ================= 1. MENÚ DE LOGIN ================= -->
+    <div class="box" id="login-box">
+        <h2>ADMIN LOGIN</h2>
+        <form onsubmit="event.preventDefault();">
+            <div class="input-group">
+                <label for="usuario">Usuario:</label>
+                <input type="text" id="usuario" placeholder="Ingresa tu usuario" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+            </div>
 
-  <main class="main-content">
-    <div class="header-dashboard">
-      <h1>Flota y Choferes</h1>
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Ingresar</button>
+
+            <div class="links">
+                <!-- Cambiado para que lleve a la vista de recuperar -->
+                <a href="javascript:void(0)" onclick="toggleView('forgot')">Olvidé contraseña</a>
+                <a href="javascript:void(0)" onclick="toggleView('register')">Crear nuevo usuario</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= 2. MENÚ DE REGISTRO ================= -->
+    <div class="box" id="register-box" style="display: none;">
+        <h2>NUEVO USUARIO</h2>
+        <form id="register-form" onsubmit="validarRegistro(event)">
+            
+            <div class="row">
+                <div class="input-group">
+                    <label for="reg-nombre">Nombre:</label>
+                    <input type="text" id="reg-nombre" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-apellido">Apellido:</label>
+                    <input type="text" id="reg-apellido" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-usuario">Nombre de usuario:</label>
+                <input type="text" id="reg-usuario" required>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-correo">Correo electrónico:</label>
+                <input type="email" id="reg-correo" required>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-password">Contraseña:</label>
+                <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" required>
+                <div class="error-msg" id="error-password"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-repassword">Repetir contraseña:</label>
+                <input type="password" id="reg-repassword" required>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Aceptar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= 3. MENÚ DE OLVIDÉ CONTRASEÑA ================= -->
+    <div class="box" id="forgot-box" style="display: none;">
+        <h2>RECUPERAR</h2>
+        <p class="subtitle">Ingresa tu correo para recibir las instrucciones.</p>
+        <form onsubmit="validarCorreo(event)">
+            <div class="input-group">
+                <label for="forgot-correo">Correo electrónico:</label>
+                <input type="email" id="forgot-correo" placeholder="Ej: admin@correo.com" required>
+                <!-- Mensaje de error de correo -->
+                <div class="error-msg" id="error-correo">Este correo no existe.</div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Aceptar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= 4. MENÚ INGRESAR CÓDIGO ================= -->
+    <div class="box" id="code-box" style="display: none;">
+        <h2>VERIFICACIÓN</h2>
+        <p class="subtitle">Ingresa el código temporal que enviamos a tu correo.</p>
+        <form onsubmit="event.preventDefault(); alert('Contraseña reestablecida correctamente.'); toggleView('login');">
+            <div class="input-group">
+                <label for="codigo-temp">Código de seguridad:</label>
+                <input type="text" id="codigo-temp" placeholder="Ingresa el código" required>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Verificar</button>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- ================= SCRIPT DE LÓGICA ================= -->
+    <script>
+        // Simulador de correos registrados en base de datos
+        const correosRegistrados = ["admin@correo.com", "usuario@correo.com"];
+
+        // Función para cambiar entre todas las vistas
+        function toggleView(view) {
+            // Ocultamos todas primero
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('register-box').style.display = 'none';
+            document.getElementById('forgot-box').style.display = 'none';
+            document.getElementById('code-box').style.display = 'none';
+
+            // Mostramos la que pedimos
+            document.getElementById(view + '-box').style.display = 'block';
+
+            // Limpiamos errores
+            document.getElementById('error-password').style.display = 'none';
+            document.getElementById('error-correo').style.display = 'none';
+            
+            // Si volvemos al login, limpiamos los formularios
+            if(view === 'login') {
+                document.getElementById('register-form').reset();
+                document.getElementById('forgot-correo').value = '';
+                document.getElementById('codigo-temp').value = '';
+            }
+        }
+
+        // Validación de Registro
+        function validarRegistro(event) {
+            event.preventDefault(); 
+            const pass = document.getElementById('reg-password').value;
+            const repass = document.getElementById('reg-repassword').value;
+            const errorDiv = document.getElementById('error-password');
+
+            errorDiv.style.display = 'none';
+
+            if (pass.length < 8) {
+                errorDiv.innerText = "La contraseña debe tener al menos 8 caracteres.";
+                errorDiv.style.display = "block";
+                return;
+            }
+
+            if (pass !== repass) {
+                errorDiv.innerText = "Las contraseñas no coinciden. Inténtalo de nuevo.";
+                errorDiv.style.display = "block";
+                return; 
+            }
+
+            alert('¡Usuario creado con éxito!');
+            toggleView('login'); 
+        }
+
+        // Validación de Recuperar Contraseña
+        function validarCorreo(event) {
+            event.preventDefault();
+            const correoIngresado = document.getElementById('forgot-correo').value;
+            const errorDiv = document.getElementById('error-correo');
+
+            // Verificamos si el correo está en nuestra lista de simulador
+            if (!correosRegistrados.includes(correoIngresado)) {
+                errorDiv.style.display = 'block'; // Mostramos error
+            } else {
+                errorDiv.style.display = 'none'; // Ocultamos error
+                // Mensaje que pediste
+                alert("Se te administro el codigo temporal valido por 24 hs para reestrablecer la contraseña.");
+                // Pasamos a la ventana del código
+                toggleView('code');
+            }
+        }
+    </script>
+
+</body>
+</html>
