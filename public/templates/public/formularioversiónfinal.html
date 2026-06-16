@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solicitar mudanza · Panel de Cotización</title>
+<title>Solicitar mudanza · GDM</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
 <style>
@@ -50,6 +50,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
   .topbar-logo {
     font-family: var(--serif);
@@ -199,7 +200,6 @@
   .check-group:hover { border-color: var(--accent); background: var(--accent-bg); }
   .check-group input { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; }
 
-  /* Contenedor personalizado para sugerencias de autocompletado */
   .sugerencias-lista {
     position: absolute;
     top: 100%;
@@ -308,7 +308,6 @@
     text-align: center;
   }
 
-  /* Visualizador Estilo Tarjeta Camión */
   .camion-visualizador {
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
@@ -334,7 +333,6 @@
     transition: background var(--transition);
   }
 
-  /* Ilustración Dinámica con SVG */
   .camion-ilustracion {
     width: 100%;
     height: 100px;
@@ -349,7 +347,6 @@
     transition: transform var(--transition);
   }
 
-  /* Métricas de carga (Artículos y m³) */
   .camion-metricas {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -427,6 +424,52 @@
     background: var(--border);
   }
 
+  /* ── Calendario 3D (Formulario de Datos) ──────────────────── */
+  .grid-3d {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 14px 10px;
+    margin-bottom: 20px;
+  }
+
+  .btn-3d {
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 0;
+    text-align: center;
+    font-family: var(--font);
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 0 var(--accent-2), 0 8px 10px rgba(0,0,0,0.1);
+    transform: translateY(0);
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+    user-select: none;
+  }
+  
+  .btn-3d:active:not(.disabled) {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 var(--accent-2), 0 2px 2px rgba(0,0,0,0.1);
+  }
+
+  .btn-3d.selected {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-3d.disabled {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: 0 5px 0 #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .day-name { font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .day-number { font-size: 20px; display: block; }
+  .btn-hora { width: 100%; font-size: 15px; }
+
   /* ── Buttons ──────────────────────────────────────────────── */
   .btn {
     display: inline-flex;
@@ -458,6 +501,42 @@
   .btn-ghost { background: transparent; color: var(--ink-3); border-color: var(--border); }
   .btn-ghost:hover { background: var(--surface); color: var(--ink-2); }
   .btn-row { display: flex; gap: 12px; margin-top: 20px; }
+
+  /* ── Botón 3D Inicio ──────────────────────────────────────── */
+  .btn-3d-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: var(--r-sm);
+    padding: 6px 14px;
+    text-decoration: none;
+    font-family: var(--font);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 4px 0 var(--accent-2), 0 4px 6px rgba(0,0,0,0.1);
+    transform: translateY(0);
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+    cursor: pointer;
+    user-select: none;
+    margin-left: 16px;
+  }
+
+  .btn-3d-home:hover {
+    background: var(--accent-bg);
+  }
+
+  .btn-3d-home:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--accent-2), 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .btn-3d-home svg {
+    width: 16px;
+    height: 16px;
+  }
 
   /* ── Presupuesto ──────────────────────────────────────────── */
   .presupuesto-card {
@@ -525,15 +604,6 @@
 
   /* ── Utilities ────────────────────────────────────────────── */
   .hidden { display: none !important; }
-  .loader {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(255,255,255,.4);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
   .info-box { background: var(--warn-bg); border: 1px solid #fde68a; border-radius: var(--r-sm); padding: 12px 16px; font-size: 13px; color: var(--warn); margin-bottom: 18px; }
   .fade-in { animation: fadeIn .3s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -542,8 +612,16 @@
 <body>
 
 <div class="topbar">
-  <span class="topbar-logo">🚛 Sistema de Cotizaciones</span>
-  <span class="topbar-sub">Cálculo de Volumen Automatizado</span>
+  <span class="topbar-logo"></span>
+  <span class="topbar-sub">Cálculo y Reserva</span>
+  
+  <a href="index.html" class="btn-3d-home" title="Volver al inicio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    </svg>
+    Inicio
+  </a>
 </div>
 
 <div class="container">
@@ -551,7 +629,7 @@
   <div class="progress-wrap">
     <div class="step-dot active" id="dot-1"><div class="dot-circle">1</div><span class="dot-label">Datos</span></div>
     <div class="step-dot" id="dot-2"><div class="dot-circle">2</div><span class="dot-label">Presupuesto</span></div>
-    <div class="step-dot" id="dot-3"><div class="dot-circle">3</div><span class="dot-label">Confirmación</span></div>
+    <div class="step-dot" id="dot-3"><div class="dot-circle">3</div><span class="dot-label">Reserva</span></div>
   </div>
 
   <div id="paso-1" class="fade-in">
@@ -575,10 +653,6 @@
         <div class="field">
           <label>Distancia estimada (KM)</label>
           <input type="number" id="distancia_km" placeholder="Ej: 0" value="0">
-        </div>
-        <div class="field">
-          <label>Fecha estimada</label>
-          <input type="date" id="fecha">
         </div>
       </div>
 
@@ -621,13 +695,10 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="heladeraBody" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#cbd5e1"/>
-                      <stop offset="50%" stop-color="#94a3b8"/>
-                      <stop offset="100%" stop-color="#64748b"/>
+                      <stop offset="0%" stop-color="#cbd5e1"/><stop offset="50%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#64748b"/>
                     </linearGradient>
                     <linearGradient id="heladeraReflejo" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
-                      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.0"/>
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/><stop offset="30%" stop-color="#ffffff" stop-opacity="0.0"/>
                     </linearGradient>
                   </defs>
                   <ellipse cx="16" cy="29" rx="9" ry="2" fill="#000" fill-opacity="0.15"/>
@@ -657,13 +728,10 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="lavarropasBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#f8fafc"/>
-                      <stop offset="100%" stop-color="#cbd5e1"/>
+                      <stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#cbd5e1"/>
                     </linearGradient>
                     <radialGradient id="tambor3D" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stop-color="#334155"/>
-                      <stop offset="75%" stop-color="#1e293b"/>
-                      <stop offset="100%" stop-color="#0f172a"/>
+                      <stop offset="0%" stop-color="#334155"/><stop offset="75%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/>
                     </radialGradient>
                   </defs>
                   <ellipse cx="16" cy="28" rx="10" ry="2" fill="#000" fill-opacity="0.15"/>
@@ -694,12 +762,10 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="maderaCama" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#b45309"/>
-                      <stop offset="100%" stop-color="#78350f"/>
+                      <stop offset="0%" stop-color="#b45309"/><stop offset="100%" stop-color="#78350f"/>
                     </linearGradient>
                     <linearGradient id="colchonCama" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#ffffff"/>
-                      <stop offset="100%" stop-color="#e2e8f0"/>
+                      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e2e8f0"/>
                     </linearGradient>
                   </defs>
                   <ellipse cx="16" cy="26" rx="12" ry="3" fill="#000" fill-opacity="0.15"/>
@@ -730,12 +796,10 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="sofaSombra" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#2563eb"/>
-                      <stop offset="100%" stop-color="#1d4ed8"/>
+                      <stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/>
                     </linearGradient>
                     <linearGradient id="sofaCojin" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#60a5fa"/>
-                      <stop offset="100%" stop-color="#2563eb"/>
+                      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/>
                     </linearGradient>
                   </defs>
                   <ellipse cx="16" cy="27" rx="11" ry="2.5" fill="#000" fill-opacity="0.15"/>
@@ -766,8 +830,7 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="maderaMesa" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#d97706"/>
-                      <stop offset="100%" stop-color="#92400e"/>
+                      <stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#92400e"/>
                     </linearGradient>
                   </defs>
                   <ellipse cx="16" cy="27" rx="10" ry="3" fill="#000" fill-opacity="0.12"/>
@@ -797,17 +860,13 @@
                 <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="placardMadera" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#a16207"/>
-                      <stop offset="50%" stop-color="#78350f"/>
-                      <stop offset="100%" stop-color="#451a03"/>
+                      <stop offset="0%" stop-color="#a16207"/><stop offset="50%" stop-color="#78350f"/><stop offset="100%" stop-color="#451a03"/>
                     </linearGradient>
                     <linearGradient id="placardPuertas" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#ca8a04"/>
-                      <stop offset="100%" stop-color="#a16207"/>
+                      <stop offset="0%" stop-color="#ca8a04"/><stop offset="100%" stop-color="#a16207"/>
                     </linearGradient>
                     <linearGradient id="placardReflejo" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
-                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
                     </linearGradient>
                   </defs>
                   <ellipse cx="16" cy="28" rx="10" ry="2" fill="#000" fill-opacity="0.2"/>
@@ -837,7 +896,6 @@
 
         <div class="camion-visualizador">
           <div class="camion-tag" id="camion-tipo">Vehículo Requerido: Ninguno</div>
-          
           <div class="camion-ilustracion">
             <svg class="camion-svg" id="camion-dibujo" viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="20" y="55" width="120" height="8" rx="2" fill="#5a5a5a"/>
@@ -848,7 +906,6 @@
               <rect id="svg-caja-carga" x="25" y="20" width="85" height="35" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" rx="1"/>
             </svg>
           </div>
-
           <div class="camion-metricas">
             <div class="metrica-bloque">
               <span class="metrica-val" id="metrica-bultos">0</span>
@@ -859,7 +916,6 @@
               <span class="metrica-lbl">Volumen Total</span>
             </div>
           </div>
-
           <div class="camion-caja" id="camion-caja-items">
             <div class="caja-vacia-msg">Sin artículos seleccionados.</div>
           </div>
@@ -905,7 +961,7 @@
       <div class="resumen-grid" id="resumen-datos"></div>
       <div class="btn-row">
         <button class="btn btn-cancel" onclick="cancelarMudanza()">✕ Cancelar</button>
-        <button class="btn btn-confirm" id="btn-confirmar" onclick="confirmarMudanza()">✓ Confirmar Solicitud</button>
+        <button class="btn btn-confirm" id="btn-confirmar" onclick="irAReserva()">Continuar a Reserva →</button>
       </div>
       <div style="text-align:center;margin-top:14px;">
         <button class="btn btn-ghost" onclick="volverPaso1()">← Modificar inventario</button>
@@ -914,16 +970,49 @@
   </div>
 
   <div id="paso-3" class="hidden fade-in">
-    <div class="card" style="text-align:center; padding:40px 20px;">
-      <div id="resultado-confirmado" class="hidden">
-        <h2 style="font-family:var(--serif); font-size:26px; color:var(--success); margin-bottom:10px;">¡Solicitud Registrada!</h2>
-        <p style="color:var(--ink-3); margin-bottom:20px;">Tu orden ha sido procesada con éxito. Un agente comercial revisará los metros cúbicos asignados para coordinar el viaje.</p>
-        <button class="btn btn-primary" onclick="reiniciar()" style="max-width:200px;">Iniciar nueva cotización</button>
+    
+    <div class="card" id="reserva-card">
+      <div class="card-title">Completá tus datos</div>
+      <div class="card-sub">Último paso para agendar el servicio y confirmar el viaje.</div>
+
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input type="text" id="nombre" placeholder="Ej: Juan Pérez" required>
       </div>
+      <div class="field">
+        <label>Teléfono / WhatsApp *</label>
+        <input type="tel" id="telefono" placeholder="Ej: 11 1234-5678" required>
+      </div>
+      <div class="field">
+        <label>Email (opcional)</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com">
+      </div>
+
+      <div class="section-label">1. Seleccioná el día (días hábiles)</div>
+      <div class="grid-3d" id="calendario-dias"></div>
+
+      <div class="horarios-container" id="seccion-horarios" style="display:none;">
+        <div class="section-label">2. Seleccioná el horario disponible</div>
+        <div class="grid-3d" id="grilla-horarios"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="volverPaso2()">← Volver</button>
+        <button class="btn btn-primary" id="btn-confirmar-reserva" disabled onclick="procesarReserva()">Confirmar Reserva ✓</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="mensaje-final" style="text-align:center; padding:40px 20px;">
+      <div id="resultado-confirmado" class="hidden">
+        <h2 style="font-family:var(--serif); font-size:26px; color:var(--success); margin-bottom:10px;">¡Reserva confirmada!</h2>
+        <p style="color:var(--ink-3); margin-bottom:20px;">Tus datos y tu fecha fueron agendados correctamente. Un representante comercial de GDM revisará los detalles y se pondrá en contacto a la brevedad.</p>
+        <button class="btn btn-primary" onclick="reiniciarTodo()" style="max-width:200px;">Hacer otra cotización</button>
+      </div>
+      
       <div id="resultado-cancelado" class="hidden">
         <h2 style="font-family:var(--serif); font-size:26px; color:var(--danger); margin-bottom:10px;">Cotización cancelada</h2>
         <p style="color:var(--ink-3); margin-bottom:20px;">Los datos cargados en el formulario fueron removidos correctamente.</p>
-        <button class="btn btn-primary" onclick="reiniciar()" style="max-width:200px;">Volver a empezar</button>
+        <button class="btn btn-primary" onclick="reiniciarTodo()" style="max-width:200px;">Volver a empezar</button>
       </div>
     </div>
   </div>
@@ -937,6 +1026,13 @@ let coordenadas = { origen: null, destino: null };
 document.addEventListener('DOMContentLoaded', () => {
   configurarAutocompletado('origen', 'sug-origen');
   configurarAutocompletado('destino', 'sug-destino');
+  
+  // Generar calendario de reservas
+  generarDiasHabiles();
+
+  // Escuchar inputs para validar el botón de reserva final
+  document.getElementById("nombre").addEventListener("input", validarBotonReserva);
+  document.getElementById("telefono").addEventListener("input", validarBotonReserva);
 });
 
 function configurarAutocompletado(inputId, sugerenciasId) {
@@ -945,6 +1041,7 @@ function configurarAutocompletado(inputId, sugerenciasId) {
   let timeout = null;
 
   input.addEventListener('input', () => {
+    coordenadas[inputId] = null; // Reseteamos la coordenada si el usuario escribe
     clearTimeout(timeout);
     const query = input.value.trim();
 
@@ -1021,24 +1118,15 @@ function calcularRutaGratis() {
 }
 // ---------------------------------------------------
 
-// Base de metros cúbicos unitarios por tipo de mueble
+// --- LÓGICA DEL INVENTARIO Y CAMIÓN ---
 const volumesMuebles = {
-  Heladera: 1.20,
-  Lavarropas: 0.50,
-  Cama: 1.60,
-  Sofa: 1.50,
-  Mesa: 0.90,
-  Ropero: 1.00
+  Heladera: 1.20, Lavarropas: 0.50, Cama: 1.60,
+  Sofa: 1.50, Mesa: 0.90, Ropero: 1.00
 };
 
-// Estado global de las cantidades de inventario
 let inventarioCantidades = {
-  Heladera: 0,
-  Lavarropas: 0,
-  Cama: 0,
-  Sofa: 0,
-  Mesa: 0,
-  Ropero: 0
+  Heladera: 0, Lavarropas: 0, Cama: 0,
+  Sofa: 0, Mesa: 0, Ropero: 0
 };
 
 function alterarMueble(id, cambio) {
@@ -1047,7 +1135,6 @@ function alterarMueble(id, cambio) {
   
   inventarioCantidades[id] = nuevaCant;
   document.getElementById(`cant-${id}`).textContent = nuevaCant;
-  
   actualizarCamionVisual();
 }
 
@@ -1083,41 +1170,25 @@ function actualizarCamionVisual() {
     caja.innerHTML = `<div class="caja-vacia-msg">Sin bultos seleccionados.</div>`;
     tipoTag.textContent = "Vehículo Requerido: Ninguno";
     tipoTag.style.background = "var(--ink-3)";
-    svgCaja.setAttribute("width", "40");
-    svgCaja.setAttribute("x", "70");
-    svgCaja.setAttribute("y", "30");
-    svgCaja.setAttribute("height", "25");
-    svgCaja.setAttribute("fill", "#cbd5e1");
+    svgCaja.setAttribute("width", "40"); svgCaja.setAttribute("x", "70"); svgCaja.setAttribute("y", "30"); svgCaja.setAttribute("height", "25"); svgCaja.setAttribute("fill", "#cbd5e1");
     svgCamion.style.transform = "scale(1)";
   } 
   else if (totalVolumen <= 3.0) {
     tipoTag.textContent = "Vehículo Recomendado: Utilitario (Furgón)";
     tipoTag.style.background = "#1a5fcc"; 
-    svgCaja.setAttribute("width", "55");
-    svgCaja.setAttribute("x", "55");
-    svgCaja.setAttribute("y", "26");
-    svgCaja.setAttribute("height", "29");
-    svgCaja.setAttribute("fill", "#93c5fd");
+    svgCaja.setAttribute("width", "55"); svgCaja.setAttribute("x", "55"); svgCaja.setAttribute("y", "26"); svgCaja.setAttribute("height", "29"); svgCaja.setAttribute("fill", "#93c5fd");
     svgCamion.style.transform = "scale(1.05)";
   } 
   else if (totalVolumen <= 8.0) {
     tipoTag.textContent = "Vehículo Recomendado: Camión Ligero";
     tipoTag.style.background = "#166534";
-    svgCaja.setAttribute("width", "75");
-    svgCaja.setAttribute("x", "35");
-    svgCaja.setAttribute("y", "22");
-    svgCaja.setAttribute("height", "33");
-    svgCaja.setAttribute("fill", "#86efac");
+    svgCaja.setAttribute("width", "75"); svgCaja.setAttribute("x", "35"); svgCaja.setAttribute("y", "22"); svgCaja.setAttribute("height", "33"); svgCaja.setAttribute("fill", "#86efac");
     svgCamion.style.transform = "scale(1.15)";
   } 
   else {
     tipoTag.textContent = "Vehículo Recomendado: Camión de Gran Porte";
     tipoTag.style.background = "#991b1b";
-    svgCaja.setAttribute("width", "90");
-    svgCaja.setAttribute("x", "20");
-    svgCaja.setAttribute("y", "15");
-    svgCaja.setAttribute("height", "40");
-    svgCaja.setAttribute("fill", "#fca5a5");
+    svgCaja.setAttribute("width", "90"); svgCaja.setAttribute("x", "20"); svgCaja.setAttribute("y", "15"); svgCaja.setAttribute("height", "40"); svgCaja.setAttribute("fill", "#fca5a5");
     svgCamion.style.transform = "scale(1.25)";
   }
 }
@@ -1125,14 +1196,16 @@ function actualizarCamionVisual() {
 function calcularPresupuesto() {
   const km = parseFloat(document.getElementById("distancia_km").value) || 0;
   
-  let volTotal = 0;
-  let bultosTotal = 0;
+  let volTotal = 0; let bultosTotal = 0;
   Object.keys(inventarioCantidades).forEach(k => {
     bultosTotal += inventarioCantidades[k];
     volTotal += inventarioCantidades[k] * volumesMuebles[k];
   });
 
-  let tarifaBaseVehiculo = 15000;
+  if (!coordenadas.origen || !coordenadas.destino) return alert("Por favor, buscá y seleccioná una dirección válida de la lista sugerida para el origen y el destino.");
+  if (bultosTotal === 0) return alert("Por favor, seleccioná al menos un artículo para transportar.");
+
+  let tarifaBaseVehiculo = 0; 
   if(volTotal > 0 && volTotal <= 3) tarifaBaseVehiculo = 25000;
   else if(volTotal > 3 && volTotal <= 8) tarifaBaseVehiculo = 45000;
   else if(volTotal > 8) tarifaBaseVehiculo = 70000;
@@ -1149,7 +1222,6 @@ function calcularPresupuesto() {
     <div class="linea-item"><span>Kilometraje en ruta (${km} km)</span><span class="linea-monto">${fmt(costoPorKm)}</span></div>
     <div class="linea-item"><span>Cubicaje total estimado (${volTotal.toFixed(2)} m³)</span><span class="linea-monto cero">—</span></div>
   `;
-
   document.getElementById("val-subtotal").textContent = fmt(subtotal);
   document.getElementById("val-iva").textContent = fmt(iva);
   document.getElementById("val-total").textContent = fmt(total);
@@ -1158,42 +1230,172 @@ function calcularPresupuesto() {
     <div class="resumen-item"><div class="resumen-label">Métricas de carga</div><div class="resumen-value">${bultosTotal} artículos / ${volTotal.toFixed(2)} m³</div></div>
     <div class="resumen-item"><div class="resumen-label">Ruta</div><div class="resumen-value">${km} KM</div></div>
   `;
-
   setStep(2);
 }
 
+// --- NAVEGACIÓN Y FLUJO ---
 function setStep(n) {
   [1,2,3].forEach(i => {
     document.getElementById(`paso-${i}`).classList.toggle("hidden", i !== n);
     const dot = document.getElementById(`dot-${i}`);
-    dot.classList.toggle("active", i === n);
-    dot.classList.toggle("done", i < n);
+    if(dot) {
+      dot.classList.toggle("active", i === n);
+      dot.classList.toggle("done", i < n);
+    }
   });
 }
 
-function confirmarMudanza() {
+function volverPaso1() { setStep(1); }
+function volverPaso2() { setStep(2); }
+
+function irAReserva() {
   setStep(3);
-  document.getElementById("resultado-confirmado").classList.remove("hidden");
-  document.getElementById("resultado-cancelado").classList.add("hidden");
+  document.getElementById("reserva-card").classList.remove("hidden");
+  document.getElementById("mensaje-final").classList.add("hidden");
 }
 
 function cancelarMudanza() {
   setStep(3);
+  document.getElementById("reserva-card").classList.add("hidden");
+  document.getElementById("mensaje-final").classList.remove("hidden");
   document.getElementById("resultado-cancelado").classList.remove("hidden");
   document.getElementById("resultado-confirmado").classList.add("hidden");
 }
 
-function volverPaso1() { setStep(1); }
+// --- LÓGICA DEL CALENDARIO Y RESERVAS ---
+const horariosBase = ["08:00", "10:00", "13:00", "15:00"];
+let fechaSeleccionada = null;
+let horaSeleccionada = null;
+let reservasGuardadas = JSON.parse(localStorage.getItem('gdm_reservas')) || {};
 
-function reiniciar() {
+function generarDiasHabiles() {
+  const contenedorDias = document.getElementById("calendario-dias");
+  contenedorDias.innerHTML = "";
+  
+  let hoy = new Date();
+  let diasGenerados = 0;
+  let fechaIteradora = new Date(hoy);
+
+  while (diasGenerados < 10) {
+    fechaIteradora.setDate(fechaIteradora.getDate() + 1);
+    const diaSemana = fechaIteradora.getDay(); 
+    if (diaSemana !== 0 && diaSemana !== 6) {
+      crearBotonDia(new Date(fechaIteradora));
+      diasGenerados++;
+    }
+  }
+}
+
+function crearBotonDia(fecha) {
+  const contenedor = document.getElementById("calendario-dias");
+  const nombreDia = fecha.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
+  const numDia = fecha.getDate();
+  const strFecha = fecha.toISOString().split('T')[0];
+
+  const btn = document.createElement("div");
+  btn.className = "btn-3d day-btn";
+  btn.dataset.fecha = strFecha;
+  btn.innerHTML = `<span class="day-name">${nombreDia}</span><span class="day-number">${numDia}</span>`;
+
+  const ocupadosHoy = reservasGuardadas[strFecha] || [];
+  if (ocupadosHoy.length >= horariosBase.length) {
+    btn.classList.add("disabled"); btn.title = "Sin disponibilidad";
+  } else {
+    btn.onclick = () => seleccionarDia(btn, strFecha);
+  }
+  contenedor.appendChild(btn);
+}
+
+function seleccionarDia(botonElemento, strFecha) {
+  document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("selected"));
+  botonElemento.classList.add("selected");
+  
+  fechaSeleccionada = strFecha;
+  horaSeleccionada = null;
+  validarBotonReserva();
+
+  document.getElementById("seccion-horarios").style.display = "block";
+  generarHorarios(strFecha);
+}
+
+function generarHorarios(strFecha) {
+  const contenedorHorarios = document.getElementById("grilla-horarios");
+  contenedorHorarios.innerHTML = "";
+  const ocupadosHoy = reservasGuardadas[strFecha] || [];
+
+  horariosBase.forEach(hora => {
+    const btn = document.createElement("div");
+    btn.className = "btn-3d btn-hora";
+    btn.textContent = hora;
+
+    if (ocupadosHoy.includes(hora)) {
+      btn.classList.add("disabled"); btn.textContent += " (Ocupado)";
+    } else {
+      btn.onclick = () => seleccionarHora(btn, hora);
+    }
+    contenedorHorarios.appendChild(btn);
+  });
+}
+
+function seleccionarHora(botonElemento, hora) {
+  document.querySelectorAll(".btn-hora").forEach(b => b.classList.remove("selected"));
+  botonElemento.classList.add("selected");
+  horaSeleccionada = hora;
+  validarBotonReserva();
+}
+
+function validarBotonReserva() {
+  const nombre = document.getElementById("nombre").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+  const btnSubmit = document.getElementById("btn-confirmar-reserva");
+
+  if (nombre !== "" && telefono !== "" && fechaSeleccionada && horaSeleccionada) {
+    btnSubmit.disabled = false;
+  } else {
+    btnSubmit.disabled = true;
+  }
+}
+
+function procesarReserva() {
+  if (!reservasGuardadas[fechaSeleccionada]) reservasGuardadas[fechaSeleccionada] = [];
+  reservasGuardadas[fechaSeleccionada].push(horaSeleccionada);
+  localStorage.setItem('gdm_reservas', JSON.stringify(reservasGuardadas));
+
+  document.getElementById("reserva-card").classList.add("hidden");
+  document.getElementById("mensaje-final").classList.remove("hidden");
+  document.getElementById("resultado-confirmado").classList.remove("hidden");
+  document.getElementById("resultado-cancelado").classList.add("hidden");
+}
+
+function reiniciarTodo() {
+  // Limpiar Inventario
   Object.keys(inventarioCantidades).forEach(k => { inventarioCantidades[k] = 0; document.getElementById(`cant-${k}`).textContent = 0; });
+  // Limpiar Formulario de datos 1
   document.getElementById("origen").value = "";
   document.getElementById("destino").value = "";
   document.getElementById("distancia_km").value = "0";
-  document.getElementById("fecha").value = "";
   document.getElementById("notas").value = "";
   coordenadas = { origen: null, destino: null };
+  // Limpiar Formulario de Reserva (Paso 3)
+  document.getElementById("nombre").value = "";
+  document.getElementById("telefono").value = "";
+  document.getElementById("email").value = "";
+  fechaSeleccionada = null;
+  horaSeleccionada = null;
+  document.getElementById("seccion-horarios").style.display = "none";
+  document.getElementById("grilla-horarios").innerHTML = "";
+  document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("selected"));
+  
+  // Re-iniciar vistas
   actualizarCamionVisual();
+  generarDiasHabiles(); 
+  validarBotonReserva();
+  
+  // Ocultar mensajes y restaurar forms
+  document.getElementById("mensaje-final").classList.add("hidden");
+  document.getElementById("resultado-confirmado").classList.add("hidden");
+  document.getElementById("resultado-cancelado").classList.add("hidden");
+  
   setStep(1);
 }
 </script>
