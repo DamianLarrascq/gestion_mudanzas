@@ -27,3 +27,5 @@ pytest-django==4.10.0
 pytest-cov==6.1.0
 # E2E — Selenium (Chrome + Safari). Ver tests/e2e/ cuando se implemente.
 selenium==4.31.0
+factory-boy==3.3.3
+twilio==9.10.9

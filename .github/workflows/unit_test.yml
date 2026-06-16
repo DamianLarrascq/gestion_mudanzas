@@ -30,6 +30,7 @@ jobs:
       MERCADOPAGO_ACCESS_TOKEN: "TEST_TOKEN_CI"
       SITE_BASE_URL: "http://localhost:8000"
       MERCADOPAGO_SANDBOX: "True"
+      TWILIO_ACCOUNT_SID: mock-twilio-sid-for-ci
       ALLOWED_HOSTS: "localhost,127.0.0.1"
 
     steps:
@@ -53,7 +54,7 @@ jobs:
         # garantizando que los pasos de reporte siempre se ejecuten.
         continue-on-error: true
         run: |
-          python -m pytest \
+          pytest tests/unit/ \
             --tb=short \
             --no-header \
             -v \
