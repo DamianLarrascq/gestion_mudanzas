@@ -51,6 +51,7 @@ class MudanzaCreateInput:
     camion_id: Optional[int] = None
     monto_senia: Optional[Decimal] = None
     origen: Optional[DireccionInput] = None
+    destino: Optional[DireccionInput] = None
     asignaciones: list[AsignacionInput] = field(default_factory=list)
     inventario: list[ItemInventarioInput] = field(default_factory=list)
 
@@ -191,10 +192,10 @@ def _serializar_mudanza_creada(mudanza: Mudanza) -> dict:
     return {
         'id': mudanza.pk,
         'uuid': str(mudanza.uuid),
-        'url_detalle': f'/gestion/mudanzas/{mudanza.pk}/',
+         'url_detalle': f'/gestion/mudanzas/{mudanza.pk}/resumen/',
         'cliente_nombre': mudanza.cliente.nombre_completo,
         'cliente_telefono': mudanza.cliente.telefono,
-        'fecha_hora_display': timezone.localtime(mudanza.fecha_hora).strftime('%-d de %B de %Y a las %H:%M'),
+        'fecha_hora_display': timezone.localtime(mudanza.fecha_hora).strftime('%d de %B de %Y a las %H:%M'),
         'estado_valor': mudanza.estado,
         'estado_label': mudanza.get_estado_display(),
         'camion_display': mudanza.camion.patente if mudanza.camion else 'Sin asignar',

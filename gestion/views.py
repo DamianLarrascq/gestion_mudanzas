@@ -23,6 +23,7 @@ from gestion.services.clientes_service import (
     FiltrosCliente, obtener_clientes_filtrados, obtener_detalle_cliente
 )
 import datetime
+from datetime import date
 from gestion.models.mudanzas import Mudanza
 from gestion.services.presupuesto_service import PresupuestoService, construir_contexto_presupuesto
 from gestion.services.mercadopago_service import MercadoPagoService
@@ -572,18 +573,51 @@ def _build_form_schema(form: TarifaBaseForm) -> list[dict]:
 def _parsear_input(raw) -> MudanzaCreateInput:
     """
     Convierte POST crudo en MudanzaCreateInput.
+
+    Soporta dos modos de cliente:
+      - Modo selector (legacy): campo 'cliente_id' con un ID existente.
+      - Modo creación inline: campos 'cliente_nombre' + 'cliente_telefono'
+        (+ opcionales: cliente_email, cliente_dni). Se hace get_or_create
+        por teléfono para evitar duplicados.
+
     Lanza ValidationError si los campos obligatorios faltan o tienen formato invalido.
     """
     from decimal import Decimal, InvalidOperation
 
     errores = []
 
-    # cliente_id
-    try:
-        cliente_id = int(raw['cliente_id'])
-    except (KeyError, ValueError):
-        errores.append('cliente_id es obligatorio y debe ser un entero.')
-        cliente_id = None
+    # ── Resolución del cliente ────────────────────────────────
+    cliente_id = None
+
+    if raw.get('cliente_id', '').strip():
+        # Modo selector (compatibilidad)
+        try:
+            cliente_id = int(raw['cliente_id'])
+        except (KeyError, ValueError):
+            errores.append('cliente_id debe ser un entero válido.')
+    else:
+        # Modo creación inline
+        nombre_cl   = raw.get('cliente_nombre', '').strip()
+        telefono_cl = raw.get('cliente_telefono', '').strip()
+
+        if not nombre_cl:
+            errores.append('El nombre del cliente es obligatorio.')
+        if not telefono_cl:
+            errores.append('El teléfono del cliente es obligatorio.')
+
+        if nombre_cl and telefono_cl:
+            try:
+                cliente_obj, _ = Cliente.objects.get_or_create(
+                    telefono=telefono_cl,
+                    defaults={
+                        'nombre_completo': nombre_cl,
+                        'email': raw.get('cliente_email', '').strip() or None,
+                        'dni':   raw.get('cliente_dni', '').strip() or None,
+                    },
+                )
+                cliente_id = cliente_obj.pk
+            except Exception as exc:
+                errores.append(f'Error al crear el cliente: {exc}')
 
     # fecha_hora
     try:
@@ -688,15 +722,17 @@ def _obtener_contexto_formulario(fecha=None) -> dict:
     if fecha is not None:
         camiones = obtener_camiones_disponibles_para_fecha(fecha)
     else:
-        camiones = list(
-            Camion.objects.filter(activo=True).order_by('patente').values('id', 'patente', 'modelo', 'categoria_label')
-        )
+      camiones = list(
+    Camion.objects.filter(activo=True)
+    .order_by('patente')
+    .values('id', 'patente', 'modelo', 'categoria')
+)
 
     empleados = list(
         Empleado.objects.filter(disponible=True).order_by('nombre').values('id', 'nombre', 'rol')
     )
     catalogo = list(
-        CatalogoItem.objects.order_by('nombre').values('id', 'nombre', 'volumen_m3', 'peso_estimado_kg')
+        CatalogoItem.objects.order_by('categoria', 'nombre').values('id', 'nombre', 'volumen_m3', 'peso_estimado_kg', 'categoria')
     )
     roles = [{'valor': r.value, 'label': r.label} for r in Empleado.Rol]
 

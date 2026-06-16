@@ -291,7 +291,7 @@ ESTADO_COLORES = {
 class MudanzaAdmin(ModelAdmin):
     list_display = ['__str__', 'cliente', 'fecha_hora', 'estado_colored', 'camion', 'total_presupuesto']
     list_filter = ['estado']
-    search_fields = ['cliente__nombre_completo', 'domicilio_origen', 'domicilio_destino']
+    search_fields = ['cliente__nombre_completo']
     inlines = [AsignacionEmpleadoInline]
     actions = [
         'marcar_confirmada',
@@ -307,21 +307,12 @@ class MudanzaAdmin(ModelAdmin):
                 ('fecha_hora', 'camion'),
             ),
         }),
-        ('Domicilios', {
-            'fields': (
-                ('domicilio_origen', 'domicilio_destino'),
-                ('piso_origen', 'ascensor_origen'),
-                ('piso_destino', 'ascensor_destino'),
-                ('distancia_km',),
-            ),
-        }),
-        ('Coordenadas', {
-            'classes': ('collapse',),
-            'fields': (
-                ('lat_origen', 'lng_origen'),
-                ('lat_destino', 'lng_destino'),
-            ),
-        }),
+     ('Direcciones', {
+    'fields': (
+        ('origen', 'destino'),
+        ('distancia_km',),
+    ),
+}),
         ('Servicio', {
             'fields': (
                 ('necesita_ayudantes',),
