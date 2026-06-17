@@ -4,6 +4,7 @@
 
 {% block extra_head %}
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
   /* ── Variables ── */
   :root {
     --flota-bg: #0f1117;
@@ -33,6 +34,40 @@
     --badge-info-bg: #0d2a4a;
     --badge-info-text: #60a5fa;
     --badge-info-border: #1e4a7a;
+
+      --font-body: 'Inter', sans-serif;
+    --font-title: 'DM Serif Display', serif;
+    
+  }
+  html[data-theme="light"] {
+    --flota-bg:             #f8fafc;        /* Fondo general de la página gris suave */
+    --flota-surface:        #f1f5f9;        /* Encabezado de los grupos (un gris para enmarcar) */
+    --flota-card:           #ffffff;        /* ¡KPIs y Tarjetas en BLANCO puro para dar relieve! */
+    --flota-border:         #e2e8f0;        /* Bordes limpios y visibles */
+    --flota-text:           #0f172a;        /* Texto principal oscuro (casi negro) */
+    --flota-muted:          #64748b;        /* Subtítulos y etiquetas legibles */
+    --flota-accent:         #1d4ed8;        /* Azul con más contraste para los botones */
+
+    /* Badges adaptados para Modo Claro (Fondo pastel + Texto oscuro) */
+    --badge-success-bg:     #d1fae5;
+    --badge-success-text:   #065f46;
+    --badge-success-border: #a7f3d0;
+
+    --badge-warning-bg:     #fef3c7;
+    --badge-warning-text:   #92400e;
+    --badge-warning-border: #fde68a;
+
+    --badge-danger-bg:      #fee2e2;
+    --badge-danger-text:    #991b1b;
+    --badge-danger-border:  #fca5a5;
+
+    --badge-secondary-bg:   #f1f5f9;
+    --badge-secondary-text: #475569;
+    --badge-secondary-border: #cbd5e1;
+
+    --badge-info-bg:        #dbeafe;
+    --badge-info-text:      #1e40af;
+    --badge-info-border:    #bfdbfe;
   }
 
   /* ── KPI Strip ── */
@@ -91,11 +126,11 @@
     line-height: 1;
     letter-spacing: -0.03em;
     color: var(--flota-text);
-    font-family: 'DM Mono', 'Fira Mono', monospace;
+      font-family: var(--font-body);
   }
 
   .kpi-label {
-    font-size: 0.72rem;
+    font-size: 0.95rem;
     color: var(--flota-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -107,7 +142,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.7rem;
+    font-size: 0.90rem;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 20px;
@@ -130,11 +165,11 @@
   }
 
   .page-title {
-    font-size: 1.5rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--flota-text);
     letter-spacing: -0.02em;
-    font-family: 'DM Mono', monospace;
+      font-family: var(--font-title);
     display: flex;
     align-items: center;
     gap: 0.6rem;
@@ -175,16 +210,16 @@
   }
 
   .grupo-label {
-    font-size: 0.85rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--flota-text);
     letter-spacing: 0.01em;
   }
 
   .grupo-count {
-    font-size: 0.75rem;
+    font-size: 0.90rem;
     color: var(--flota-muted);
-    font-family: 'DM Mono', monospace;
+      font-family: var(--font-body);
   }
 
   .grupo-chevron {
@@ -222,7 +257,7 @@
     text-align: center;
     padding: 1.5rem;
     color: var(--flota-muted);
-    font-size: 0.82rem;
+    font-size: 1rem;
     font-style: italic;
   }
 
@@ -262,7 +297,7 @@
   .camion-card.estado-EN_TALLER::before { background: var(--badge-danger-text); }
 
   .camion-card:hover {
-    border-color: rgba(255,255,255,0.15);
+border-color: var(--flota-accent);
     box-shadow: 0 4px 20px rgba(0,0,0,0.35);
     transform: translateY(-2px);
   }
@@ -282,14 +317,14 @@
     font-weight: 700;
     color: var(--flota-text);
     letter-spacing: 0.04em;
-    font-family: 'DM Mono', monospace;
+     font-family: var(--font-body);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .card-modelo {
-    font-size: 0.75rem;
+    font-size: 0.90rem;
     color: var(--flota-muted);
     margin-top: 2px;
     white-space: nowrap;
@@ -298,7 +333,7 @@
   }
 
   .card-year {
-    font-size: 0.7rem;
+    font-size: 0.90rem;
     color: var(--flota-muted);
     opacity: 0.7;
   }
@@ -308,8 +343,8 @@
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px solid rgba(251, 191, 36, 0.25);
+   background: var(--badge-warning-bg);      /* ANTES: rgba(251, 191, 36, 0.1) */
+    border: 1px solid var(--badge-warning-border);
     border-radius: 7px;
     padding: 0.45rem 0.65rem;
     font-size: 0.72rem;
@@ -326,7 +361,7 @@
 
   .cap-item {
     flex: 1;
-    background: rgba(255,255,255,0.04);
+    background: var(--flota-bg);
     border: 1px solid var(--flota-border);
     border-radius: 7px;
     padding: 0.4rem 0.6rem;
@@ -334,14 +369,14 @@
   }
 
   .cap-value {
-    font-size: 0.85rem;
+    font-size: 0.80rem;
     font-weight: 700;
     color: var(--flota-text);
-    font-family: 'DM Mono', monospace;
+     font-family: var(--font-body);
   }
 
   .cap-label {
-    font-size: 0.63rem;
+    font-size: 0.90rem;
     color: var(--flota-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -363,7 +398,7 @@
   }
 
   .doc-name {
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     color: var(--flota-muted);
     font-weight: 500;
     flex-shrink: 0;
@@ -371,7 +406,7 @@
   }
 
   .doc-label-text {
-    font-size: 0.72rem;
+    font-size: 0.80rem;
     color: var(--flota-text);
     flex: 1;
     text-align: right;
@@ -390,7 +425,7 @@
   }
 
   .card-categoria {
-    font-size: 0.68rem;
+    font-size: 0.70rem;
     color: var(--flota-muted);
     max-width: 140px;
     white-space: nowrap;
@@ -402,7 +437,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.72rem;
+    font-size: 0.90rem;
     font-weight: 600;
     color: var(--flota-accent);
     text-decoration: none;

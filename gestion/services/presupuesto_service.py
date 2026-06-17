@@ -332,7 +332,7 @@ def construir_contexto_presupuesto(
         "monto_senia_raw": monto_senia,
         "desglose_items": desglose,
         "tarifa_nombre": presupuesto.tarifa.nombre,
-        "tarifa_vigente_desde": presupuesto.tarifa.vigente_desde.strftime("%-d/%m/%Y"),
+       "tarifa_vigente_desde": presupuesto.tarifa.vigente_desde.strftime("%d/%m/%Y"),
 
         # Inventario
         "inventario_items": inventario.items,

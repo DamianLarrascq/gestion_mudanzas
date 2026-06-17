@@ -1,0 +1,573 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+  :root {
+    --f-bg:          #0f1117;
+    --f-surface:     #181c27;
+    --f-surface-2:   #1e2334;
+    --f-border:      rgba(255,255,255,0.07);
+    --f-border-focus:rgba(79,124,255,.5);
+    --f-accent:      #4f7cff;
+    --f-accent-light:#7a9dff;
+    --f-green:       #22c97b;
+    --f-red:         #ff4f6b;
+    --f-yellow:      #f5b942;
+    --f-text:        #e8eaf0;
+    --f-muted:       #6e7891;
+    --f-radius:      14px;
+    --f-radius-sm:   8px;
+       --font-body: 'Inter', sans-serif;
+    --font-title: 'DM Serif Display', serif;
+  }
+  /* ── Variables Modo Claro (Alta Definición para Formularios) ── */
+  html[data-theme="light"] {
+    --f-bg:           #f8fafc;        /* Fondo general de la página gris suave */
+    --f-surface:      #ffffff;        /* ¡Contenedores y tarjetas en BLANCO puro! */
+    --f-surface-2:    #f1f5f9;        /* Fondo interno para inputs y cajas secundarias */
+    --f-border:       #e2e8f0;        /* Bordes de secciones finos y limpios */
+    --f-border-focus: rgba(37, 99, 235, 0.4); /* Foco azul nítido al escribir en inputs */
+    --f-accent:       #1d4ed8;        /* Azul de botones con alto contraste de día */
+    --f-accent-light: #2563eb;        /* Iconos o detalles legibles */
+    --f-green:        #16a34a;        /* Textos de éxito o confirmación */
+    --f-red:          #dc2626;        /* Mensajes de error críticos bien visibles */
+    --f-yellow:       #b45309;        /* Alertas o textos informativos en ámbar */
+    --f-text:         #1e293b;        /* Color principal de etiquetas y texto escrito */
+    --f-muted:        #64748b;        /* Explicaciones o leyendas secundarias (hints) */
+  }
+  /* Correcciones estéticas extras para el Modo Claro en este Formulario */
+  html[data-theme="light"] .f-header h1,
+  html[data-theme="light"] .f-panel-title,
+  html[data-theme="light"] .f-section-title,
+  html[data-theme="light"] label {
+    color: #0f172a !important; /* Asegura un tono pizarra oscuro ultra legible */
+  }
+
+  html[data-theme="light"] input, 
+  html[data-theme="light"] select, 
+  html[data-theme="light"] textarea {
+    color: #1e293b !important; /* Texto que escribe el usuario en color oscuro */
+    background-color: #f8fafc !important; /* Fondo del input gris claro para contrastar con la tarjeta blanca */
+  }
+  .f-header-titles h1 {
+    font-family: var(--font-title);
+}
+
+  .f-page {
+    padding: 32px 36px 60px;
+    margin: 0 auto;
+    max-width: 860px;
+    font-family:var(--font-body);
+    color: var(--f-text);
+  }
+
+  /* ── Header ── */
+  .f-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .f-header-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--f-muted);
+    text-decoration: none;
+    padding: 8px 0;
+    transition: color .15s;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .f-header-back:hover { color: var(--f-accent-light); text-decoration: none; }
+  .f-header-back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+  .f-header-titles { flex: 1; }
+  .f-header-titles h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    color: #fff;
+    margin: 0 0 5px;
+    line-height: 1;
+  }
+  .f-header-titles p { font-size: 0.84rem; color: var(--f-muted); margin: 0; }
+
+  /* ── Alerta de errores global ── */
+  .f-errors-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255,79,107,.08);
+    border: 1px solid rgba(255,79,107,.2);
+    border-radius: var(--f-radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    animation: fadeUp .3s ease;
+  }
+  .f-errors-banner svg { width: 18px; height: 18px; stroke: var(--f-red); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+  .f-errors-banner-text { font-size: 0.90rem; color: var(--f-red); line-height: 1.5; }
+  .f-errors-banner-text strong { font-weight: 700; }
+
+  /* ── Sección del formulario ── */
+  .f-section {
+    background: var(--f-surface);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-radius);
+    padding: 26px;
+    margin-bottom: 18px;
+    animation: fadeUp .35s ease both;
+  }
+  .f-section:nth-child(1) { animation-delay: .04s; }
+  .f-section:nth-child(2) { animation-delay: .09s; }
+  .f-section:nth-child(3) { animation-delay: .13s; }
+  .f-section:nth-child(4) { animation-delay: .17s; }
+
+  .f-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--f-accent-light);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .f-section-title svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Grid de campos ── */
+  .f-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .f-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) {
+    .f-grid-2, .f-grid-3 { grid-template-columns: 1fr; }
+  }
+  .f-col-full { grid-column: 1 / -1; }
+
+  /* ── Campo individual ── */
+  .f-field { display: flex; flex-direction: column; gap: 6px; }
+  .f-label {
+    font-size: 0.90rem;
+    font-weight: 600;
+    color: var(--f-muted);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+  .f-label-req { color: var(--f-accent-light); margin-left: 2px; }
+
+  .f-input {
+    background: var(--f-surface-2);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-radius-sm);
+    color: var(--f-text);
+    font-family: inherit;
+    font-size: 0.90rem;
+    padding: 10px 13px;
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+    width: 100%;
+  }
+  .f-input:focus {
+    border-color: var(--f-border-focus);
+    box-shadow: 0 0 0 3px rgba(79,124,255,.12);
+  }
+  .f-input.has-error { border-color: rgba(255,79,107,.4); }
+  .f-input.has-error:focus { box-shadow: 0 0 0 3px rgba(255,79,107,.1); }
+
+  .f-input-prefix-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--f-surface-2);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-radius-sm);
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .f-input-prefix-wrap:focus-within {
+    border-color: var(--f-border-focus);
+    box-shadow: 0 0 0 3px rgba(79,124,255,.12);
+  }
+  .f-input-prefix-wrap.has-error { border-color: rgba(255,79,107,.4); }
+  .f-prefix {
+    padding: 10px 10px 10px 13px;
+    font-size: 0.90rem;
+    font-weight: 600;
+    color: var(--f-muted);
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .f-input-prefix-wrap .f-input {
+    border: none;
+    background: transparent;
+    box-shadow: none !important;
+    padding-left: 4px;
+    flex: 1;
+  }
+  .f-input-prefix-wrap .f-input:focus { border: none; }
+
+  .f-help { font-size: 0.72rem; color: var(--f-muted); line-height: 1.45; }
+  .f-error-msg { font-size: 0.72rem; color: var(--f-red); line-height: 1.4; }
+
+  /* ── Checkbox toggle ── */
+  .f-checkbox-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--f-surface-2);
+    border: 1px solid var(--f-border);
+    border-radius: var(--f-radius-sm);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .f-checkbox-wrap:hover { border-color: rgba(79,124,255,.35); }
+  .f-checkbox-wrap input[type="checkbox"] {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--f-accent);
+    cursor: pointer;
+  }
+  .f-checkbox-label { flex: 1; }
+  .f-checkbox-label .f-checkbox-title {
+    font-size: 0.90rem;
+    font-weight: 600;
+    color: var(--f-text);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .f-checkbox-label .f-checkbox-sub {
+    font-size: 0.90rem;
+    color: var(--f-muted);
+    line-height: 1.4;
+  }
+
+  /* ── Multiplicador: hint visual ── */
+  .f-multiplicador-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--f-yellow);
+    background: rgba(245,185,66,.08);
+    border: 1px solid rgba(245,185,66,.15);
+    padding: 3px 9px;
+    border-radius: 5px;
+  }
+  .f-multiplicador-hint svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Barra de acciones ── */
+  .f-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-guardar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--f-accent);
+    color: #fff;
+    padding: 11px 24px;
+    border-radius: var(--f-radius-sm);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-guardar:hover { background: #3a66e0; }
+  .btn-guardar svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+  .btn-cancelar {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: transparent;
+    color: var(--f-muted);
+    padding: 11px 18px;
+    border-radius: var(--f-radius-sm);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    border: 1px solid var(--f-border);
+    text-decoration: none;
+    transition: color .15s, border-color .15s;
+  }
+  .btn-cancelar:hover { color: var(--f-text); border-color: rgba(255,255,255,.15); text-decoration: none; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="f-page">
+
+  {# ── Header ── #}
+  <div class="f-header">
+    <a href="{% url 'gestion:config_tarifas' %}" class="f-header-back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </a>
+    <div class="f-header-titles">
+      <h1>{{ titulo_pagina }}</h1>
+      <p>
+        {% if tarifa_id %}
+          Modificá los valores de esta tarifa. Si la marcás como activa, las demás se desactivarán automáticamente.
+        {% else %}
+          Completá los valores para la nueva tarifa de servicio.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {# ── Banner errores globales ── #}
+  {% if errors %}
+  <div class="f-errors-banner">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="f-errors-banner-text">
+      <strong>Corregí los errores antes de guardar.</strong>
+      Revisá los campos marcados en rojo.
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {# ── Se construye dinámicamente desde form_schema, agrupado por grupo ── #}
+
+    {# ---- SECCIÓN: CONFIGURACIÓN GENERAL ---- #}
+    {% with grupo_campos=form_schema|dictsortreversed:"grupo" %}
+    {% endwith %}
+
+    {# Agrupación manual siguiendo el contrato del handoff #}
+    <div class="f-section">
+      <div class="f-section-title">
+        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Configuración general
+      </div>
+      <div class="f-grid-2" style="margin-bottom:14px;">
+        {% for campo in form_schema %}
+          {% if campo.grupo == "CONFIGURACION" and campo.type != "checkbox" %}
+          <div class="f-field">
+            <label class="f-label" for="id_{{ campo.name }}">
+              {{ campo.label }}{% if campo.required %}<span class="f-label-req">*</span>{% endif %}
+            </label>
+            <input
+              class="f-input {% if campo.errors %}has-error{% endif %}"
+              type="{{ campo.type }}"
+              id="id_{{ campo.name }}"
+              name="{{ campo.name }}"
+              value="{{ campo.value|default:'' }}"
+              {% if campo.required %}required{% endif %}
+            >
+            {% if campo.help_text %}
+              <span class="f-help">{{ campo.help_text }}</span>
+            {% endif %}
+            {% for err in campo.errors %}
+              <span class="f-error-msg">{{ err }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {# Checkboxes de configuración #}
+      <div class="f-grid-2">
+        {% for campo in form_schema %}
+          {% if campo.grupo == "CONFIGURACION" and campo.type == "checkbox" %}
+          <div class="f-field">
+            <label class="f-checkbox-wrap" for="id_{{ campo.name }}">
+              <input
+                type="checkbox"
+                id="id_{{ campo.name }}"
+                name="{{ campo.name }}"
+                {% if campo.value %}checked{% endif %}
+              >
+              <div class="f-checkbox-label">
+                <span class="f-checkbox-title">{{ campo.label }}</span>
+                {% if campo.help_text %}
+                  <span class="f-checkbox-sub">{{ campo.help_text }}</span>
+                {% endif %}
+              </div>
+            </label>
+            {% for err in campo.errors %}
+              <span class="f-error-msg">{{ err }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ---- SECCIÓN: PRECIOS BÁSICOS ---- #}
+    <div class="f-section">
+      <div class="f-section-title">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+        Precios básicos
+      </div>
+      <div class="f-grid-3">
+        {% for campo in form_schema %}
+          {% if campo.grupo == "PRECIOS_BASICOS" %}
+          <div class="f-field">
+            <label class="f-label" for="id_{{ campo.name }}">
+              {{ campo.label }}{% if campo.required %}<span class="f-label-req">*</span>{% endif %}
+            </label>
+            <div class="f-input-prefix-wrap {% if campo.errors %}has-error{% endif %}">
+              <span class="f-prefix">$</span>
+              <input
+                class="f-input"
+                type="number"
+                step="0.01"
+                min="0"
+                id="id_{{ campo.name }}"
+                name="{{ campo.name }}"
+                value="{{ campo.value|default:'' }}"
+                {% if campo.required %}required{% endif %}
+              >
+            </div>
+            {% if campo.help_text %}
+              <span class="f-help">{{ campo.help_text }}</span>
+            {% endif %}
+            {% for err in campo.errors %}
+              <span class="f-error-msg">{{ err }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ---- SECCIÓN: RECARGOS ---- #}
+    <div class="f-section">
+      <div class="f-section-title">
+        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Multiplicadores de recargo
+      </div>
+      <div class="f-grid-2">
+        {% for campo in form_schema %}
+          {% if campo.grupo == "RECARGOS" %}
+          <div class="f-field">
+            <label class="f-label" for="id_{{ campo.name }}">
+              {{ campo.label }}{% if campo.required %}<span class="f-label-req">*</span>{% endif %}
+            </label>
+            <div class="f-input-prefix-wrap {% if campo.errors %}has-error{% endif %}">
+              <span class="f-prefix">×</span>
+              <input
+                class="f-input"
+                type="number"
+                step="0.01"
+                min="1"
+                id="id_{{ campo.name }}"
+                name="{{ campo.name }}"
+                value="{{ campo.value|default:'' }}"
+                {% if campo.required %}required{% endif %}
+                oninput="actualizarHintMultiplicador(this)"
+              >
+            </div>
+            <div class="f-multiplicador-hint" id="hint-{{ campo.name }}">
+              <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>—</span>
+            </div>
+            {% if campo.help_text %}
+              <span class="f-help">{{ campo.help_text }}</span>
+            {% endif %}
+            {% for err in campo.errors %}
+              <span class="f-error-msg">{{ err }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ---- SECCIÓN: COSTOS OPERATIVOS ---- #}
+    <div class="f-section">
+      <div class="f-section-title">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Costos operativos
+      </div>
+      <div class="f-grid-3">
+        {% for campo in form_schema %}
+          {% if campo.grupo == "COSTOS_OPERATIVOS" %}
+          <div class="f-field">
+            <label class="f-label" for="id_{{ campo.name }}">
+              {{ campo.label }}{% if campo.required %}<span class="f-label-req">*</span>{% endif %}
+            </label>
+            <div class="f-input-prefix-wrap {% if campo.errors %}has-error{% endif %}">
+              <span class="f-prefix">$</span>
+              <input
+                class="f-input"
+                type="number"
+                step="0.01"
+                min="0"
+                id="id_{{ campo.name }}"
+                name="{{ campo.name }}"
+                value="{{ campo.value|default:'' }}"
+                {% if campo.required %}required{% endif %}
+              >
+            </div>
+            {% if campo.help_text %}
+              <span class="f-help">{{ campo.help_text }}</span>
+            {% endif %}
+            {% for err in campo.errors %}
+              <span class="f-error-msg">{{ err }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ---- Acciones ---- #}
+    <div class="f-actions">
+      <button type="submit" class="btn-guardar">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Guardar tarifa
+      </button>
+      <a href="{% url 'gestion:config_tarifas' %}" class="btn-cancelar">Cancelar</a>
+    </div>
+
+  </form>
+
+</div>{# /f-page #}
+
+<script>
+function actualizarHintMultiplicador(input) {
+  const val = parseFloat(input.value);
+  const nombre = input.id.replace('id_', '');
+  const hint = document.getElementById('hint-' + nombre);
+  if (!hint) return;
+  const span = hint.querySelector('span');
+  if (isNaN(val) || val <= 0) {
+    span.textContent = '—';
+    return;
+  }
+  if (val >= 1) {
+    const pct = ((val - 1) * 100).toFixed(0);
+    span.textContent = '+' + pct + '% sobre el precio base';
+  } else {
+    const pct = ((1 - val) * 100).toFixed(0);
+    span.textContent = '-' + pct + '% descuento sobre base';
+  }
+}
+
+// Inicializar los hints al cargar
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[oninput="actualizarHintMultiplicador(this)"]').forEach(function(input) {
+    actualizarHintMultiplicador(input);
+  });
+});
+</script>
+
+{% endblock %}

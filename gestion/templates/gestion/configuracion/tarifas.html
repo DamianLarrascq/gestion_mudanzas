@@ -1,0 +1,608 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+  :root {
+    --t-bg:          #0f1117;
+    --t-surface:     #181c27;
+    --t-surface-2:   #1e2334;
+    --t-border:      rgba(255,255,255,0.07);
+    --t-accent:      #4f7cff;
+    --t-accent-light:#7a9dff;
+    --t-green:       #22c97b;
+    --t-red:         #ff4f6b;
+    --t-yellow:      #f5b942;
+    --t-text:        #e8eaf0;
+    --t-muted:       #6e7891;
+    --t-radius:      14px;
+    --t-radius-sm:   8px;
+
+
+    --font-body: 'Inter', sans-serif;
+    --font-title: 'DM Serif Display', serif;
+  }
+  /* ── Variables Modo Claro (Alta Definición para Tarifas) ── */
+  html[data-theme="light"] {
+    --t-bg:           #f8fafc;        /* Fondo general grisáceo limpio */
+    --t-surface:      #ffffff;        /* ¡Paneles en BLANCO puro para dar relieve! */
+    --t-surface-2:    #f1f5f9;        /* Recuadros internos de valores en gris claro */
+    --t-border:       #e2e8f0;        /* Bordes finos y visibles */
+    --t-accent:       #1d4ed8;        /* Azul de botones con más contraste */
+    --t-accent-light: #2563eb;        /* Iconos en azul legible */
+    --t-green:        #16a34a;        /* Verde optimizado para leerse de día */
+    --t-red:          #dc2626;        /* Rojo de alerta para el día */
+    --t-yellow:       #b45309;        /* Multiplicadores en tono ámbar/marrón para alta legibilidad */
+    --t-text:         #1e293b;        /* Texto descriptivo principal */
+    --t-muted:        #64748b;        /* Subtítulos y unidades atenuadas */
+  }
+
+  /* Corrección técnica para elementos con color blanco fijo (#fff) en modo oscuro */
+  html[data-theme="light"] .t-header h1,
+  html[data-theme="light"] .t-panel-title,
+  html[data-theme="light"] .t-activa-nombre,
+  html[data-theme="light"] .t-valor-num:not(.multiplicador),
+  html[data-theme="light"] .t-historial-nombre:not(.activa-nombre) {
+    color: #0f172a !important;
+  }
+/* Ajustes de badges y alertas para Modo Claro (Estilo Pastel Premium) */
+  html[data-theme="light"] .t-badge-activa {
+    background: #d1fae5;
+    color: #15803d;
+  }
+  html[data-theme="light"] .t-badge-inactiva {
+    background: #e2e8f0;
+    color: #475569;
+  }
+  html[data-theme="light"] .t-alert-config {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+  html[data-theme="light"] .t-flag-feriados.activo {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  .t-page {
+    padding: 32px 36px 56px;
+    max-width: 1280px;
+    margin: 0 auto;
+      font-family: var(--font-body);
+    color: var(--t-text);
+  }
+
+  /* ── Header ── */
+  .t-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .t-header h1 {
+      font-family: var(--font-title);
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: -.5px;
+    color: #fff;
+    margin: 0;
+    line-height: 1;
+  }
+  .t-header .t-subtitle {
+    font-size: 1rem;
+    color: var(--t-muted);
+    margin-top: 6px;
+  }
+  .btn-nueva-tarifa {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--t-accent);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: var(--t-radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .18s ease;
+    white-space: nowrap;
+  }
+  .btn-nueva-tarifa:hover { background: #3a66e0; color: #fff; text-decoration: none; }
+  .btn-nueva-tarifa svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+
+  /* ── Layout principal ── */
+  .t-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 1024px) { .t-layout { grid-template-columns: 1fr; } }
+
+  /* ── Panel genérico ── */
+  .t-panel {
+    background: var(--t-surface);
+    border: 1px solid var(--t-border);
+    border-radius: var(--t-radius);
+    overflow: hidden;
+  }
+  .t-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--t-border);
+  }
+  .t-panel-title {
+     font-family: var(--font-body);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .t-panel-title svg {
+    width: 16px; height: 16px;
+    stroke: var(--t-accent-light);
+    stroke-width: 2;
+    fill: none;
+    flex-shrink: 0;
+  }
+  .t-panel-body { padding: 22px; }
+
+  /* ── Aviso de no hay tarifa activa ── */
+  .t-alert-config {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(255,79,107,.08);
+    border: 1px solid rgba(255,79,107,.2);
+    border-radius: var(--t-radius-sm);
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .t-alert-config svg {
+    width: 20px; height: 20px;
+    stroke: var(--t-red);
+    stroke-width: 2;
+    fill: none;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .t-alert-config-texto { font-size: 0.85rem; color: var(--t-red); line-height: 1.5; }
+  .t-alert-config-texto strong { font-weight: 700; }
+
+  /* ── Tarifa activa: badge de estado ── */
+  .t-badge-activa {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(34,201,123,.12);
+    color: var(--t-green);
+    font-size: 0.90rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .t-badge-activa::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--t-green);
+  }
+  .t-badge-inactiva {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(110,120,145,.15);
+    color: var(--t-muted);
+    font-size: 0.90rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Nombre + fecha de tarifa activa ── */
+  .t-activa-nombre {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.3px;
+    margin: 14px 0 4px;
+  }
+  .t-activa-meta {
+    font-size: 0.90rem;
+    color: var(--t-muted);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .t-activa-meta-sep { color: var(--t-border); }
+
+  /* ── Grid de valores de tarifa ── */
+  .t-seccion-label {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t-muted);
+    margin: 20px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .t-seccion-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--t-border);
+  }
+
+  .t-valores-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 780px) { .t-valores-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .t-valor-item {
+    background: var(--t-surface-2);
+    border: 1px solid var(--t-border);
+    border-radius: var(--t-radius-sm);
+    padding: 12px 14px;
+  }
+  .t-valor-label {
+    font-size: 0.90rem;
+    color: var(--t-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+  .t-valor-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.3px;
+  }
+  .t-valor-num.multiplicador {
+    color: var(--t-yellow);
+  }
+  .t-valor-hint {
+    font-size: 0.95rem;
+    color: var(--t-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Flag CABA feriados ── */
+  .t-flag-feriados {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.90rem;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: var(--t-radius-sm);
+    border: 1px solid var(--t-border);
+  }
+  .t-flag-feriados.activo {
+    background: rgba(79,124,255,.1);
+    color: var(--t-accent-light);
+    border-color: rgba(79,124,255,.2);
+  }
+  .t-flag-feriados.inactivo {
+    background: var(--t-surface-2);
+    color: var(--t-muted);
+  }
+  .t-flag-feriados svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ── Botón editar tarifa activa ── */
+  .btn-editar-tarifa {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--t-surface-2);
+    border: 1px solid var(--t-border);
+    color: var(--t-text);
+    padding: 9px 18px;
+    border-radius: var(--t-radius-sm);
+    font-size: 0.90rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+    margin-top: 24px;
+  }
+  .btn-editar-tarifa:hover {
+    border-color: var(--t-accent);
+    background: rgba(79,124,255,.08);
+    color: var(--t-accent-light);
+    text-decoration: none;
+  }
+  .btn-editar-tarifa svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  /* ── Historial (panel derecho) ── */
+  .t-historial-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--t-border);
+    transition: background .12s;
+  }
+  .t-historial-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .t-historial-info { flex: 1; min-width: 0; }
+  .t-historial-nombre {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .t-historial-nombre.activa-nombre { color: var(--t-green); }
+  .t-historial-fecha {
+    font-size: 0.90rem;
+    color: var(--t-muted);
+  }
+  .t-historial-acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .btn-editar-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: var(--t-surface-2);
+    border: 1px solid var(--t-border);
+    color: var(--t-muted);
+    text-decoration: none;
+    transition: border-color .14s, color .14s;
+  }
+  .btn-editar-sm:hover {
+    border-color: var(--t-accent);
+    color: var(--t-accent-light);
+  }
+  .btn-editar-sm svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+  .t-historial-empty {
+    padding: 32px 0;
+    text-align: center;
+    color: var(--t-muted);
+    font-size: 0.82rem;
+  }
+
+  /* ── Animaciones de entrada ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .t-panel { animation: fadeUp .35s ease both; }
+  .t-layout > :nth-child(1) { animation-delay: .05s; }
+  .t-layout > :nth-child(2) { animation-delay: .12s; }
+</style>
+
+<div class="t-page">
+
+  {# ── Header ── #}
+  <div class="t-header">
+    <div>
+      <h1>{{ titulo_pagina }}</h1>
+      <p class="t-subtitle">Tarifas de servicio y costos operativos</p>
+    </div>
+    {% if puede_crear %}
+    <a href="{% url 'gestion:tarifa_create' %}" class="btn-nueva-tarifa">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva tarifa
+    </a>
+    {% endif %}
+  </div>
+
+  {# ── Aviso si no hay tarifa activa ── #}
+  {% if not tarifa_activa %}
+  <div class="t-alert-config">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p class="t-alert-config-texto">
+      <strong>Sin tarifa activa.</strong>
+      No es posible generar presupuestos hasta que haya una tarifa activa. Creá una nueva tarifa o activá una existente desde el historial.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="t-layout">
+
+    {# ── Tarifa activa (columna principal) ── #}
+    <div class="t-panel">
+      <div class="t-panel-header">
+        <span class="t-panel-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Tarifa activa
+        </span>
+        {% if tarifa_activa %}
+          <span class="t-badge-activa">Vigente</span>
+        {% endif %}
+      </div>
+
+      <div class="t-panel-body">
+
+        {% if tarifa_activa %}
+
+          <p class="t-activa-nombre">{{ tarifa_activa.nombre }}</p>
+          <div class="t-activa-meta">
+            <span>Vigente desde {{ tarifa_activa.vigente_desde }}</span>
+            <span class="t-activa-meta-sep">·</span>
+            {% if tarifa_activa.permite_caba_feriados %}
+              <span class="t-flag-feriados activo">
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.3 9.93a19.79 19.79 0 01-3.07-8.59A2 2 0 012.11 1H5a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                Aplica CABA feriados
+              </span>
+            {% else %}
+              <span class="t-flag-feriados inactivo">
+                <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+                Sin recargo feriados CABA
+              </span>
+            {% endif %}
+          </div>
+
+          {# Precios básicos #}
+          <div class="t-seccion-label">Precios básicos</div>
+          <div class="t-valores-grid">
+            <div class="t-valor-item">
+              <div class="t-valor-label">Precio / km</div>
+              <div class="t-valor-num">${{ tarifa_activa.precio_por_km|floatformat:0 }}</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Ayudante extra</div>
+              <div class="t-valor-num">${{ tarifa_activa.precio_ayudante|floatformat:0 }}</div>
+              <div class="t-valor-hint">por mudanza</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Recargo por piso</div>
+              <div class="t-valor-num">${{ tarifa_activa.recargo_piso|floatformat:0 }}</div>
+              <div class="t-valor-hint">sin ascensor</div>
+            </div>
+          </div>
+
+          {# Recargos #}
+          <div class="t-seccion-label">Multiplicadores de recargo</div>
+          <div class="t-valores-grid">
+            <div class="t-valor-item">
+              <div class="t-valor-label">Hora pico</div>
+              <div class="t-valor-num multiplicador">×{{ tarifa_activa.recargo_hora_pico }}</div>
+              <div class="t-valor-hint">
+                {% with recargo=tarifa_activa.recargo_hora_pico %}
+                  +{{ recargo|floatformat:2 }}0% sobre base
+                {% endwith %}
+              </div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Fin de semana</div>
+              <div class="t-valor-num multiplicador">×{{ tarifa_activa.recargo_fin_de_semana }}</div>
+            </div>
+          </div>
+
+          {# Costos operativos #}
+          <div class="t-seccion-label">Costos operativos</div>
+          <div class="t-valores-grid">
+            <div class="t-valor-item">
+              <div class="t-valor-label">Seguro camión</div>
+              <div class="t-valor-num">${{ tarifa_activa.seguro_camion|floatformat:0 }}</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">ART empleado</div>
+              <div class="t-valor-num">${{ tarifa_activa.empleado_art|floatformat:0 }}</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Seg. riesgo</div>
+              <div class="t-valor-num">${{ tarifa_activa.empleado_seguro_riesgo|floatformat:0 }}</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Seg. ayudante</div>
+              <div class="t-valor-num">${{ tarifa_activa.empleado_seguro_ayudante|floatformat:0 }}</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Salario conductor</div>
+              <div class="t-valor-num">${{ tarifa_activa.salario_conductor|floatformat:0 }}</div>
+              <div class="t-valor-hint">referencia interna</div>
+            </div>
+            <div class="t-valor-item">
+              <div class="t-valor-label">Salario ayudante</div>
+              <div class="t-valor-num">${{ tarifa_activa.salario_ayudante|floatformat:0 }}</div>
+              <div class="t-valor-hint">referencia interna</div>
+            </div>
+          </div>
+
+          <a href="{{ tarifa_activa.url_editar }}" class="btn-editar-tarifa">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar tarifa activa
+          </a>
+
+        {% else %}
+          {# Estado vacío — sin tarifa activa #}
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 48px 24px; gap: 14px; color: var(--t-muted);">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--t-muted)" stroke-width="1.2" opacity=".4">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <path d="M9 9h6M9 12h6M9 15h4"/>
+            </svg>
+            <p style="font-size:.85rem; text-align:center; line-height:1.55; max-width:280px;">
+              No hay ninguna tarifa activa. Los presupuestos de mudanzas no podrán calcularse hasta que actives una.
+            </p>
+            {% if puede_crear %}
+            <a href="{% url 'gestion:tarifa_create' %}" class="btn-nueva-tarifa" style="margin-top: 4px;">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Crear primera tarifa
+            </a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {# ── Historial (columna lateral) ── #}
+    <div class="t-panel">
+      <div class="t-panel-header">
+        <span class="t-panel-title">
+          <svg viewBox="0 0 24 24"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 8 8 8"/></svg>
+          Historial de tarifas
+        </span>
+        <span style="font-size:.72rem; color:var(--t-muted); background:var(--t-surface-2); border:1px solid var(--t-border); padding:3px 10px; border-radius:20px;">
+          {{ historial|length }} registros
+        </span>
+      </div>
+
+      <div style="padding: 6px 22px 16px;">
+
+        {% if historial %}
+          {% for t in historial %}
+          <div class="t-historial-item">
+            <div class="t-historial-info">
+              <div class="t-historial-nombre {% if t.activa %}activa-nombre{% endif %}">
+                {{ t.nombre }}{% if t.activa %} ✓{% endif %}
+              </div>
+              <div class="t-historial-fecha">Desde {{ t.vigente_desde }}</div>
+            </div>
+            <div class="t-historial-acciones">
+              {% if t.activa %}
+                <span class="t-badge-activa" style="font-size:.65rem; padding: 2px 8px;">Activa</span>
+              {% else %}
+                <span class="t-badge-inactiva" style="font-size:.65rem; padding: 2px 8px;">Inactiva</span>
+              {% endif %}
+              <a href="{{ t.url_editar }}" class="btn-editar-sm" title="Editar {{ t.nombre }}">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="t-historial-empty">
+            Sin historial de tarifas registradas.
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>{# /t-layout #}
+
+</div>{# /t-page #}
+
+{% endblock %}

@@ -17,7 +17,7 @@
     ══════════════════════════════════════════════════════════════════════ */
     :root {
       /* Sidebar */
-      --sidebar-width: 228px;
+      --sidebar-width: 200px;
       --sidebar-collapsed-width: 0px;
       --topbar-height: 52px;
 
@@ -40,7 +40,7 @@
 
     /* ── DARK THEME (default) ─────────────────────────────────────────── */
     [data-theme="dark"] {
-      --bg:              #0f1117;
+      --bg:              #101828;
       --bg-elevated:     #161b25;
       --surface:         #1c2232;
       --surface-hover:   #212840;
@@ -291,7 +291,7 @@
     }
 
     .sidebar-logo-name {
-      font-size: 0.82rem;
+      font-size: 0.90rem;
       font-weight: 700;
       color: #e8ecf4;
       letter-spacing: -0.01em;
@@ -299,7 +299,7 @@
     }
 
     .sidebar-logo-sub {
-      font-size: 0.62rem;
+      font-size: 0.90rem;
       color: #5e6b87;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -317,11 +317,11 @@
     .sidebar-nav::-webkit-scrollbar { display: none; }
 
     .sidebar-section-label {
-      font-size: 0.59rem;
+      font-size: 1rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #3a4561;
+      color: #4e5669;
       padding: 0.375rem 0.5rem 0.25rem;
       user-select: none;
     }
@@ -332,8 +332,8 @@
       gap: 0.6rem;
       padding: 0.55rem 0.625rem;
       border-radius: var(--radius-md);
-      color: #6b7a99;
-      font-size: 0.8rem;
+      color: #bec0c7;
+      font-size: 1.2rem;
       font-weight: 500;
       position: relative;
       transition: background var(--transition-fast), color var(--transition-fast);
@@ -615,7 +615,7 @@
     ══════════════════════════════════════════════════════════════════════ */
     .main-content {
       grid-area: main;
-      margin-left: var(--sidebar-width);
+      margin-left:0;
       margin-top: var(--topbar-height);
       padding: 1.5rem 1.75rem;
       min-height: calc(100vh - var(--topbar-height));

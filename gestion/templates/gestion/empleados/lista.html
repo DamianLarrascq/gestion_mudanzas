@@ -6,29 +6,39 @@
 {% block content %}
 <style>
   /* ── Paleta / tokens ─────────────────────────────────────── */
-  :root {
-    --bg:          #0c0e16;
-    --surface:     #13161f;
-    --surface-2:   #191d2b;
-    --surface-3:   #1f2335;
-    --border:      rgba(255,255,255,0.07);
-    --accent:      #4f7cff;
-    --accent-lt:   #7da0ff;
-    --green:       #22c97b;
-    --yellow:      #f5b942;
-    --red:         #ff4f6b;
-    --muted:       #6b7490;
-    --text:        #dde1ef;
-    --text-bright: #ffffff;
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+:root {
+    --dash-bg: var(--bg);
+    --dash-surface: var(--surface);
+    --dash-surface-2: var(--bg-elevated);
+
+    --dash-border: var(--border);
+
+    --dash-text: var(--text-primary);
+    --dash-muted: var(--text-secondary);
+
+    --dash-accent: var(--accent);
+    --dash-accent-light: var(--accent-hover);
+
+    --dash-green: var(--success);
+    --dash-red: var(--danger);
+    --dash-yellow: var(--warning);
+
+    --dash-radius: 14px;
+
     --radius:      13px;
     --radius-sm:   8px;
+
+    --font-body: 'Inter', sans-serif;
+--font-title: 'DM Serif Display', serif;
   }
 
   /* ── Layout ──────────────────────────────────────────────── */
   .emp-page {
+    margin: 0 auto;
     padding: 32px 36px 56px;
     max-width: 1440px;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+   font-family: var(--font-body);
     color: var(--text);
   }
 
@@ -37,20 +47,17 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 24px;
     flex-wrap: wrap;
     gap: 12px;
   }
   .emp-header h1 {
-    font-size: 1.85rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text-bright);
-    margin: 0;
-    line-height: 1;
-  }
+    font-family: var(--font-title);
+    font-size: 2.5rem;
+    font-weight: 400;
+    letter-spacing: 0;
+}
   .emp-header .sub {
-    font-size: 0.82rem;
+    font-size: 1.1rem;
     color: var(--muted);
     margin-top: 6px;
   }
@@ -76,7 +83,7 @@
     flex-shrink: 0;
   }
   .alert-banner-text {
-    font-size: 0.88rem;
+    font-size: 0.90rem;
     color: var(--text);
     line-height: 1.4;
   }
@@ -102,7 +109,7 @@
     min-width: 160px;
   }
   .filter-group label {
-    font-size: 0.7rem;
+    font-size: 0.80 rem;
     text-transform: uppercase;
     letter-spacing: .08em;
     color: var(--muted);
@@ -114,7 +121,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text);
-    font-size: 0.85rem;
+    font-size: 1rem;
     padding: 9px 13px;
     outline: none;
     transition: border-color .15s, box-shadow .15s;
@@ -140,7 +147,7 @@
     border: none;
     border-radius: var(--radius-sm);
     padding: 9px 20px;
-    font-size: 0.84rem;
+    font-size: 0.90rem;
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -154,7 +161,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 9px 16px;
-    font-size: 0.84rem;
+    font-size: 0.90rem;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -176,7 +183,7 @@
     border-collapse: collapse;
   }
   .emp-table thead th {
-    font-size: 0.68rem;
+    font-size: 0.90rem;
     text-transform: uppercase;
     letter-spacing: .09em;
     color: var(--muted);
@@ -195,7 +202,7 @@
   .emp-table tbody tr:hover { background: rgba(255,255,255,.022); }
   .emp-table td {
     padding: 14px 18px;
-    font-size: 0.84rem;
+    font-size: 0.90rem;
     vertical-align: middle;
     color: var(--text);
   }
@@ -209,7 +216,7 @@
   .nombre-main {
     font-weight: 700;
     color: var(--text-bright);
-    font-size: 0.87rem;
+    font-size: 0.90rem;
   }
   .dni-sub {
     font-size: 0.74rem;
@@ -285,7 +292,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.71rem;
+    font-size: 0.90rem;
     font-weight: 700;
     padding: 4px 10px;
     border-radius: 20px;
@@ -303,7 +310,7 @@
 
   /* ── Celda: licencia ─────────────────────────────────────── */
   .licencia-na {
-    font-size: 0.78rem;
+    font-size: 0.90rem;
     color: var(--muted);
     font-style: italic;
   }
