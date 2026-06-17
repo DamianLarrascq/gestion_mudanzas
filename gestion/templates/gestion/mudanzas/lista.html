@@ -4,6 +4,42 @@
 
 {% block extra_head %}
 <style>
+ @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  /* ── Overrides globales para esta vista ──────────────────────────────────── */
+
+.cliente-nombre {
+    color: var(--text-primary) !important;
+    font-family: "Inter", sans-serif !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+body,
+.admin-content,
+.content-wrapper,
+main,
+[class*="content"] {
+    font-family: var(--font-body) !important;
+}
+
+:root {
+    --font-body: 'Inter', sans-serif;
+    --font-title: 'DM Serif Display', serif;
+}
+.page-header-eyebrow,
+.page-header-title,
+.table-card-title,
+.data-table thead th {
+    font-family: var(--font-title) !important;
+}
+.page-header-title,
+.table-card-title,
+h1 {
+    font-family: var(--font-title) !important;
+}
+
   /* ── PAGE HEADER ─────────────────────────────────────────────────────────── */
   .page-header {
     display: flex;
@@ -14,19 +50,21 @@
   }
   .page-header-left { display: flex; flex-direction: column; gap: 0.2rem; }
   .page-header-eyebrow {
-    font-size: 0.68rem;
-    font-weight: 600;
+    font-size: 1.5rem;             /* ← más grande */
+    font-weight: 700;               /* ← bold */
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-muted);
+    font-family: var(--font-body);
   }
   .page-header-title {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 2.5rem;             /* ← más grande */
+    font-weight: 800;               /* ← más bold */
     color: var(--text-primary);
     line-height: 1.1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     margin: 0;
+    font-family: var(--font-body);
   }
 
   /* ── FILTER BAR ─────────────────────────────────────────────────────────── */
@@ -71,25 +109,30 @@
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 0.5rem 0.875rem 0.5rem 2.25rem;
-    font-size: 0.8rem;
+    padding: 0.55rem 0.875rem 0.55rem 2.25rem;
+    font-size: 1rem;             /* ← más grande */
     color: var(--text-primary);
+    font-family:var(--font-body);
+    font-weight: 500;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
   }
 
-  .filter-input::placeholder { color: var(--text-muted); }
+  .filter-input::placeholder { color: var(--text-muted); opacity: 0.8; }
   .filter-input:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+    
   }
 
   .filter-select {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 0.5rem 2rem 0.5rem 0.875rem;
-    font-size: 0.8rem;
+    padding: 0.55rem 2rem 0.55rem 0.875rem;
+    font-size: 1rem;             /* ← más grande */
+       font-family: var(--font-body);
+    font-weight: 500;
     color: var(--text-primary);
     cursor: pointer;
     outline: none;
@@ -108,13 +151,14 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.5rem 1rem;
+    padding: 0.55rem 1.1rem;
     background: var(--accent);
     color: #fff;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.95rem;             /* ← más grande */
+    font-weight: 700;               /* ← bold */
+      font-family: var(--font-body);
     cursor: pointer;
     white-space: nowrap;
     transition: opacity 0.15s;
@@ -123,7 +167,7 @@
   .filter-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
 
   .filter-clear {
-    font-size: 0.72rem;
+    font-size: 1rem;             /* ← más grande */
     color: var(--text-muted);
     text-decoration: none;
     white-space: nowrap;
@@ -146,7 +190,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.68rem;
+    font-size: 0.72rem;             /* ← más grande */
     font-weight: 600;
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -156,9 +200,9 @@
   }
 
   .filter-chips-label {
-    font-size: 0.68rem;
+    font-size: 0.72rem;             /* ← más grande */
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   /* ── TABLE CARD ─────────────────────────────────────────────────────────── */
@@ -179,15 +223,16 @@
   }
 
   .table-card-title {
-    font-size: 0.78rem;
+    font-size: 1.1rem;             /* ← más grande */
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--text-primary);
+      font-family: var(--font-title);
   }
 
   .table-total-badge {
-    font-size: 0.68rem;
+    font-size: 1rem;             /* ← más grande */
     font-weight: 600;
     color: var(--text-muted);
     background: var(--bg);
@@ -200,12 +245,12 @@
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.87rem;             /* ← más grande */
+   font-family: var(--font-title);
   }
-
   .data-table thead th {
-    padding: 0.6rem 1rem;
-    font-size: 0.67rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.90rem;             /* ← más grande */
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -229,7 +274,7 @@
   .data-table tbody tr:hover { background: var(--bg); }
 
   .data-table tbody td {
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;          /* ← más espacio */
     vertical-align: middle;
     color: var(--text-primary);
   }
@@ -241,37 +286,37 @@
 
   /* Fecha */
   .fecha-cell { display: flex; flex-direction: column; gap: 0.05rem; }
-  .fecha-dia  { font-family: "JetBrains Mono", monospace; font-size: 0.73rem; font-weight: 600; color: var(--text-primary); }
-  .fecha-id   { font-size: 0.65rem; color: var(--text-muted); }
+  .fecha-dia  { font-family: "JetBrains Mono", monospace; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); }
+  .fecha-id   { font-size: 0.80rem; color: var(--text-muted); font-weight: 500; }
 
   /* Cliente */
   .cliente-cell  { display: flex; align-items: center; gap: 0.55rem; }
   .cliente-avatar {
-    width: 30px; height: 30px;
+    width: 32px; height: 32px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--accent) 16%, transparent);
     color: var(--accent);
-    font-size: 0.68rem; font-weight: 700;
+    font-size: 0.80rem; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; text-transform: uppercase;
   }
-  .cliente-nombre { font-weight: 600; font-size: 0.78rem; }
+  .cliente-nombre { font-family: var(--font-body);  font-weight: 700; font-size: 0.95rem; }  /* ← bold */
 
   /* Ruta */
-  .ruta-cell { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; white-space: nowrap; }
-  .ruta-orig { color: var(--text-primary); font-weight: 500; }
-  .ruta-sep  { color: var(--text-muted); font-size: 0.65rem; }
-  .ruta-dest { color: var(--text-muted); }
+  .ruta-cell { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; white-space: nowrap; }
+  .ruta-orig { color: var(--text-primary); font-weight: 600; }
+  .ruta-sep  { color: var(--text-muted); font-size: 0.68rem; }
+  .ruta-dest { color: var(--text-muted); font-weight: 500; }
 
   /* Camion */
   .camion-chip {
     font-family: "JetBrains Mono", monospace;
-    font-size: 0.68rem; font-weight: 600;
+    font-size: 0.80rem; font-weight: 700;  /* ← bold */
     color: var(--text-primary);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 5px;
-    padding: 0.15rem 0.45rem;
+    padding: 0.2rem 0.5rem;
     white-space: nowrap;
   }
   .camion-chip.sin-asignar {
@@ -282,22 +327,22 @@
   /* Operarios badge */
   .operarios-badge {
     display: inline-flex; align-items: center; gap: 0.25rem;
-    font-size: 0.7rem; font-weight: 600;
+    font-size: 0.90rem; font-weight: 600;  /* ← más grande */
     color: var(--text-muted);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 5px;
-    padding: 0.15rem 0.45rem;
+    padding: 0.2rem 0.5rem;
   }
   .operarios-badge svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
 
   /* Seña */
-  .senia-ok      { color: #22c55e; font-size: 0.85rem; font-weight: 600; }
+  .senia-ok      { color: #22c55e; font-size: 0.9rem; font-weight: 700; }  /* ← más grande */
   .senia-pending { color: var(--text-muted); font-size: 0.75rem; }
 
   /* Ver link */
   .ver-link {
-    font-size: 0.72rem; font-weight: 600;
+    font-size: 0.90rem; font-weight: 600;
     color: var(--accent);
     text-decoration: none; white-space: nowrap;
     opacity: 0; transition: opacity 0.12s;
@@ -606,9 +651,87 @@
 
 {% block extra_js %}
 <script>
-  // Enviar form al cambiar el select de estado
+  // ── Submit automático al cambiar estado ─────────────────────────────────────
   document.querySelector('[name="estado"]')?.addEventListener('change', function() {
     this.closest('form').submit();
   });
+
+  // ── Búsqueda en tiempo real (client-side) ────────────────────────────────────
+  (function () {
+    const searchInput = document.querySelector('[name="q"]');
+    const tableBody   = document.querySelector('.data-table tbody');
+    const emptyRow    = document.getElementById('live-empty-row');
+
+    if (!searchInput || !tableBody) return;
+
+    // Debounce helper
+    function debounce(fn, ms) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), ms);
+      };
+    }
+
+    function normalizeStr(str) {
+      return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function filterTable(query) {
+      const rows    = tableBody.querySelectorAll('tr[data-fecha-iso], tr:not(#live-empty-row)');
+      const q       = normalizeStr(query.trim());
+      let   visible = 0;
+
+      rows.forEach(row => {
+        if (!q) {
+          row.style.display = '';
+          visible++;
+          return;
+        }
+        const text = normalizeStr(row.textContent);
+        if (text.includes(q)) {
+          row.style.display = '';
+          visible++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Mostrar mensaje vacío si no hay coincidencias
+      let emptyMsg = tableBody.querySelector('#live-empty-row');
+      if (visible === 0 && q) {
+        if (!emptyMsg) {
+          const colspan = tableBody.closest('table')?.querySelectorAll('thead th').length || 8;
+          emptyMsg = document.createElement('tr');
+          emptyMsg.id = 'live-empty-row';
+          emptyMsg.innerHTML = `<td colspan="${colspan}" style="padding:2.5rem;text-align:center;color:var(--text-muted);font-size:0.82rem;">Sin resultados para "<strong style="color:var(--text-primary);">${q}</strong>"</td>`;
+          tableBody.appendChild(emptyMsg);
+        }
+        emptyMsg.style.display = '';
+      } else if (emptyMsg) {
+        emptyMsg.style.display = 'none';
+      }
+    }
+
+    // Filtro instantáneo mientras se escribe
+    searchInput.addEventListener('input', debounce(function() {
+      filterTable(this.value);
+    }, 150));
+
+    // Si ya hay un valor (viene del server) aplicar también
+    if (searchInput.value) {
+      filterTable(searchInput.value);
+    }
+
+    // Enter sigue haciendo submit normal al server para paginación
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        this.closest('form').submit();
+      }
+    });
+  })();
 </script>
 {% endblock %}

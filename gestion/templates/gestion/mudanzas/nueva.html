@@ -5,32 +5,50 @@
 
 {% block content %}
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
   /* ── Variables ─────────────────────────────────────────────── */
   :root {
     --nm-bg:          #0d1117;
     --nm-surface:     #161b22;
     --nm-surface-2:   #1c2330;
     --nm-surface-3:   #21293a;
-    --nm-border:      rgba(255,255,255,0.08);
-    --nm-border-2:    rgba(255,255,255,0.13);
+    --nm-border:      rgba(255,255,255,0.10);
+    --nm-border-2:    rgba(255,255,255,0.16);
     --nm-accent:      #3b82f6;
-    --nm-accent-h:    #60a5fa;
+    --nm-accent-h:    #93c5fd;
     --nm-green:       #22c55e;
     --nm-red:         #ef4444;
     --nm-yellow:      #f59e0b;
-    --nm-text:        #e2e8f0;
-    --nm-muted:       #64748b;
-    --nm-muted-2:     #94a3b8;
+    --nm-text:        #f0f4ff;
+    --nm-muted:       #8b949e;
+    --nm-muted-2:     #484f58;
     --nm-radius:      12px;
     --nm-radius-sm:   8px;
-    --nm-shadow:      0 4px 24px rgba(0,0,0,0.4);
+    --nm-shadow:      0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  /* ── Variables (Modo Claro de Alta Definición y Contraste) ── */
+  html[data-theme="light"] {
+    --nm-bg:          #f8fafc;        /* Fondo general de la página gris muy suave */
+    --nm-surface:     #ffffff;        /* ¡TARJETAS BLANCAS puras para que resalten! */
+    --nm-surface-2:   #f1f5f9;        /* Fondo interno de los inputs (gris claro sutil) */
+    --nm-surface-3:   #e2e8f0;        /* Hover de elementos internos */
+    --nm-border:      #e2e8f0;        /* Bordes de las tarjetas bien visibles y limpios */
+    --nm-border-2:    #cbd5e1;        /* Bordes de los inputs */
+    --nm-accent-h:    #1d4ed8;        /* Azul más oscuro para contraste en fondo claro */
+    --nm-text:        #0f172a;        /* Letras principales oscuras (casi negras) */
+    --nm-muted:       #475569;        /* Textos secundarios e informativos legibles */
+    --nm-muted-2:     #94a3b8;
+    --nm-shadow:      0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02); /* Sombra suave para dar relieve */
   }
 
   /* ── Page layout ───────────────────────────────────────────── */
   .nm-page {
     padding: 28px 32px 64px;
     max-width: 1100px;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    margin: 0 auto;                   /* ← centrado */
+    font-family: 'Inter', 'DM Sans', 'Segoe UI', sans-serif;
     color: var(--nm-text);
   }
 
@@ -57,13 +75,14 @@
   .nm-header-back:hover { background: var(--nm-surface-2); color: var(--nm-text); }
   .nm-header-back svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.5; }
   .nm-header h1 {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #fff;
+    font-size: 1.75rem;               /* ← más grande */
+    font-weight: 800;                 /* ← más bold */
+  color: var(--nm-text);
     margin: 0;
-    letter-spacing: -0.4px;
+    letter-spacing: -0.5px;
+    font-family: 'Inter', sans-serif;
   }
-  .nm-header p { margin: 3px 0 0; font-size: .82rem; color: var(--nm-muted); }
+  .nm-header p { margin: 4px 0 0; font-size: .88rem; color: var(--nm-muted-2); }
 
   /* ── Error banner ──────────────────────────────────────────── */
   .nm-errors {
@@ -121,12 +140,13 @@
   }
   .nm-card-icon svg { width:15px; height:15px; stroke:#93c5fd; fill:none; stroke-width:2; }
   .nm-card-title {
-    font-size: .88rem;
+    font-size: .95rem;                /* ← más grande */
     font-weight: 700;
-    color: #fff;
+   color: var(--nm-text);
     flex: 1;
+    font-family: 'Inter', sans-serif;
   }
-  .nm-card-subtitle { font-size:.75rem; color: var(--nm-muted); margin-top:1px; }
+  .nm-card-subtitle { font-size:.8rem; color: var(--nm-muted-2); margin-top:2px; }  /* ← más claro */
   .nm-card-chevron {
     width:16px; height:16px;
     stroke:var(--nm-muted); fill:none; stroke-width:2.5;
@@ -502,7 +522,7 @@
   .truck-metric-val {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--nm-text);
     display: block;
     font-variant-numeric: tabular-nums;
   }
