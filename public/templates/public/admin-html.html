@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body>
+
+    <div class="box" id="login-box">
+        <h2>ADMIN LOGIN</h2>
+        <form onsubmit="event.preventDefault();">
+            <div class="input-group">
+                <label for="usuario">Usuario:</label>
+                <input type="text" id="usuario" placeholder="Ingresa tu usuario" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Ingresar</button>
+
+            <div class="links">
+                <a href="javascript:void(0)" onclick="toggleView('forgot')">Olvidé contraseña</a>
+                <a href="javascript:void(0)" onclick="toggleView('register')">Crear nuevo usuario</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="box" id="register-box" style="display: none;">
+        <h2>NUEVO USUARIO</h2>
+        <form id="register-form" onsubmit="validarRegistro(event)">
+            
+            <div class="row">
+                <div class="input-group">
+                    <label for="reg-nombre">Nombre:</label>
+                    <input type="text" id="reg-nombre" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-apellido">Apellido:</label>
+                    <input type="text" id="reg-apellido" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-usuario">Nombre de usuario:</label>
+                <input type="text" id="reg-usuario" required>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-correo">Correo electrónico:</label>
+                <input type="email" id="reg-correo" required>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-password">Contraseña:</label>
+                <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" required>
+                <div class="error-msg" id="error-password"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-repassword">Repetir contraseña:</label>
+                <input type="password" id="reg-repassword" required>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Aceptar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="box" id="forgot-box" style="display: none;">
+        <h2>RECUPERAR</h2>
+        <p class="subtitle">Ingresa tu correo para recibir las instrucciones.</p>
+        <form onsubmit="validarCorreo(event)">
+            <div class="input-group">
+                <label for="forgot-correo">Correo electrónico:</label>
+                <input type="email" id="forgot-correo" placeholder="Ej: admin@correo.com" required>
+                <div class="error-msg" id="error-correo">Este correo no existe.</div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Aceptar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="box" id="code-box" style="display: none;">
+        <h2>VERIFICACIÓN</h2>
+        <p class="subtitle">Ingresa el código temporal que enviamos a tu correo.</p>
+        <form onsubmit="event.preventDefault(); alert('Contraseña reestablecida correctamente.'); toggleView('login');">
+            <div class="input-group">
+                <label for="codigo-temp">Código de seguridad:</label>
+                <input type="text" id="codigo-temp" placeholder="Ingresa el código" required>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="toggleView('login')">Volver</button>
+                <button type="submit" class="btn btn-primary">Verificar</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="admin-script.js"></script>
+</body>
+</html>
