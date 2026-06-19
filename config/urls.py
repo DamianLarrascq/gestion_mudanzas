@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('gestion/', include('gestion.urls', namespace='gestion')),
     path('webhook/', include('webhook.urls')),
-    # path('', include('public.urls')),
+    path('', include('public.urls')),
 ]
