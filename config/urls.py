@@ -23,4 +23,5 @@ urlpatterns = [
     path('gestion/', include('gestion.urls', namespace='gestion')),
     path('webhook/', include('webhook.urls')),
     path('', include('public.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 ]
