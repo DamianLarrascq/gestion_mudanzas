@@ -126,13 +126,16 @@
         <span class="sidebar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
         <span class="sidebar-user-role">Administrador</span>
       </div>
-      <a href="{% url 'admin:logout' %}" class="sidebar-logout-btn" title="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </a>
+      <form method="post" action="{% url 'logout' %}" class="sidebar-logout-form">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-logout-btn" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </form>
     </div>
   </div>
 

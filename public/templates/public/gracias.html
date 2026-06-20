@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¡Gracias! · EM Empresa de Mudanzas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'public/landing-style.css' %}">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="{% url 'public:landing' %}" class="logo">
+      <img src="{% static 'public/logo.jpg' %}" alt="EM Empresa de Mudanzas" style="height: 150px; width: auto;">
+    </a>
+  </nav>
+
+  <header class="hero">
+    {% if status == "approved" %}
+      <h1>¡Listo! Tu seña fue confirmada 🎉</h1>
+      <p>Recibimos tu pago{% if payment_id %} (referencia #{{ payment_id }}){% endif %}. En breve te contactamos por WhatsApp para coordinar los detalles de tu mudanza.</p>
+    {% else %}
+      <h1>Estamos procesando tu pago</h1>
+      <p>Tu solicitud quedó registrada. Te avisaremos por WhatsApp en cuanto se confirme el pago{% if payment_id %} (referencia #{{ payment_id }}){% endif %}.</p>
+    {% endif %}
+    <a href="{% url 'public:landing' %}" class="btn btn-primary">Volver al inicio</a>
+  </header>
+
+</body>
+</html>
