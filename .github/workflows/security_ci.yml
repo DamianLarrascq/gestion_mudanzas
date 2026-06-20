@@ -1,4 +1,4 @@
-name: 🔐 Security — Tests + CodeQL
+name: Security — Tests + CodeQL
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
   # JOB 1: Tests de seguridad
   # ────────────────────────────────────────────────────────────────────────────
   security-tests:
-    name: 🔐 Tests de Seguridad (Python ${{ matrix.python-version }})
+    name: Tests de Seguridad (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -109,7 +109,7 @@ jobs:
       - name: 🔐 Ejecutar tests de seguridad — auth, CSRF, webhook, presupuesto, headers
         run: |
           mkdir -p reports
-          python -m pytest tests_actions/test_security.py \
+          python -m pytest tests/security/test_auth.py \
             -v --tb=short \
             --junitxml=reports/junit-security.xml \
             --cov=gestion --cov=webhook --cov=public \
@@ -126,7 +126,7 @@ jobs:
       - name: 🔍 Ejecutar tests de seguridad — IDOR
         continue-on-error: true
         run: |
-          python -m pytest tests_actions/test_security_idor.py \
+          python -m pytest tests/security/test_idor.py \
             -v --tb=short \
             --junitxml=reports/junit-security-idor.xml \
             --cov=gestion --cov-append \
@@ -142,10 +142,20 @@ jobs:
       - name: 🛡️ Ejecutar tests de seguridad — SQL Injection + Webhook Spoofing
         continue-on-error: true
         run: |
-          python -m pytest tests_actions/test_security_sqli_webhook.py \
+          python -m pytest tests/security/test_sqli_webhook.py \
             -v --tb=short \
             --junitxml=reports/junit-security-sqli-webhook.xml \
             --cov=gestion --cov=webhook --cov=public --cov-append \
+            --cov-report=xml:reports/coverage-security.xml \
+            --cov-report=term-missing
+
+      # ── Step: tests presupuesto ──────────────────────────────────────────
+      - name: 🧮 Ejecutar tests de seguridad — Presupuesto público
+        run: |
+          python -m pytest tests/security/test_presupuesto.py \
+            -v --tb=short \
+            --junitxml=reports/junit-security-presupuesto.xml \
+            --cov=public --cov-append \
             --cov-report=xml:reports/coverage-security.xml \
             --cov-report=term-missing
 
@@ -154,7 +164,7 @@ jobs:
         if: always()
         run: |
           echo "── SEC: auth / CSRF / webhook / presupuesto / headers ──"
-          python -m pytest tests_actions/test_security.py \
+          python -m pytest tests/security/test_auth.py \
             --tb=no --no-header --co -q 2>/dev/null \
             | grep "::" | sed 's/^/  /' || true
 
@@ -162,7 +172,7 @@ jobs:
         if: always()
         run: |
           echo "── IDOR: ClienteDetailView / ResumenMudanzaView ──"
-          python -m pytest tests_actions/test_security_idor.py \
+          python -m pytest tests/security/test_idor.py \
             --tb=no --no-header --co -q 2>/dev/null \
             | grep "::" | sed 's/^/  /' || true
 
@@ -170,7 +180,15 @@ jobs:
         if: always()
         run: |
           echo "── SQLI + SPOOF: inyección SQL y payload falso MP ──"
-          python -m pytest tests_actions/test_security_sqli_webhook.py \
+          python -m pytest tests/security/test_sqli_webhook.py \
+            --tb=no --no-header --co -q 2>/dev/null \
+            | grep "::" | sed 's/^/  /' || true
+
+      - name: 📊 Resumen — tests presupuesto público
+        if: always()
+        run: |
+          echo "── PRESUPUESTO: endpoint público /presupuesto/solicitar/ ──"
+          python -m pytest tests/security/test_presupuesto.py \
             --tb=no --no-header --co -q 2>/dev/null \
             | grep "::" | sed 's/^/  /' || true
 

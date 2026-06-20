@@ -14,7 +14,7 @@ def _serializar_tarifa(t: TarifaBase) -> dict:
     return {
         "id": t.pk,
         "nombre": t.nombre,
-        "vigente_desde": t.vigente_desde.strftime("%-d/%m/%Y"),
+        "vigente_desde": t.vigente_desde.strftime("%d/%m/%Y"),
         "vigente_desde_iso": t.vigente_desde.isoformat(),
         "activa": t.activa,
         "permite_caba_feriados": t.permite_caba_feriados,
