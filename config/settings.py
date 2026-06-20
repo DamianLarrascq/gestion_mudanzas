@@ -77,6 +77,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Auth — Opción A (Django built-in auth), ver Handoff Frontend — Sistema de Autenticación
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'gestion:dashboard'
+LOGOUT_REDIRECT_URL = '/'
+
 # Unfold config
 
 UNFOLD = {
