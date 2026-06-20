@@ -140,7 +140,7 @@ def procesar_solicitud_landing(form_data: dict, inventario_raw: list) -> dict:
         mudanza = Mudanza.objects.create(
             cliente=cliente,
             estado=Mudanza.Estado.PRESUPUESTADA,
-            fecha_hora=form_data["fecha_deseada"],
+            fecha_hora=form_data["fecha_hora"],
             origen=origen,
             destino=destino,
             distancia_km=distancia_km,
