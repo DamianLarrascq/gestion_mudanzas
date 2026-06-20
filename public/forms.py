@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 import datetime
 
 
@@ -27,14 +28,26 @@ class SolicitudPresupuestoForm(forms.Form):
     destino_lng       = forms.FloatField(required=False)
 
     # ── Logística ─────────────────────────────────────────────────────────────
-    fecha_deseada = forms.DateField()
+    fecha_deseada = forms.DateTimeField()
+    hora_deseada = forms.TimeField()
     distancia_km  = forms.DecimalField(max_digits=8, decimal_places=2, min_value=1)
 
     def clean_fecha_deseada(self):
-        fecha = self.cleaned_data["fecha_deseada"]
-        if fecha < datetime.date.today():
-            raise forms.ValidationError("La fecha de la mudanza no puede ser en el pasado.")
-        return fecha
+        cleaned = super().clean()
+        fecha = cleaned.get("fecha_deseada")
+        hora = cleaned.get("hora_deseada")
+
+        if fecha and hora:
+            fecha_hora_naive = datetime.combine(fecha, hora)
+            fecha_hora = timezone.make_aware(fecha_hora_naive)
+
+            if fecha_hora < timezone.now():
+                raise forms.ValidationError(
+                    "La fecha y hora de la mudanza no puede ser en el pasado."
+                )
+            cleaned["fecha_hora"] = fecha_hora
+
+        return cleaned
 
     def clean_origen_piso(self):
         return self.cleaned_data.get("origen_piso") or "PB"
