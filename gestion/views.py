@@ -134,7 +134,7 @@ class MudanzaCreateView(StaffRequiredMixin, TemplateView):
             request,
             f"Mudanza #{resultado['id']} creada correctamente."
         )
-        return redirect('gestion:mudanza_detalle', pk=resultado['id'])
+        return redirect(resultado['url_detalle'])
 
 
 # Clientes
