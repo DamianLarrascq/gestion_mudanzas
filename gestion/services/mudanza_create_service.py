@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.urls import reverse
 
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.clientes import Cliente
@@ -192,7 +193,7 @@ def _serializar_mudanza_creada(mudanza: Mudanza) -> dict:
     return {
         'id': mudanza.pk,
         'uuid': str(mudanza.uuid),
-         'url_detalle': f'/gestion/mudanzas/{mudanza.pk}/resumen/',
+         'url_detalle': reverse('gestion:mudanza_resumen', kwargs={'pk': mudanza.pk}),
         'cliente_nombre': mudanza.cliente.nombre_completo,
         'cliente_telefono': mudanza.cliente.telefono,
         'fecha_hora_display': timezone.localtime(mudanza.fecha_hora).strftime('%d de %B de %Y a las %H:%M'),
