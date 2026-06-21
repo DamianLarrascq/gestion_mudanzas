@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,7 +7,7 @@
 <title>Solicitar mudanza · GDM</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
-<link rel="stylesheet" href="formulario-style.css">
+<link rel="stylesheet" href="{% static 'public/formulario-style.css' %}">
 </head>
 <body>
 
@@ -14,7 +15,7 @@
   <span class="topbar-logo"></span>
   <span class="topbar-sub">Cálculo y Reserva</span>
   
-  <a href="landing-html.html" class="btn-3d-home" title="Volver al inicio">
+  <a href="{% url 'public:landing' %}" class="btn-3d-home" title="Volver al inicio">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
       <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -418,6 +419,6 @@
 
 </div>
 
-<script src="formulario-script.js"></script>
+<script src="{% static 'public/formulario-script.js' %}"></script>
 </body>
 </html>
