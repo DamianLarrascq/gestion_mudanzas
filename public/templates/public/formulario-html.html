@@ -1,0 +1,424 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitar mudanza · GDM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
+<link rel="stylesheet" href="{% static 'public/formulario-style.css' %}">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo"></span>
+  <span class="topbar-sub">Cálculo y Reserva</span>
+  
+  <a href="{% url 'public:landing' %}" class="btn-3d-home" title="Volver al inicio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+      <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    </svg>
+    Inicio
+  </a>
+</div>
+
+<div class="container">
+
+  <div class="progress-wrap">
+    <div class="step-dot active" id="dot-1"><div class="dot-circle">1</div><span class="dot-label">Datos</span></div>
+    <div class="step-dot" id="dot-2"><div class="dot-circle">2</div><span class="dot-label">Presupuesto</span></div>
+    <div class="step-dot" id="dot-3"><div class="dot-circle">3</div><span class="dot-label">Reserva</span></div>
+  </div>
+
+  <div id="paso-1" class="fade-in">
+    <div class="card">
+      <div class="card-title">Cotizá tu mudanza</div>
+      <div class="card-sub">Ingresá los detalles y calculá la capacidad ideal de transporte.</div>
+
+      <div class="section-label">Ruta</div>
+      <div class="field">
+        <label>Dirección de origen</label>
+        <input type="text" id="origen" placeholder="Dirección exacta de inicio..." autocomplete="off">
+        <div id="sug-origen" class="sugerencias-lista hidden"></div>
+      </div>
+      <div class="field">
+        <label>Dirección de destino</label>
+        <input type="text" id="destino" placeholder="Dirección exacta de llegada..." autocomplete="off">
+        <div id="sug-destino" class="sugerencias-lista hidden"></div>
+      </div>
+      
+      <div class="field-row">
+        <div class="field">
+          <label>Distancia estimada (KM)</label>
+          <input type="number" id="distancia_km" placeholder="Ej: 0" readonly tabindex="-1">
+        </div>
+      </div>
+
+      <div class="section-label">Características de los accesos</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Piso origen</label>
+          <select id="pisos_origen">
+            <option value="0">Planta baja / Casa</option>
+            <option value="1">1° piso</option>
+            <option value="2">2° piso</option>
+            <option value="3">3° piso o más</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Piso destino</label>
+          <select id="pisos_destino">
+            <option value="0">Planta baja / Casa</option>
+            <option value="1">1° piso</option>
+            <option value="2">2° piso</option>
+            <option value="3">3° piso o más</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <label class="check-group"><input type="checkbox" id="asc_origen"><span>Ascensor en origen</span></label>
+        <label class="check-group"><input type="checkbox" id="asc_destino"><span>Ascensor en destino</span></label>
+      </div>
+
+      <div class="section-label">Inventario principal e Índices de Carga</div>
+      <div class="info-box" style="margin-bottom: 14px;">
+        Agregá los muebles de tu mudanza. El sistema calculará el volumen exacto en metros cúbicos (m³) para recomendarte el camión correcto.
+      </div>
+      
+      <div class="inventario-container">
+        <div class="muebles-lista">
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="heladeraBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#cbd5e1"/><stop offset="50%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#64748b"/>
+                    </linearGradient>
+                    <linearGradient id="heladeraReflejo" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/><stop offset="30%" stop-color="#ffffff" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="16" cy="29" rx="9" ry="2" fill="#000" fill-opacity="0.15"/>
+                  <rect x="8" y="4" width="16" height="24" rx="2" fill="url(#heladeraBody)"/>
+                  <rect x="9" y="5" width="14" height="8" rx="1" fill="#475569" fill-opacity="0.2"/>
+                  <line x1="8" y1="14" x2="24" y2="14" stroke="#475569" stroke-width="1.5"/>
+                  <rect x="21" y="8" width="1.5" height="4" rx="0.5" fill="#f8fafc" stroke="#334155" stroke-width="0.5"/>
+                  <rect x="21" y="16" width="1.5" height="6" rx="0.5" fill="#f8fafc" stroke="#334155" stroke-width="0.5"/>
+                  <rect x="9" y="5" width="4" height="22" fill="url(#heladeraReflejo)"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Heladera</span>
+                <span class="mueble-vol">Volumen: 1.20 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Heladera', -1)">-</button>
+              <span class="cont-valor" id="cant-Heladera">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Heladera', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="lavarropasBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#cbd5e1"/>
+                    </linearGradient>
+                    <radialGradient id="tambor3D" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#334155"/><stop offset="75%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/>
+                    </radialGradient>
+                  </defs>
+                  <ellipse cx="16" cy="28" rx="10" ry="2" fill="#000" fill-opacity="0.15"/>
+                  <rect x="7" y="8" width="18" height="19" rx="2" fill="url(#lavarropasBody)" stroke="#94a3b8" stroke-width="0.5"/>
+                  <rect x="7" y="8" width="18" height="4" fill="#e2e8f0"/>
+                  <circle cx="11" cy="10" r="1" fill="#3b82f6"/>
+                  <rect x="14" y="9.5" width="8" height="1" rx="0.5" fill="#94a3b8"/>
+                  <circle cx="16" cy="19" r="6" fill="#94a3b8" fill-opacity="0.3" stroke="#64748b" stroke-width="1.5"/>
+                  <circle cx="16" cy="19" r="4.5" fill="url(#tambor3D)"/>
+                  <circle cx="14.5" cy="17.5" r="2" fill="#ffffff" fill-opacity="0.4"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Lavarropas</span>
+                <span class="mueble-vol">Volumen: 0.50 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Lavarropas', -1)">-</button>
+              <span class="cont-valor" id="cant-Lavarropas">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Lavarropas', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="maderaCama" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#b45309"/><stop offset="100%" stop-color="#78350f"/>
+                    </linearGradient>
+                    <linearGradient id="colchonCama" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e2e8f0"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="16" cy="26" rx="12" ry="3" fill="#000" fill-opacity="0.15"/>
+                  <rect x="4" y="8" width="24" height="10" rx="1" fill="url(#maderaCama)"/>
+                  <rect x="5" y="16" width="22" height="9" rx="1" fill="url(#maderaCama)"/>
+                  <rect x="6" y="14" width="20" height="9" rx="1" fill="url(#colchonCama)"/>
+                  <line x1="6" y1="18" x2="26" y2="18" stroke="#cbd5e1" stroke-width="1"/>
+                  <rect x="8" y="11" width="7" height="4" rx="1" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>
+                  <rect x="17" y="11" width="7" height="4" rx="1" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>
+                  <path d="M 6 19 L 26 19 L 26 23 L 6 23 Z" fill="#3b82f6" fill-opacity="0.15"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Cama 2 plazas</span>
+                <span class="mueble-vol">Volumen: 1.60 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Cama', -1)">-</button>
+              <span class="cont-valor" id="cant-Cama">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Cama', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="sofaSombra" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/>
+                    </linearGradient>
+                    <linearGradient id="sofaCojin" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="16" cy="27" rx="11" ry="2.5" fill="#000" fill-opacity="0.15"/>
+                  <rect x="5" y="10" width="22" height="12" rx="3" fill="url(#sofaSombra)"/>
+                  <rect x="3" y="14" width="4" height="10" rx="2" fill="url(#sofaCojin)"/>
+                  <rect x="25" y="14" width="4" height="10" rx="2" fill="url(#sofaCojin)"/>
+                  <rect x="6" y="16" width="20" height="7" rx="2" fill="url(#sofaCojin)"/>
+                  <line x1="16" y1="11" x2="16" y2="23" stroke="#1e40af" stroke-width="1"/>
+                  <rect x="6" y="23" width="2" height="3" fill="#64748b"/>
+                  <rect x="24" y="23" width="2" height="3" fill="#64748b"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Sofá de 2/3 cuerpos</span>
+                <span class="mueble-vol">Volumen: 1.50 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Sofa', -1)">-</button>
+              <span class="cont-valor" id="cant-Sofa">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Sofa', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="maderaMesa" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#92400e"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="16" cy="27" rx="10" ry="3" fill="#000" fill-opacity="0.12"/>
+                  <rect x="8" y="14" width="2" height="12" fill="#78350f"/>
+                  <rect x="22" y="14" width="2" height="12" fill="#78350f"/>
+                  <rect x="6" y="15" width="2.5" height="12" fill="url(#maderaMesa)"/>
+                  <rect x="23.5" y="15" width="2.5" height="12" fill="url(#maderaMesa)"/>
+                  <ellipse cx="16" cy="14" rx="11" ry="4" fill="url(#maderaMesa)" stroke="#78350f" stroke-width="0.5"/>
+                  <ellipse cx="16" cy="13.5" rx="11" ry="3.8" fill="#fbbf24" fill-opacity="0.3"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Mesa de comedor</span>
+                <span class="mueble-vol">Volumen: 0.90 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Mesa', -1)">-</button>
+              <span class="cont-valor" id="cant-Mesa">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Mesa', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="mueble-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="mueble-icono">
+                <svg width="34" height="34" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="placardMadera" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#a16207"/><stop offset="50%" stop-color="#78350f"/><stop offset="100%" stop-color="#451a03"/>
+                    </linearGradient>
+                    <linearGradient id="placardPuertas" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#ca8a04"/><stop offset="100%" stop-color="#a16207"/>
+                    </linearGradient>
+                    <linearGradient id="placardReflejo" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="16" cy="28" rx="10" ry="2" fill="#000" fill-opacity="0.2"/>
+                  <rect x="7" y="4" width="18" height="23" rx="1.5" fill="url(#placardMadera)"/>
+                  <rect x="8.5" y="5.5" width="7" height="20" rx="0.5" fill="url(#placardPuertas)"/>
+                  <rect x="16.5" y="5.5" width="7" height="20" rx="0.5" fill="url(#placardPuertas)"/>
+                  <line x1="16" y1="5" x2="16" y2="26" stroke="#451a03" stroke-width="1"/>
+                  <rect x="14" y="13" width="1" height="4" rx="0.3" fill="#e2e8f0" stroke="#475569" stroke-width="0.5"/>
+                  <rect x="17" y="13" width="1" height="4" rx="0.3" fill="#e2e8f0" stroke="#475569" stroke-width="0.5"/>
+                  <rect x="9" y="27" width="2" height="2" fill="#451a03"/>
+                  <rect x="21" y="27" width="2" height="2" fill="#451a03"/>
+                  <rect x="8.5" y="5.5" width="15" height="6" fill="url(#placardReflejo)" pointer-events="none"/>
+                </svg>
+              </div>
+              <div class="mueble-info">
+                <span class="mueble-nombre">Placard</span>
+                <span class="mueble-vol">Volumen: 1.00 m³</span>
+              </div>
+            </div>
+            <div class="contador-control">
+              <button type="button" class="btn-cont" onclick="alterarMueble('Ropero', -1)">-</button>
+              <span class="cont-valor" id="cant-Ropero">0</span>
+              <button type="button" class="btn-cont" onclick="alterarMueble('Ropero', 1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="camion-visualizador">
+          <div class="camion-tag" id="camion-tipo">Vehículo Requerido: Ninguno</div>
+          <div class="camion-ilustracion">
+            <svg class="camion-svg" id="camion-dibujo" viewBox="0 0 160 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="20" y="55" width="120" height="8" rx="2" fill="#5a5a5a"/>
+              <circle cx="45" cy="65" r="8" fill="#1a1a18" stroke="#fff" stroke-width="2"/>
+              <circle cx="115" cy="65" r="8" fill="#1a1a18" stroke="#fff" stroke-width="2"/>
+              <path d="M110 30 H130 L140 45 V55 H110 Z" fill="#2563eb"/>
+              <rect x="120" y="34" width="12" height="10" fill="#eef4ff"/>
+              <rect id="svg-caja-carga" x="25" y="20" width="85" height="35" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" rx="1"/>
+            </svg>
+          </div>
+          <div class="camion-metricas">
+            <div class="metrica-bloque">
+              <span class="metrica-val" id="metrica-bultos">0</span>
+              <span class="metrica-lbl">Artículos</span>
+            </div>
+            <div class="metrica-bloque">
+              <span class="metrica-val" id="metrica-volumen">0.00 m³</span>
+              <span class="metrica-lbl">Volumen Total</span>
+            </div>
+          </div>
+          <div class="camion-caja" id="camion-caja-items">
+            <div class="caja-vacia-msg">Sin artículos seleccionados.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:18px;">
+        <label>Otros detalles o bultos menores (cajas, bolsas, etc.)</label>
+        <textarea id="notas" placeholder="Ej: 15 cajas medianas, 1 televisor, 3 valijas..."></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="btn-calcular" onclick="calcularPresupuesto()" style="margin-top:16px;">
+        Calcular tarifa y ver resumen →
+      </button>
+    </div>
+  </div>
+
+  <div id="paso-2" class="hidden fade-in">
+    <div class="presupuesto-card">
+      <div class="presupuesto-header">
+        <div class="presupuesto-header-title">Tu presupuesto estimado</div>
+        <div class="presupuesto-header-badge">Calculado en vivo</div>
+      </div>
+      <div class="presupuesto-body">
+        <div id="lineas-presupuesto"></div>
+        <div class="linea-subtotal">
+          <span>Subtotal base</span>
+          <span id="val-subtotal"></span>
+        </div>
+        <div class="linea-subtotal">
+          <span>IVA (21%)</span>
+          <span id="val-iva"></span>
+        </div>
+        <div class="linea-total">
+          <span class="total-label">Total Neto</span>
+          <span class="total-monto" id="val-total"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="font-size:18px;margin-bottom:16px;">Resumen del viaje</div>
+      <div class="resumen-grid" id="resumen-datos"></div>
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="cancelarMudanza()">✕ Cancelar</button>
+        <button class="btn btn-confirm" id="btn-confirmar" onclick="irAReserva()">Continuar a Reserva →</button>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button class="btn btn-ghost" onclick="volverPaso1()">← Modificar inventario</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="paso-3" class="hidden fade-in">
+    
+    <div class="card" id="reserva-card">
+      <div class="card-title">Completá tus datos</div>
+      <div class="card-sub">Último paso para agendar el servicio y confirmar el viaje.</div>
+
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input type="text" id="nombre" placeholder="Ej: Juan Pérez" required>
+      </div>
+      <div class="field">
+        <label>Teléfono / WhatsApp *</label>
+        <input type="tel" id="telefono" placeholder="Ej: 11 1234-5678" required>
+      </div>
+      <div class="field">
+        <label>Email (opcional)</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com">
+      </div>
+
+      <div class="section-label">1. Seleccioná el día (días hábiles)</div>
+      <div class="grid-3d" id="calendario-dias"></div>
+
+      <div class="horarios-container" id="seccion-horarios" style="display:none;">
+        <div class="section-label">2. Seleccioná el horario disponible</div>
+        <div class="grid-3d" id="grilla-horarios"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="volverPaso2()">← Volver</button>
+        <button class="btn btn-primary" id="btn-confirmar-reserva" disabled onclick="procesarReserva()">Confirmar Reserva ✓</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="mensaje-final" style="text-align:center; padding:40px 20px;">
+      <div id="resultado-confirmado" class="hidden">
+        <h2 style="font-family:var(--serif); font-size:26px; color:var(--success); margin-bottom:10px;">¡Reserva confirmada!</h2>
+        <p style="color:var(--ink-3); margin-bottom:20px;">Tus datos y tu fecha fueron agendados correctamente. Un representante comercial de GDM revisará los detalles y se pondrá en contacto a la brevedad.</p>
+        <button class="btn btn-primary" onclick="reiniciarTodo()" style="max-width:200px;">Hacer otra cotización</button>
+      </div>
+      
+      <div id="resultado-cancelado" class="hidden">
+        <h2 style="font-family:var(--serif); font-size:26px; color:var(--danger); margin-bottom:10px;">Cotización cancelada</h2>
+        <p style="color:var(--ink-3); margin-bottom:20px;">Los datos cargados en el formulario fueron removidos correctamente.</p>
+        <button class="btn btn-primary" onclick="reiniciarTodo()" style="max-width:200px;">Volver a empezar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="{% static 'public/formulario-script.js' %}"></script>
+</body>
+</html>

@@ -5,25 +5,40 @@
 
 {% block content %}
 <style>
-  :root {
-    --dash-bg:           #0f1117;
-    --dash-surface:      #181c27;
-    --dash-surface-2:    #1e2334;
-    --dash-border:       rgba(255,255,255,0.07);
-    --dash-accent:       #4f7cff;
-    --dash-accent-light: #7a9dff;
-    --dash-green:        #22c97b;
-    --dash-red:          #ff4f6b;
-    --dash-yellow:       #f5b942;
-    --dash-text:         #e8eaf0;
-    --dash-muted:        #6e7891;
-    --dash-radius:       14px;
-  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+:root {
+    --dash-bg: var(--bg);
+    --dash-surface: var(--surface);
+    --dash-surface-2: var(--bg-elevated);
+
+    --dash-border: var(--border);
+
+    --dash-text: var(--text-primary);
+    --dash-muted: var(--text-secondary);
+
+    --dash-accent: var(--accent);
+    --dash-accent-light: var(--accent-hover);
+
+    --dash-green: var(--success);
+    --dash-red: var(--danger);
+    --dash-yellow: var(--warning);
+
+    --dash-radius: 14px;
+
+    --font-body: 'Inter', sans-serif;
+--font-title: 'DM Serif Display', serif;
+}
+.profile-name {
+    font-family: var(--font-title);
+    font-size: 1.75rem;
+    font-weight: 400;
+}
 
   .detalle-page {
+    margin: 0 auto;
     padding: 32px 36px 48px;
     max-width: 1200px;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+     font-family: var(--font-body);
     color: var(--dash-text);
   }
 
@@ -32,9 +47,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     color: var(--dash-muted);
-    margin-bottom: 22px;
+    /* margin-bottom: 22px; */
   }
   .breadcrumb a { color: var(--dash-accent-light); text-decoration: none; }
   .breadcrumb a:hover { text-decoration: underline; }
@@ -77,7 +92,7 @@
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .profile-id-tag {
-    font-size: 0.72rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--dash-muted);
     background: var(--dash-surface-2);
@@ -86,7 +101,7 @@
     border-radius: 5px;
     letter-spacing: .04em;
   }
-  .profile-since { font-size: 0.8rem; color: var(--dash-muted); margin-bottom: 16px; }
+  .profile-since { font-size: 1rem; color: var(--dash-muted); margin-bottom: 16px; }
 
   .profile-fields {
     display: flex;
@@ -95,7 +110,7 @@
   }
   .profile-field {}
   .profile-field-label {
-    font-size: 0.68rem;
+    font-size: 0.90rem;
     text-transform: uppercase;
     letter-spacing: .08em;
     color: var(--dash-muted);
@@ -103,7 +118,7 @@
     margin-bottom: 3px;
   }
   .profile-field-value {
-    font-size: 0.88rem;
+    font-size: 1rem;
     color: var(--dash-text);
     font-weight: 500;
   }
@@ -136,7 +151,7 @@
   .resumen-card:nth-child(4) { animation-delay: .23s; }
 
   .resumen-card-label {
-    font-size: 0.7rem;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: .07em;
     color: var(--dash-muted);
@@ -154,7 +169,7 @@
   .resumen-card-value.red   { color: var(--dash-red); }
   .resumen-card-value.blue  { color: var(--dash-accent-light); }
   .resumen-card-sub {
-    font-size: 0.73rem;
+    font-size: 0.95rem;
     color: var(--dash-muted);
     margin-top: 5px;
   }
@@ -162,7 +177,7 @@
   /* Badge activo */
   .badge-activo {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.72rem; font-weight: 700;
+    font-size: 1rem; font-weight: 700;
     padding: 3px 10px; border-radius: 20px;
     letter-spacing: .04em; text-transform: uppercase;
     background: rgba(34,201,123,.15); color: var(--dash-green);
@@ -182,12 +197,12 @@
     padding: 16px 22px; border-bottom: 1px solid var(--dash-border);
   }
   .panel-title {
-    font-size: 0.88rem; font-weight: 700; color: #fff;
+    font-size: 1.2rem; font-weight: 700; color: #fff;
     display: flex; align-items: center; gap: 8px;
   }
   .panel-title svg { width: 15px; height: 15px; stroke: var(--dash-accent-light); stroke-width: 2; fill: none; }
   .panel-count {
-    font-size: 0.75rem; color: var(--dash-muted);
+    font-size: 0.95; color: var(--dash-muted);
     background: var(--dash-surface-2); padding: 3px 10px;
     border-radius: 20px; border: 1px solid var(--dash-border);
   }
@@ -195,7 +210,7 @@
   /* ── Tabla historial ──────────────────────────────────────────── */
   .historial-table { width: 100%; border-collapse: collapse; }
   .historial-table thead th {
-    font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
+    font-size: 0.95; text-transform: uppercase; letter-spacing: .08em;
     color: var(--dash-muted); padding: 11px 20px; font-weight: 600;
     text-align: left; background: var(--dash-surface-2);
     border-bottom: 1px solid var(--dash-border); white-space: nowrap;
@@ -205,12 +220,12 @@
   .historial-table tbody tr:hover { background: rgba(255,255,255,.025); }
   .historial-table td { padding: 13px 20px; font-size: 0.84rem; vertical-align: middle; color: var(--dash-text); }
 
-  .fecha-cell { font-size: 0.8rem; color: var(--dash-muted); white-space: nowrap; }
+  .fecha-cell { font-size: 0.90rem; color: var(--dash-muted); white-space: nowrap; }
 
-  .ruta-text { font-size: 0.84rem; color: var(--dash-text); white-space: nowrap; }
+  .ruta-text { font-size: 0.90rem; color: var(--dash-text); white-space: nowrap; }
 
   .camion-pill {
-    font-size: 0.75rem;
+    font-size: 0.90rem;
     font-family: 'Courier New', monospace;
     background: var(--dash-surface-2);
     border: 1px solid var(--dash-border);
@@ -226,7 +241,7 @@
 
   .btn-detalle {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.78rem; font-weight: 600;
+    font-size: 1rem; font-weight: 600;
     color: var(--dash-accent-light);
     background: rgba(79,124,255,.1);
     border: 1px solid rgba(79,124,255,.2);
@@ -246,7 +261,7 @@
   .badge-dark      { background: rgba(40,40,60,.5);     color: #7a8199; }
   [class^="badge-"] {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.72rem; font-weight: 700;
+    font-size: 0.90rem; font-weight: 700;
     padding: 3px 9px; border-radius: 20px;
     letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
   }

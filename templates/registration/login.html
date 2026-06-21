@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso · Panel de Administración</title>
+    <link rel="stylesheet" href="{% static 'public/admin-style.css' %}">
+</head>
+<body>
+
+    <div class="box" id="login-box">
+        <h2>ADMIN LOGIN</h2>
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="error-msg" style="display:block;margin-bottom:15px;">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="input-group">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <span class="error-msg" style="display:block;">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="input-group">
+                {{ form.password.label_tag }}
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <span class="error-msg" style="display:block;">{{ form.password.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            {# Campo oculto — no eliminar, Django lo usa para el redirect post-login #}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Ingresar</button>
+        </form>
+    </div>
+
+</body>
+</html>

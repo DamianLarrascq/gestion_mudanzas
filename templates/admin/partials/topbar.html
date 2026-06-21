@@ -3,6 +3,64 @@
   Requiere: titulo_pagina (str), seccion_activa (str)
   Opcional: breadcrumb_extra (list of dicts {label, url})
 {% endcomment %}
+<style>
+  .topbar-notif-wrapper {
+    position: relative;
+}
+
+.topbar-notif-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topbar-notif-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 45px;
+    width: 250px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,.1);
+    z-index: 1000;
+}
+
+.topbar-notif-menu.active {
+    display: block;
+}
+
+.notif-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.notif-item:last-child {
+    border-bottom: none;
+}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("notifBtn");
+    const menu = document.getElementById("notifMenu");
+
+    if (btn && menu) {
+        btn.addEventListener("click", function () {
+            menu.classList.toggle("active");
+        });
+    }
+});
+</script>
 
 <header class="topbar" id="topbar">
 
@@ -42,24 +100,39 @@
   {# ── ACCIONES GLOBALES ────────────────────────────────────────────────── #}
   <div class="topbar-actions">
 
-    {# Búsqueda rápida #}
-    <button class="topbar-action-btn" id="quickSearchBtn" title="Búsqueda rápida (Ctrl+K)" aria-label="Búsqueda rápida">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <span class="topbar-action-kbd">⌘K</span>
-    </button>
+   
 
     {# Notificaciones — placeholder #}
-    <button class="topbar-action-btn topbar-notif-btn" title="Notificaciones" aria-label="Notificaciones">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-      {# Descomentar cuando haya notificaciones reales: #}
-      {# <span class="topbar-notif-dot"></span> #}
+
+<div class="topbar-notif-wrapper">
+    <button class="topbar-action-btn topbar-notif-btn"
+            id="notifBtn">
+
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.75">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+
+        {% if cantidad_notificaciones > 0 %}
+        <span class="topbar-notif-dot">
+            {{ cantidad_notificaciones }}
+        </span>
+        {% endif %}
     </button>
+
+    <div class="topbar-notif-menu" id="notifMenu">
+        {% for n in ultimas_notificaciones %}
+            <div class="notif-item">
+                {{ n.get_tipo_display }}
+            </div>
+        {% empty %}
+            <div class="notif-item">
+                Sin notificaciones
+            </div>
+        {% endfor %}
+    </div>
+</div>
 
     {# Divider #}
     <div class="topbar-divider" aria-hidden="true"></div>

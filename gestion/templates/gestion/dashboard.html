@@ -6,30 +6,51 @@
 {% block content %}
 
 {# ── Estilos específicos del dashboard ─────────────────────────────── #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
+  
+  /* ── Google Font: Inter ─────────────────── */
   /* ── Paleta ──────────────────────────────── */
-  :root {
-    --dash-bg:           #0f1117;
-    --dash-surface:      #181c27;
-    --dash-surface-2:    #1e2334;
-    --dash-border:       rgba(255,255,255,0.07);
-    --dash-accent:       #4f7cff;
-    --dash-accent-light: #7a9dff;
-    --dash-green:        #22c97b;
-    --dash-red:          #ff4f6b;
-    --dash-yellow:       #f5b942;
-    --dash-text:         #e8eaf0;
-    --dash-muted:        #6e7891;
-    --dash-radius:       14px;
-  }
+ :root {
+    --dash-bg: var(--bg);
+    --dash-surface: var(--surface);
+    --dash-surface-2: var(--bg-elevated);
 
+    --dash-border: var(--border);
+
+    --dash-text: var(--text-primary);
+    --dash-muted: var(--text-secondary);
+
+    --dash-accent: var(--accent);
+    --dash-accent-light: var(--accent-hover);
+
+    --dash-green: var(--success);
+    --dash-red: var(--danger);
+    --dash-yellow: var(--warning);
+    
+    --dash-radius: 14px;
+
+    --font-body: 'DM Sans', sans-serif;
+--font-title: 'DM Serif Display', serif;
+}
+body {
+    font-family: var(--font-body);
+    font-size: 20px;
+}
+
+/* Todos los títulos */
+h1,h2,h3,h4,h5,h6  {
+    font-family: var(--font-title);
+}
   /* ── Layout wrapper ──────────────────────── */
-  .dash-page {
-    padding: 32px 36px 48px;
-    max-width: 1440px;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
-    color: var(--dash-text);
-  }
+.dash-page {
+    padding: 32px 24px 48px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
 
   /* ── Header ──────────────────────────────── */
   .dash-header {
@@ -39,15 +60,16 @@
     margin-bottom: 32px;
   }
   .dash-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    color: #fff;
+    font-family: var(--font-title);
+    font-size: 40px;               /* ← más grande */
+    font-weight: 800;                /* ← más bold */
+    letter-spacing: -0.6px;
+     color: var(--dash-text);
     margin: 0;
     line-height: 1;
   }
   .dash-header .dash-date {
-    font-size: 0.85rem;
+    font-size: 0.9rem;               /* ← más legible */
     color: var(--dash-muted);
     margin-top: 6px;
   }
@@ -55,7 +77,7 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 0.78rem;
+    font-size: 0.90rem;
     color: var(--dash-green);
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -118,26 +140,26 @@
   }
 
   .kpi-value {
-    font-size: 2rem;
+    font-size: 2.2rem;               /* ← más grande */
     font-weight: 800;
     letter-spacing: -1px;
-    color: #fff;
+     color: var(--dash-text);
     line-height: 1;
     margin-bottom: 4px;
   }
   .kpi-label {
-    font-size: 0.78rem;
+    font-size: 0.90rem;              /* ← más grande */
     color: var(--dash-muted);
     text-transform: uppercase;
     letter-spacing: .06em;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 12px;
   }
   .kpi-trend {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.78rem;
+    font-size: 0.90rem;
     font-weight: 600;
     padding: 3px 9px;
     border-radius: 20px;
@@ -146,7 +168,7 @@
   .kpi-trend.down { background: rgba(255,79,107,.12);  color: var(--dash-red);   }
   .kpi-trend.neutral { background: rgba(110,120,145,.15); color: var(--dash-muted); }
   .kpi-subtitulo {
-    font-size: 0.74rem;
+    font-size: 1rem;
     color: var(--dash-muted);
     margin-top: 8px;
   }
@@ -175,9 +197,9 @@
     border-bottom: 1px solid var(--dash-border);
   }
   .panel-title {
-    font-size: 0.9rem;
+    font-size: 1.2rem;                 /* ← más grande */
     font-weight: 700;
-    color: #fff;
+     color: var(--dash-text);
     letter-spacing: .02em;
     display: flex; align-items: center; gap: 8px;
   }
@@ -203,12 +225,12 @@
     border-collapse: collapse;
   }
   .mudanzas-table thead th {
-    font-size: 0.7rem;
+    font-size: 0.73rem;
     text-transform: uppercase;
     letter-spacing: .08em;
     color: var(--dash-muted);
     padding: 12px 22px;
-    font-weight: 600;
+    font-weight: 700;               /* ← bold */
     text-align: left;
     background: var(--dash-surface-2);
     border-bottom: 1px solid var(--dash-border);
@@ -218,10 +240,10 @@
     transition: background .12s;
   }
   .mudanzas-table tbody tr:last-child { border-bottom: none; }
-  .mudanzas-table tbody tr:hover { background: rgba(255,255,255,.025); }
+  .mudanzas-table tbody tr:hover { background: rgba(255,255,255,.04); }
   .mudanzas-table td {
     padding: 14px 22px;
-    font-size: 0.84rem;
+    font-size: 0.88rem;             /* ← más grande */
     vertical-align: middle;
     color: var(--dash-text);
   }
@@ -231,7 +253,7 @@
     background: var(--dash-surface-2);
     border: 1px solid var(--dash-border);
     color: var(--dash-accent-light);
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     padding: 4px 10px;
@@ -240,13 +262,14 @@
   }
 
   .cliente-name {
-    font-weight: 600;
+    font-weight: 700;               /* ← más bold */
     color: #fff;
     display: block;
     margin-bottom: 2px;
+    font-size: 0.9rem;
   }
   .cliente-tel {
-    font-size: 0.75rem;
+    font-size: 0.78rem;             /* ← más grande */
     color: var(--dash-muted);
   }
 
@@ -255,9 +278,9 @@
     flex-direction: column;
     gap: 2px;
   }
-  .ruta-orig { font-size: 0.8rem; color: var(--dash-text); }
-  .ruta-arrow { font-size: 0.7rem; color: var(--dash-muted); margin: 1px 0; }
-  .ruta-dest { font-size: 0.8rem; color: var(--dash-muted); }
+  .ruta-orig { font-size: 0.84rem; color: var(--dash-text); font-weight: 500; }
+  .ruta-arrow { font-size: 0.72rem; color: var(--dash-muted); margin: 1px 0; }
+  .ruta-dest { font-size: 0.82rem; color: var(--dash-muted); }
 
   .senia-icon { font-size: 1rem; }
 

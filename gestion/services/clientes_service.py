@@ -219,7 +219,7 @@ def _serializar_mudanza_historial(m: Mudanza) -> dict:
 
     return {
         "id": m.pk,
-        "url_detalle": f"/gestion/mudanzas/{m.pk}/",
+        "url_detalle": f"/gestion/mudanzas/{m.pk}/resumen/",
         "fecha_display": _fmt_fecha(m.fecha_hora.date()),
         "fecha_iso": m.fecha_hora.isoformat(),
         "ruta": _fmt_ruta(m.origen, m.destino),

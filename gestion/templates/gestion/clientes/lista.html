@@ -5,25 +5,51 @@
 
 {% block content %}
 <style>
-  :root {
-    --dash-bg:           #0f1117;
-    --dash-surface:      #181c27;
-    --dash-surface-2:    #1e2334;
-    --dash-border:       rgba(255,255,255,0.07);
-    --dash-accent:       #4f7cff;
-    --dash-accent-light: #7a9dff;
-    --dash-green:        #22c97b;
-    --dash-red:          #ff4f6b;
-    --dash-yellow:       #f5b942;
-    --dash-text:         #e8eaf0;
-    --dash-muted:        #6e7891;
-    --dash-radius:       14px;
-  }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+ :root {
+    --dash-bg: var(--bg);
+    --dash-surface: var(--surface);
+    --dash-surface-2: var(--bg-elevated);
+
+    --dash-border: var(--border);
+
+    --dash-text: var(--text-primary);
+    --dash-muted: var(--text-secondary);
+
+    --dash-accent: var(--accent);
+    --dash-accent-light: var(--accent-hover);
+
+    --dash-green: var(--success);
+    --dash-red: var(--danger);
+    --dash-yellow: var(--warning);
+
+    --dash-radius: 14px;
+
+      --font-body: 'Inter', sans-serif;
+  --font-title: 'DM Serif Display', serif;
+}
+
+html, body {
+  font-family: var(--font-body) !important;
+}
+
+.clientes-page,
+.clientes-page * {
+  font-family: var(--font-body);
+}
+
+.page-header h1,
+.panel-title {
+  font-family: var(--font-title) !important;
+}
 
   .clientes-page {
+    margin: 0 auto;
     padding: 32px 36px 48px;
     max-width: 1440px;
-    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+   font-family: var(--font-body);
     color: var(--dash-text);
   }
 
@@ -32,20 +58,20 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 28px;
+    /* margin-bottom: 28px; */
     flex-wrap: wrap;
     gap: 16px;
   }
   .page-header h1 {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     letter-spacing: -0.5px;
-    color: #fff;
+    color: var(--text-primary);
     margin: 0;
     line-height: 1;
   }
   .page-header .page-subtitle {
-    font-size: 0.84rem;
+    font-size: 1rem;
     color: var(--dash-muted);
     margin-top: 6px;
   }
@@ -115,7 +141,7 @@
     border: 1px solid var(--dash-border);
     border-radius: 8px;
     padding: 9px 12px 9px 36px;
-    font-size: 0.84rem;
+    font-size: 0.95rem;
     color: var(--dash-text);
     outline: none;
     transition: border-color .15s;
@@ -143,11 +169,11 @@
 
   .btn-filter {
     background: var(--dash-accent);
-    color: #fff;
+    color: #ffffff;
     border: none;
     border-radius: 8px;
     padding: 9px 18px;
-    font-size: 0.84rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: opacity .15s, transform .1s;
@@ -161,7 +187,7 @@
     border: 1px solid var(--dash-border);
     border-radius: 8px;
     padding: 9px 14px;
-    font-size: 0.84rem;
+    font-size: 1rem;
     cursor: pointer;
     text-decoration: none;
     transition: color .15s, border-color .15s;
@@ -184,12 +210,12 @@
     padding: 16px 22px; border-bottom: 1px solid var(--dash-border);
   }
   .panel-title {
-    font-size: 0.88rem; font-weight: 700; color: #fff;
+    font-size: 0.88rem; font-weight: 700; color: var(--text-primary);
     display: flex; align-items: center; gap: 8px;
   }
   .panel-title svg { width: 15px; height: 15px; stroke: var(--dash-accent-light); stroke-width: 2; fill: none; }
   .panel-count {
-    font-size: 0.75rem; color: var(--dash-muted);
+    font-size: 0.90rem; color: var(--dash-muted);
     background: var(--dash-surface-2); padding: 3px 10px;
     border-radius: 20px; border: 1px solid var(--dash-border);
   }
@@ -197,7 +223,7 @@
   /* ── Tabla ────────────────────────────────────────────────────── */
   .clientes-table { width: 100%; border-collapse: collapse; }
   .clientes-table thead th {
-    font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
+    font-size: 0.90rem; text-transform: uppercase; letter-spacing: .08em;
     color: var(--dash-muted); padding: 11px 20px; font-weight: 600;
     text-align: left; background: var(--dash-surface-2);
     border-bottom: 1px solid var(--dash-border); white-space: nowrap;
@@ -205,15 +231,16 @@
   .clientes-table tbody tr { border-bottom: 1px solid var(--dash-border); transition: background .12s; }
   .clientes-table tbody tr:last-child { border-bottom: none; }
   .clientes-table tbody tr:hover { background: rgba(255,255,255,.025); }
-  .clientes-table td { padding: 13px 20px; font-size: 0.84rem; vertical-align: middle; color: var(--dash-text); }
+  .clientes-table td { padding: 13px 20px; font-size: 1rem; vertical-align: middle; color: var(--dash-text); }
 
-  .cliente-nombre { font-weight: 600; color: #fff; display: block; margin-bottom: 2px; }
-  .cliente-tel { font-size: 0.75rem; color: var(--dash-muted); }
+
+  .cliente-nombre {   font-weight: 600;  color: var(--text-primary); display: block; margin-bottom: 2px; }
+  .cliente-tel { font-size: 0.90rem; color: var(--dash-muted); }
 
   .inversion-amount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--dash-green); font-size: 0.9rem; }
   .inversion-zero { color: var(--dash-muted); }
 
-  .mudanza-counts { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; }
+  .mudanza-counts { display: flex; align-items: center; gap: 6px; font-size: 0.90rem; }
   .count-total { color: var(--dash-text); font-weight: 600; }
   .count-sep { color: var(--dash-muted); font-size: 0.7rem; }
   .count-comp { color: var(--dash-green); font-size: 0.75rem; }
@@ -222,7 +249,7 @@
 
   .btn-detalle {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 0.78rem; font-weight: 600;
+    font-size: 1rem; font-weight: 600;
     color: var(--dash-accent-light);
     background: rgba(79,124,255,.1);
     border: 1px solid rgba(79,124,255,.2);

@@ -70,12 +70,18 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'gestion.context_processors.notificaciones',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+
+# Auth — Opción A (Django built-in auth), ver Handoff Frontend — Sistema de Autenticación
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'gestion:dashboard'
+LOGOUT_REDIRECT_URL = '/'
 
 # Unfold config
 
@@ -156,13 +162,13 @@ CHATBOT_URL_FORMULARIO = ""
 CHATBOT_URL_WEB_PRINCIPAL = ""
 
 # Twilio / Whatsapp
-TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM")
-TWILIO_SANDBOX = config.bool("TWILIO_SANDBOX", default=True)
+TWILIO_ACCOUNT_SID   = config("TWILIO_ACCOUNT_SID",   default="")
+TWILIO_AUTH_TOKEN    = config("TWILIO_AUTH_TOKEN",     default="")
+TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM",  default="")
+TWILIO_SANDBOX = config("TWILIO_SANDBOX", default=True, cast=bool)
 # URL pública de este servidor, usada para validar la firma de Twilio.
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
-SITE_BASE_URL = config("SITE_BASE_URL")
+SITE_BASE_URL = config("SITE_BASE_URL", default="")
 
 
 # Database
@@ -230,3 +236,4 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+

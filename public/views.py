@@ -36,6 +36,27 @@ def landing(request):
     return render(request, "public/landing.html", {"catalogo_items": catalogo_items})
 
 
+def formulario(request):
+    """
+    GET /presupuesto/
+
+    Página con el formulario de solicitud de presupuesto. El envío real
+    se hace vía AJAX/fetch contra `public:solicitar_presupuesto` (POST).
+
+    Contexto entregado al template:
+        catalogo_items: list[dict]
+            - id              int
+            - nombre          str
+            - volumen_m3      str
+            - peso_estimado_kg str
+    """
+    catalogo_items = list(
+        CatalogoItem.objects.values("id", "nombre", "volumen_m3", "peso_estimado_kg")
+        .order_by("nombre")
+    )
+    return render(request, "public/formulario-html.html", {"catalogo_items": catalogo_items})
+
+
 @require_POST
 def solicitar_presupuesto(request):
     """

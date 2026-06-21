@@ -1,4 +1,4 @@
-name: 🔗 Integration & E2E — Tests
+name: Integration & E2E — Tests
 
 on:
   push:
