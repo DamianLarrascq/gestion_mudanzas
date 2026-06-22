@@ -219,6 +219,138 @@ class EmpleadoListView(StaffRequiredMixin, TemplateView):
             return None
 
 
+class EmpleadoDetailView(StaffRequiredMixin, TemplateView):
+    """
+    GET /gestion/empleados/<pk>/
+
+    Contexto entregado al template:
+        empleado        Empleado    — instancia ORM completa
+        titulo_pagina   str
+        seccion_activa  str
+    """
+    template_name = "gestion/empleados/detalle.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        empleado = get_object_or_404(
+            Empleado.objects.select_related("user"),
+            pk=self.kwargs["pk"],
+        )
+        ctx["empleado"] = empleado
+        ctx["titulo_pagina"] = f"Empleado — {empleado.nombre}"
+        ctx["seccion_activa"] = "empleados"
+        return ctx
+
+
+class EmpleadoUpdateView(StaffRequiredMixin, TemplateView):
+    """
+    GET  /gestion/empleados/<pk>/editar/   — renderiza el form con datos actuales
+    POST /gestion/empleados/<pk>/editar/   — guarda y redirige al detalle
+
+    Campos editables: nombre, dni, rol, nro_licencia, licencia_fecha_vencimiento,
+                      disponible, art, seguro_riesgo, seguro_ayudante_carga
+    """
+    template_name = "gestion/empleados/detalle.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        empleado = get_object_or_404(
+            Empleado.objects.select_related("user"),
+            pk=self.kwargs["pk"],
+        )
+        ctx["empleado"] = empleado
+        ctx["modo_edicion"] = True
+        ctx["titulo_pagina"] = f"Editar — {empleado.nombre}"
+        ctx["seccion_activa"] = "empleados"
+        ctx["opciones_rol"] = [
+            {"valor": r.value, "label": r.label} for r in Empleado.Rol
+        ]
+        ctx["errors"] = None
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        empleado = get_object_or_404(Empleado, pk=self.kwargs["pk"])
+        raw = request.POST
+
+        errores = []
+
+        nombre = raw.get("nombre", "").strip()
+        dni = raw.get("dni", "").strip()
+        rol = raw.get("rol", "").strip()
+
+        if not nombre:
+            errores.append("El nombre es obligatorio.")
+        if not dni:
+            errores.append("El DNI es obligatorio.")
+        if rol not in Empleado.Rol.values:
+            errores.append("Rol inválido.")
+
+        # Unicidad dni (excluye el propio empleado)
+        if dni and Empleado.objects.filter(dni=dni).exclude(pk=empleado.pk).exists():
+            errores.append("Ya existe otro empleado con ese DNI.")
+
+        nro_licencia = raw.get("nro_licencia", "").strip() or None
+        if (
+            nro_licencia
+            and Empleado.objects.filter(nro_licencia=nro_licencia).exclude(pk=empleado.pk).exists()
+        ):
+            errores.append("Ya existe otro empleado con ese número de licencia.")
+
+        def _parse_date(campo: str) -> datetime.date | None:
+            val = raw.get(campo, "").strip()
+            if not val:
+                return None
+            try:
+                return datetime.date.fromisoformat(val)
+            except ValueError:
+                errores.append(f"Formato de fecha inválido en '{campo}'.")
+                return None
+
+        licencia_fecha_vencimiento = _parse_date("licencia_fecha_vencimiento")
+        seguro_riesgo = _parse_date("seguro_riesgo")
+        seguro_ayudante_carga = _parse_date("seguro_ayudante_carga")
+
+        if errores:
+            ctx = self.get_context_data(**kwargs)
+            ctx["errors"] = errores
+            return self.render_to_response(ctx)
+
+        empleado.nombre = nombre
+        empleado.dni = dni
+        empleado.rol = rol
+        empleado.nro_licencia = nro_licencia or ""
+        empleado.licencia_fecha_vencimiento = licencia_fecha_vencimiento
+        empleado.disponible = raw.get("disponible") == "1"
+        empleado.art = raw.get("art") == "1"
+        empleado.seguro_riesgo = seguro_riesgo
+        empleado.seguro_ayudante_carga = seguro_ayudante_carga
+        empleado.save()
+
+        messages.success(request, f"Empleado {empleado.nombre} actualizado correctamente.")
+        return redirect("gestion:empleado_detail", pk=empleado.pk)
+
+
+@staff_required
+def empleado_delete(request, pk: int):
+    """
+    POST /gestion/empleados/<pk>/borrar/
+
+    Solo acepta POST (el frontend pregunta antes con un modal de confirmación).
+    Elimina el Empleado y su User asociado, luego redirige a la lista.
+    """
+    if request.method != "POST":
+        return redirect("gestion:empleado_detail", pk=pk)
+
+    empleado = get_object_or_404(Empleado.objects.select_related("user"), pk=pk)
+    nombre = empleado.nombre
+    user = empleado.user
+    empleado.delete()
+    user.delete()
+
+    messages.success(request, f"Empleado {nombre} eliminado correctamente.")
+    return redirect("gestion:empleado_list")
+
+
 @login_required
 def api_validar_disponibilidad(request, empleado_id: int):
     """
