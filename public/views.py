@@ -30,10 +30,10 @@ def landing(request):
             - peso_estimado_kg str
     """
     catalogo_items = list(
-        CatalogoItem.objects.values("id", "nombre", "volumen_m3", "peso_estimado_kg")
+        CatalogoItem.objects.values("id", "nombre", "volumen_m3", "peso_estimado_kg", "categoria")
         .order_by("nombre")
     )
-    return render(request, "public/landing.html", {"catalogo_items": catalogo_items})
+    return render(request, "public/landing.html", {"catalogo": catalogo_items})
 
 
 def formulario(request):
@@ -51,10 +51,10 @@ def formulario(request):
             - peso_estimado_kg str
     """
     catalogo_items = list(
-        CatalogoItem.objects.values("id", "nombre", "volumen_m3", "peso_estimado_kg")
+        CatalogoItem.objects.values("id", "nombre", "volumen_m3", "peso_estimado_kg", "categoria")
         .order_by("nombre")
     )
-    return render(request, "public/formulario-html.html", {"catalogo_items": catalogo_items})
+    return render(request, "public/formulario-html.html", {"catalogo": catalogo_items})
 
 
 @require_POST
