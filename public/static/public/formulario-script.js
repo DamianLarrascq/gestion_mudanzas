@@ -1,68 +1,119 @@
-// --- MOTOR MAPAS (TomTom Search API + OSRM Routing) ---
-const TOMTOM_API_KEY = 'I3DX7QtpmRRXVyijA67Bh6gvPPt5phYO';
+// --- CONFIGURACIÓN E INICIALIZACIÓN ---
 let coordenadas = { origen: null, destino: null };
+let dataDirecciones = { origen: {}, destino: {} };
+
+let volumesMuebles = {};
+let inventarioCantidades = {};
+
+let fechaSeleccionada = null;
+let horaSeleccionada = null;
+let urlPagoMercadoPago = null;
+
+const horariosBase = ["08:00", "10:00", "13:00", "15:00"];
 
 document.addEventListener('DOMContentLoaded', () => {
-  configurarAutocompletado('origen', 'sug-origen');
-  configurarAutocompletado('destino', 'sug-destino');
-  
-  // Generar calendario de reservas
+
+  const btnCalcular = document.getElementById('btn-calcular');
+  if (btnCalcular) {
+    btnCalcular.addEventListener('click', enviarSolicitudPresupuesto)
+  }
+
+  // Inicialización dinámica de catálogos desde el DOM estructurado por Django
+  document.querySelectorAll('.mueble-item').forEach(el => {
+    const id = el.dataset.id;
+    const vol = parseFloat(el.dataset.volumen) || 0;
+    volumesMuebles[id] = vol;
+    inventarioCantidades[id] = 0;
+  });
+
+  // Configuración del autocompletado nativo usando Nominatim (OpenStreetMap)
+  configurarAutocompletadoNominatim('origen', 'sug-origen');
+  configurarAutocompletadoNominatim('destino', 'sug-destino');
+
+  // Calendario de operaciones en días hábiles
   generarDiasHabiles();
 
-  // Escuchar inputs para validar el botón de reserva final
-  document.getElementById("nombre").addEventListener("input", validarBotonReserva);
-  document.getElementById("telefono").addEventListener("input", validarBotonReserva);
+  // Escuchadores de entradas obligatorias para validación del botón de envío
+  document.getElementById("nombre").addEventListener("input", validarFormularioCompleto);
+  document.getElementById("telefono").addEventListener("input", validarFormularioCompleto);
+  document.getElementById("origen_numero").addEventListener("input", validarFormularioCompleto);
+  document.getElementById("destino_numero").addEventListener("input", validarFormularioCompleto);
 });
 
-function configurarAutocompletado(inputId, sugerenciasId) {
+// --- MOTOR DE MAPAS: NOMINATIM CON ADDRESSDETAILS=1 ---
+function configurarAutocompletadoNominatim(inputId, sugerenciasId) {
   const input = document.getElementById(inputId);
   const container = document.getElementById(sugerenciasId);
   let timeout = null;
 
   input.addEventListener('input', () => {
-    coordenadas[inputId] = null; // Reseteamos la coordenada si el usuario escribe
+    coordenadas[inputId] = null;
+    dataDirecciones[inputId] = {};
+    document.getElementById(`${inputId}_calle`).value = "";
+    document.getElementById(`${inputId}_localidad`).value = "";
     clearTimeout(timeout);
-    const query = input.value.trim();
 
+    const query = input.value.trim();
     if (query.length < 4) {
       container.classList.add('hidden');
       return;
     }
 
     timeout = setTimeout(() => {
-      // Usamos la API de TomTom filtrando solo para Argentina (AR)
-      const url = `https://api.tomtom.com/search/2/geocode/${encodeURIComponent(query)}.json?key=${TOMTOM_API_KEY}&countrySet=AR&limit=5`;
+      // Inyección mandatoria del parámetro addressdetails=1 filtrado para Argentina
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}&countrycodes=ar&limit=5`;
 
-      fetch(url)
+      fetch(url, { headers: { 'Accept-Language': 'es' } })
         .then(res => res.json())
         .then(data => {
           container.innerHTML = '';
-          
-          if (!data.results || data.results.length === 0) {
+          if (!data || data.length === 0) {
             container.classList.add('hidden');
             return;
           }
 
-          data.results.forEach(f => {
-            // TomTom devuelve la dirección formateada en 'freeformAddress'
-            const nombre = f.address.freeformAddress;
+          data.forEach(result => {
+            const addr = result.address;
+            // Extracción y fallbacks según directivas contractuales
+            const calle = addr.road || addr.pedestrian || "";
+            const numero = addr.house_number || "";
+            const localidad = addr.city || addr.town || addr.village || "";
+
+            if (!calle) return; // Saltamos direcciones inconsistentes
+
             const div = document.createElement('div');
             div.className = 'sugerencia-item';
-            div.textContent = nombre;
-            
+            div.textContent = result.display_name;
+
             div.addEventListener('click', () => {
-              input.value = nombre;
+              input.value = result.display_name;
               container.classList.add('hidden');
-              // Guardamos la latitud y longitud que nos da TomTom
-              coordenadas[inputId] = [f.position.lat, f.position.lon];
-              calcularRutaGratis();
+
+              // Mapeo físico en variables globales
+              coordenadas[inputId] = [parseFloat(result.lat), parseFloat(result.lon)];
+              dataDirecciones[inputId] = { calle, numero, localidad };
+
+              // Inyección visual en campos desglosados
+              document.getElementById(`${inputId}_calle`).value = calle;
+              document.getElementById(`${inputId}_localidad`).value = localidad;
+
+              const inputNumero = document.getElementById(`${inputId}_numero`);
+              if (numero) {
+                inputNumero.value = numero;
+              } else {
+                inputNumero.value = "";
+                inputNumero.placeholder = "Falta altura *";
+                inputNumero.focus();
+              }
+
+              calcularRutaOSRM();
+              validarFormularioCompleto();
             });
-            
             container.appendChild(div);
           });
           container.classList.remove('hidden');
         })
-        .catch(err => console.error('Error en la búsqueda de dirección con TomTom:', err));
+        .catch(err => console.error('Error buscando rutas en Nominatim:', err));
     }, 500);
   });
 
@@ -71,53 +122,35 @@ function configurarAutocompletado(inputId, sugerenciasId) {
   });
 }
 
-function calcularRutaGratis() {
+// --- CALCULO DE DISTANCIAS POR OSRM ---
+function calcularRutaOSRM() {
   if (coordenadas.origen && coordenadas.destino) {
     const locOrigen = `${coordenadas.origen[1]},${coordenadas.origen[0]}`;
     const locDestino = `${coordenadas.destino[1]},${coordenadas.destino[0]}`;
-    
     const url = `https://router.project-osrm.org/route/v1/driving/${locOrigen};${locDestino}?overview=false`;
 
     fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.code === 'Ok' && data.routes.length > 0) {
-          const distanciaMetros = data.routes[0].distance;
-          const distanciaKm = (distanciaMetros / 1000).toFixed(1);
-          
-          const inputDistancia = document.getElementById('distancia_km');
-          inputDistancia.value = distanciaKm;
-          
-          inputDistancia.style.transition = 'border-color 0.3s';
-          inputDistancia.style.borderColor = 'var(--success)';
-          setTimeout(() => {
-            inputDistancia.style.borderColor = 'var(--border)';
-          }, 1500);
+          const distanciaKm = (data.routes[0].distance / 1000).toFixed(2);
+          document.getElementById('distancia_km').value = distanciaKm;
+          validarFormularioCompleto();
         }
       })
-      .catch(err => console.error('Error al calcular distancia con OSRM:', err));
+      .catch(err => console.error('Error procesando trazado OSRM:', err));
   }
 }
-// ---------------------------------------------------
 
-// --- LÓGICA DEL INVENTARIO Y CAMIÓN ---
-const volumesMuebles = {
-  Heladera: 1.20, Lavarropas: 0.50, Cama: 1.60,
-  Sofa: 1.50, Mesa: 0.90, Ropero: 1.00
-};
-
-let inventarioCantidades = {
-  Heladera: 0, Lavarropas: 0, Cama: 0,
-  Sofa: 0, Mesa: 0, Ropero: 0
-};
-
+// --- MANEJO DEL INVENTARIO DINÁMICO ---
 function alterarMueble(id, cambio) {
   let nuevaCant = inventarioCantidades[id] + cambio;
   if (nuevaCant < 0) return;
-  
+
   inventarioCantidades[id] = nuevaCant;
   document.getElementById(`cant-${id}`).textContent = nuevaCant;
   actualizarCamionVisual();
+  validarFormularioCompleto();
 }
 
 function actualizarCamionVisual() {
@@ -126,21 +159,22 @@ function actualizarCamionVisual() {
   const lblBultos = document.getElementById("metrica-bultos");
   const lblVolumen = document.getElementById("metrica-volumen");
   const svgCaja = document.getElementById("svg-caja-carga");
-  const svgCamion = document.getElementById("camion-dibujo");
-  
+
   caja.innerHTML = "";
   let totalBultos = 0;
   let totalVolumen = 0;
-  
-  Object.keys(inventarioCantidades).forEach(key => {
-    let cant = inventarioCantidades[key];
+
+  Object.keys(inventarioCantidades).forEach(id => {
+    let cant = inventarioCantidades[id];
     totalBultos += cant;
-    totalVolumen += cant * volumesMuebles[key];
-    
-    if(cant > 0) {
+    totalVolumen += cant * volumesMuebles[id];
+
+    if (cant > 0) {
       const itemNode = document.createElement("div");
       itemNode.className = "item-en-camion";
-      itemNode.innerHTML = `<span>${key}</span> <strong>x${cant}</strong>`;
+      const itemEl = document.querySelector(`.mueble-item[data-id="${id}"] .mueble-nombre`);
+      const txtNombre = itemEl ? itemEl.textContent : "Mueble";
+      itemNode.innerHTML = `<span>${txtNombre}</span> <strong>x${cant}</strong>`;
       caja.appendChild(itemNode);
     }
   });
@@ -151,117 +185,29 @@ function actualizarCamionVisual() {
   if (totalBultos === 0) {
     caja.innerHTML = `<div class="caja-vacia-msg">Sin bultos seleccionados.</div>`;
     tipoTag.textContent = "Vehículo Requerido: Ninguno";
-    tipoTag.style.background = "var(--ink-3)";
-    svgCaja.setAttribute("width", "40"); svgCaja.setAttribute("x", "70"); svgCaja.setAttribute("y", "30"); svgCaja.setAttribute("height", "25"); svgCaja.setAttribute("fill", "#cbd5e1");
-    svgCamion.style.transform = "scale(1)";
-  } 
-  else if (totalVolumen <= 3.0) {
+    svgCaja.setAttribute("fill", "#cbd5e1");
+  } else if (totalVolumen <= 3.0) {
     tipoTag.textContent = "Vehículo Recomendado: Utilitario (Furgón)";
-    tipoTag.style.background = "#1a5fcc"; 
-    svgCaja.setAttribute("width", "55"); svgCaja.setAttribute("x", "55"); svgCaja.setAttribute("y", "26"); svgCaja.setAttribute("height", "29"); svgCaja.setAttribute("fill", "#93c5fd");
-    svgCamion.style.transform = "scale(1.05)";
-  } 
-  else if (totalVolumen <= 8.0) {
+    svgCaja.setAttribute("fill", "#93c5fd");
+  } else if (totalVolumen <= 8.0) {
     tipoTag.textContent = "Vehículo Recomendado: Camión Ligero";
-    tipoTag.style.background = "#166534";
-    svgCaja.setAttribute("width", "75"); svgCaja.setAttribute("x", "35"); svgCaja.setAttribute("y", "22"); svgCaja.setAttribute("height", "33"); svgCaja.setAttribute("fill", "#86efac");
-    svgCamion.style.transform = "scale(1.15)";
-  } 
-  else {
+    svgCaja.setAttribute("fill", "#86efac");
+  } else {
     tipoTag.textContent = "Vehículo Recomendado: Camión de Gran Porte";
-    tipoTag.style.background = "#991b1b";
-    svgCaja.setAttribute("width", "90"); svgCaja.setAttribute("x", "20"); svgCaja.setAttribute("y", "15"); svgCaja.setAttribute("height", "40"); svgCaja.setAttribute("fill", "#fca5a5");
-    svgCamion.style.transform = "scale(1.25)";
+    svgCaja.setAttribute("fill", "#fca5a5");
   }
 }
 
-function calcularPresupuesto() {
-  const km = parseFloat(document.getElementById("distancia_km").value) || 0;
-  
-  let volTotal = 0; let bultosTotal = 0;
-  Object.keys(inventarioCantidades).forEach(k => {
-    bultosTotal += inventarioCantidades[k];
-    volTotal += inventarioCantidades[k] * volumesMuebles[k];
-  });
-
-  if (!coordenadas.origen || !coordenadas.destino) return alert("Por favor, buscá y seleccioná una dirección válida de la lista sugerida para el origen y el destino.");
-  if (bultosTotal === 0) return alert("Por favor, seleccioná al menos un artículo para transportar.");
-
-  let tarifaBaseVehiculo = 0; 
-  if(volTotal > 0 && volTotal <= 3) tarifaBaseVehiculo = 25000;
-  else if(volTotal > 3 && volTotal <= 8) tarifaBaseVehiculo = 45000;
-  else if(volTotal > 8) tarifaBaseVehiculo = 70000;
-
-  const costoPorKm = km * 400;
-  const subtotal = tarifaBaseVehiculo + costoPorKm;
-  const iva = subtotal * 0.21;
-  const total = subtotal + iva;
-
-  const fmt = n => "$ " + Math.round(n).toLocaleString("es-AR");
-
-  document.getElementById("lineas-presupuesto").innerHTML = `
-    <div class="linea-item"><span>Asignación de vehículo base</span><span class="linea-monto">${fmt(tarifaBaseVehiculo)}</span></div>
-    <div class="linea-item"><span>Kilometraje en ruta (${km} km)</span><span class="linea-monto">${fmt(costoPorKm)}</span></div>
-    <div class="linea-item"><span>Cubicaje total estimado (${volTotal.toFixed(2)} m³)</span><span class="linea-monto cero">—</span></div>
-  `;
-  document.getElementById("val-subtotal").textContent = fmt(subtotal);
-  document.getElementById("val-iva").textContent = fmt(iva);
-  document.getElementById("val-total").textContent = fmt(total);
-
-  document.getElementById("resumen-datos").innerHTML = `
-    <div class="resumen-item"><div class="resumen-label">Métricas de carga</div><div class="resumen-value">${bultosTotal} artículos / ${volTotal.toFixed(2)} m³</div></div>
-    <div class="resumen-item"><div class="resumen-label">Ruta</div><div class="resumen-value">${km} KM</div></div>
-  `;
-  setStep(2);
-}
-
-// --- NAVEGACIÓN Y FLUJO ---
-function setStep(n) {
-  [1,2,3].forEach(i => {
-    document.getElementById(`paso-${i}`).classList.toggle("hidden", i !== n);
-    const dot = document.getElementById(`dot-${i}`);
-    if(dot) {
-      dot.classList.toggle("active", i === n);
-      dot.classList.toggle("done", i < n);
-    }
-  });
-}
-
-function volverPaso1() { setStep(1); }
-function volverPaso2() { setStep(2); }
-
-function irAReserva() {
-  setStep(3);
-  document.getElementById("reserva-card").classList.remove("hidden");
-  document.getElementById("mensaje-final").classList.add("hidden");
-}
-
-function cancelarMudanza() {
-  setStep(3);
-  document.getElementById("reserva-card").classList.add("hidden");
-  document.getElementById("mensaje-final").classList.remove("hidden");
-  document.getElementById("resultado-cancelado").classList.remove("hidden");
-  document.getElementById("resultado-confirmado").classList.add("hidden");
-}
-
-// --- LÓGICA DEL CALENDARIO Y RESERVAS ---
-const horariosBase = ["08:00", "10:00", "13:00", "15:00"];
-let fechaSeleccionada = null;
-let horaSeleccionada = null;
-let reservasGuardadas = JSON.parse(localStorage.getItem('gdm_reservas')) || {};
-
+// --- AGENDA INTERACTIVA ---
 function generarDiasHabiles() {
   const contenedorDias = document.getElementById("calendario-dias");
+  if (!contenedorDias) return;
   contenedorDias.innerHTML = "";
-  
-  let hoy = new Date();
-  let diasGenerados = 0;
-  let fechaIteradora = new Date(hoy);
+  let hoy = new Date(), diasGenerados = 0, fechaIteradora = new Date(hoy);
 
   while (diasGenerados < 10) {
     fechaIteradora.setDate(fechaIteradora.getDate() + 1);
-    const diaSemana = fechaIteradora.getDay(); 
-    if (diaSemana !== 0 && diaSemana !== 6) {
+    if (fechaIteradora.getDay() !== 0 && fechaIteradora.getDay() !== 6) {
       crearBotonDia(new Date(fechaIteradora));
       diasGenerados++;
     }
@@ -278,105 +224,303 @@ function crearBotonDia(fecha) {
   btn.className = "btn-3d day-btn";
   btn.dataset.fecha = strFecha;
   btn.innerHTML = `<span class="day-name">${nombreDia}</span><span class="day-number">${numDia}</span>`;
-
-  const ocupadosHoy = reservasGuardadas[strFecha] || [];
-  if (ocupadosHoy.length >= horariosBase.length) {
-    btn.classList.add("disabled"); btn.title = "Sin disponibilidad";
-  } else {
-    btn.onclick = () => seleccionarDia(btn, strFecha);
-  }
+  btn.onclick = () => seleccionarDia(btn, strFecha);
   contenedor.appendChild(btn);
 }
 
 function seleccionarDia(botonElemento, strFecha) {
   document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("selected"));
   botonElemento.classList.add("selected");
-  
   fechaSeleccionada = strFecha;
   horaSeleccionada = null;
-  validarBotonReserva();
 
-  document.getElementById("seccion-horarios").style.display = "block";
-  generarHorarios(strFecha);
+  const seccionHorarios = document.getElementById("seccion-horarios");
+  if (seccionHorarios) seccionHorarios.style.display = "block";
+  generarHorarios();
+  validarFormularioCompleto();
 }
 
-function generarHorarios(strFecha) {
+function generarHorarios() {
   const contenedorHorarios = document.getElementById("grilla-horarios");
+  if (!contenedorHorarios) return;
   contenedorHorarios.innerHTML = "";
-  const ocupadosHoy = reservasGuardadas[strFecha] || [];
 
   horariosBase.forEach(hora => {
     const btn = document.createElement("div");
     btn.className = "btn-3d btn-hora";
     btn.textContent = hora;
-
-    if (ocupadosHoy.includes(hora)) {
-      btn.classList.add("disabled"); btn.textContent += " (Ocupado)";
-    } else {
-      btn.onclick = () => seleccionarHora(btn, hora);
-    }
+    btn.onclick = () => {
+      document.querySelectorAll(".btn-hora").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      horaSeleccionada = hora;
+      validarFormularioCompleto();
+    };
     contenedorHorarios.appendChild(btn);
   });
 }
 
-function seleccionarHora(botonElemento, hora) {
-  document.querySelectorAll(".btn-hora").forEach(b => b.classList.remove("selected"));
-  botonElemento.classList.add("selected");
-  horaSeleccionada = hora;
-  validarBotonReserva();
-}
-
-function validarBotonReserva() {
+// --- VALIDACIÓN DE BOTÓN DE ENVÍO DE FORMULARIO ---
+function validarFormularioCompleto() {
   const nombre = document.getElementById("nombre").value.trim();
   const telefono = document.getElementById("telefono").value.trim();
-  const btnSubmit = document.getElementById("btn-confirmar-reserva");
+  const origNum = document.getElementById("origen_numero").value.trim();
+  const destNum = document.getElementById("destino_numero").value.trim();
+  const km = parseFloat(document.getElementById("distancia_km").value) || 0;
 
-  if (nombre !== "" && telefono !== "" && fechaSeleccionada && horaSeleccionada) {
-    btnSubmit.disabled = false;
-  } else {
-    btnSubmit.disabled = true;
+  let totalBultos = 0;
+  Object.keys(inventarioCantidades).forEach(k => totalBultos += inventarioCantidades[k]);
+
+  const inputsValidos = nombre !== "" && telefono !== "" && origNum !== "" && destNum !== "" && km >= 1 && totalBultos > 0;
+  const agendaValida = fechaSeleccionada !== null && horaSeleccionada !== null;
+
+  const btnCalcular = document.getElementById("btn-calcular");
+  if (btnCalcular) {
+    btnCalcular.disabled = !(inputsValidos && agendaValida);
   }
 }
 
-function procesarReserva() {
-  if (!reservasGuardadas[fechaSeleccionada]) reservasGuardadas[fechaSeleccionada] = [];
-  reservasGuardadas[fechaSeleccionada].push(horaSeleccionada);
-  localStorage.setItem('gdm_reservas', JSON.stringify(reservasGuardadas));
-
-  document.getElementById("reserva-card").classList.add("hidden");
-  document.getElementById("mensaje-final").classList.remove("hidden");
-  document.getElementById("resultado-confirmado").classList.remove("hidden");
-  document.getElementById("resultado-cancelado").classList.add("hidden");
+// --- INTEGRACIÓN ASÍNCRONA CON EL ENDPOINT BACKEND (POST JSON) ---
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
 }
 
+function enviarSolicitudPresupuesto() {
+  // 1. Capturar y congelar el botón para evitar doble submit instantáneamente
+  const btnCalcular = document.getElementById("btn-calcular");
+  if (btnCalcular) {
+    btnCalcular.disabled = true;
+    btnCalcular.textContent = "Procesando cotización... ⏳";
+  }
+
+  // Limpieza inicial de contenedores de error (adaptado a tus IDs del HTML)
+  document.querySelectorAll(".error-msg").forEach(e => e.textContent = "");
+  const errAll = document.getElementById("err-__all__");
+  if (errAll) errAll.textContent = "";
+
+  // Construcción estructurada del array de inventario con IDs reales
+  const arrayInventario = [];
+  Object.keys(inventarioCantidades).forEach(id => {
+    const cant = inventarioCantidades[id];
+    if (cant > 0) {
+      arrayInventario.push({
+        "catalogo_item_id": parseInt(id),
+        "cantidad": cant
+      });
+    }
+  });
+
+  // Ensamblado del Payload definitivo
+  const payload = {
+    "nombre": document.getElementById("nombre").value.trim(),
+    "telefono": document.getElementById("telefono").value.trim(),
+    "email": document.getElementById("email").value.trim(),
+
+    "origen_calle": document.getElementById("origen_calle").value.trim(),
+    "origen_numero": document.getElementById("origen_numero").value.trim(),
+    "origen_localidad": document.getElementById("origen_localidad").value.trim(),
+    "origen_piso": document.getElementById("pisos_origen").value,
+    "origen_ascensor": document.getElementById("asc_origen").checked,
+    "origen_lat": coordenadas.origen ? coordenadas.origen[0] : null,
+    "origen_lng": coordenadas.origen ? coordenadas.origen[1] : null,
+
+    "destino_calle": document.getElementById("destino_calle").value.trim(),
+    "destino_numero": document.getElementById("destino_numero").value.trim(),
+    "destino_localidad": document.getElementById("destino_localidad").value.trim(),
+    "destino_piso": document.getElementById("pisos_destino").value,
+    "destino_ascensor": document.getElementById("asc_destino").checked,
+    "destino_lat": coordenadas.destino ? coordenadas.destino[0] : null,
+    "destino_lng": coordenadas.destino ? coordenadas.destino[1] : null,
+
+    "fecha_deseada": fechaSeleccionada,
+    "hora_deseada": horaSeleccionada,
+    "distancia_km": document.getElementById("distancia_km").value,
+    "inventario": arrayInventario
+  };
+
+  // Despacho vía Fetch API con inyección de cabecera CSRF Token
+  fetch('/presupuesto/solicitar/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json().then(data => ({ status: res.status, body: data })))
+  .then(response => {
+    if (response.status === 200 && response.body.ok) {
+      manejarExitoServidor(response.body);
+    } else if (response.status === 422) {
+      // Si hay errores de validación, rehabilitamos el botón para corregir
+      if (btnCalcular) {
+        btnCalcular.disabled = false;
+        btnCalcular.textContent = "Calcular tarifa y ver resumen →";
+      }
+      manejarErroresValidacion(response.body.errores);
+    } else if (response.status === 502) {
+      alert("La cotización fue registrada exitosamente, pero el portal de pagos se encuentra saturado. Podrá saldar la seña más tarde.");
+      manejarExitoServidor(response.body);
+    } else {
+      // Error 500 u otros del servidor
+      if (btnCalcular) {
+        btnCalcular.disabled = false;
+        btnCalcular.textContent = "Calcular tarifa y ver resumen →";
+      }
+      if (document.getElementById("err-__all__")) {
+        document.getElementById("err-__all__").textContent = "Error inesperado en la comunicación con el servidor central.";
+      }
+    }
+  })
+  .catch(err => {
+    console.error("Fallo crítico en operación de red:", err);
+    if (btnCalcular) {
+      btnCalcular.disabled = false;
+      btnCalcular.textContent = "Calcular tarifa y ver resumen →";
+    }
+    if (document.getElementById("err-__all__")) {
+      document.getElementById("err-__all__").textContent = "Error de red. Verifique su conectividad.";
+    }
+  });
+}
+
+function manejarExitoServidor(datos) {
+  urlPagoMercadoPago = datos.pago_url;
+
+  const kmActuales = document.getElementById("distancia_km").value;
+  document.getElementById("lineas-presupuesto").innerHTML = `
+    <div class="linea-item"><span>Tarifa base de asignación logística</span><span class="linea-monto">Operación Procesada</span></div>
+    <div class="linea-item"><span>Kilometraje en ruta calculada (${kmActuales} km)</span><span class="linea-monto">Incluido</span></div>
+  `;
+
+  document.getElementById("val-senia").textContent = "$ " + parseFloat(datos.monto_senia).toLocaleString("es-AR");
+  document.getElementById("val-total").textContent = "$ " + parseFloat(datos.monto_total).toLocaleString("es-AR");
+
+  document.getElementById("resumen-datos").innerHTML = `
+    <div class="resumen-item"><div class="resumen-label">ID Mudanza Registrada</div><div class="resumen-value">#${datos.mudanza_id}</div></div>
+    <div class="resumen-item"><div class="resumen-label">Itinerario Planificado</div><div class="resumen-value">${kmActuales} KM totales</div></div>
+  `;
+
+  setStep(2);
+}
+
+function manejarErroresValidacion(errores) {
+  Object.keys(errores).forEach(campo => {
+    // Corregido: mapea a 'error-campo' tal como figura en tu HTML
+    const contenedorError = document.getElementById(`error-${campo}`);
+    if (contenedorError) {
+      contenedorError.textContent = errores[campo].join(" ");
+    } else if (campo === "__all__" && document.getElementById("err-__all__")) {
+      document.getElementById("err-__all__").textContent = errores[campo].join(" ");
+    }
+  });
+}
+
+function manejarExitoServidor(datos) {
+  urlPagoMercadoPago = datos.pago_url;
+
+  const kmActuales = document.getElementById("distancia_km").value;
+  document.getElementById("lineas-presupuesto").innerHTML = `
+    <div class="linea-item"><span>Tarifa base de asignación logística</span><span class="linea-monto">Operación Procesada</span></div>
+    <div class="linea-item"><span>Kilometraje en ruta calculada (${kmActuales} km)</span><span class="linea-monto">Incluido</span></div>
+  `;
+
+  document.getElementById("val-senia").textContent = "$ " + parseFloat(datos.monto_senia).toLocaleString("es-AR");
+  document.getElementById("val-total").textContent = "$ " + parseFloat(datos.monto_total).toLocaleString("es-AR");
+
+  document.getElementById("resumen-datos").innerHTML = `
+    <div class="resumen-item"><div class="resumen-label">ID Mudanza Registrada</div><div class="resumen-value">#${datos.mudanza_id}</div></div>
+    <div class="resumen-item"><div class="resumen-label">Itinerario Planificado</div><div class="resumen-value">${kmActuales} KM totales</div></div>
+  `;
+
+  setStep(2);
+}
+
+function manejarErroresValidacion(errores) {
+  Object.keys(errores).forEach(campo => {
+    const contenedorError = document.getElementById(`err-${campo}`);
+    if (contenedorError) {
+      contenedorError.textContent = errores[campo].join(" ");
+    } else if (campo === "__all__") {
+      const errAll = document.getElementById("err-__all__");
+      if (errAll) errAll.textContent = errores[campo].join(" ");
+    }
+  });
+}
+
+function procederAlPago() {
+  if (!urlPagoMercadoPago) {
+      alert("Hubo un problema al recuperar la pasarela de pagos. Por favor, recargue la página e intente nuevamente.");
+      return;
+    }
+
+    // 1. Pasamos visualmente al Paso 3 ("Redirigiendo...")
+    setStep(3);
+
+    // 2. Seteamos el enlace de respaldo
+    const linkFallback = document.getElementById("link-pago-fallback");
+    if (linkFallback) {
+      linkFallback.href = urlPagoMercadoPago;
+    }
+
+    // 3. Redirigimos al usuario en la misma pestaña hacia el Checkout Pro de MercadoPago
+    window.location.href = urlPagoMercadoPago;
+}
+
+// --- FLUJO NAVEGACIONAL ---
+function setStep(n) {
+  [1, 2, 3].forEach(i => {
+    const pasoEl = document.getElementById(`paso-${i}`);
+    if (pasoEl) pasoEl.classList.toggle("hidden", i !== n);
+    const dot = document.getElementById(`dot-${i}`);
+    if (dot) {
+      dot.classList.toggle("active", i === n);
+      dot.classList.toggle("done", i < n);
+    }
+  });
+}
+
+function volverPaso1() { setStep(1); }
+
 function reiniciarTodo() {
-  // Limpiar Inventario
-  Object.keys(inventarioCantidades).forEach(k => { inventarioCantidades[k] = 0; document.getElementById(`cant-${k}`).textContent = 0; });
-  // Limpiar Formulario de datos 1
+  Object.keys(inventarioCantidades).forEach(k => {
+    inventarioCantidades[k] = 0;
+    const cantEl = document.getElementById(`cant-${k}`);
+    if (cantEl) cantEl.textContent = 0;
+  });
   document.getElementById("origen").value = "";
   document.getElementById("destino").value = "";
-  document.getElementById("distancia_km").value = "0";
-  document.getElementById("notas").value = "";
-  coordenadas = { origen: null, destino: null };
-  // Limpiar Formulario de Reserva (Paso 3)
+  document.getElementById("origen_calle").value = "";
+  document.getElementById("origen_numero").value = "";
+  document.getElementById("origen_localidad").value = "";
+  document.getElementById("destino_calle").value = "";
+  document.getElementById("destino_numero").value = "";
+  document.getElementById("destino_localidad").value = "";
+  document.getElementById("distancia_km").value = "";
   document.getElementById("nombre").value = "";
   document.getElementById("telefono").value = "";
   document.getElementById("email").value = "";
+  document.getElementById("notas").value = "";
+
   fechaSeleccionada = null;
   horaSeleccionada = null;
-  document.getElementById("seccion-horarios").style.display = "none";
-  document.getElementById("grilla-horarios").innerHTML = "";
+  urlPagoMercadoPago = null;
+
+  const seccionHorarios = document.getElementById("seccion-horarios");
+  if (seccionHorarios) seccionHorarios.style.display = "none";
   document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("selected"));
-  
-  // Re-iniciar vistas
+
   actualizarCamionVisual();
-  generarDiasHabiles(); 
-  validarBotonReserva();
-  
-  // Ocultar mensajes y restaurar forms
-  document.getElementById("mensaje-final").classList.add("hidden");
-  document.getElementById("resultado-confirmado").classList.add("hidden");
-  document.getElementById("resultado-cancelado").classList.add("hidden");
-  
+  validarFormularioCompleto();
   setStep(1);
 }

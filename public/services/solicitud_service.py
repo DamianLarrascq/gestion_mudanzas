@@ -195,6 +195,7 @@ def procesar_solicitud_landing(form_data: dict, inventario_raw: list) -> dict:
     )
 
     return {
+        'ok': True,
         "pago_url": pago_url,
         "monto_total": str(costos.total),
         "monto_senia": str(monto_senia),
