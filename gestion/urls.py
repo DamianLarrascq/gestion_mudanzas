@@ -20,7 +20,7 @@ urlpatterns = [
     # Empleados
     path('empleados/', views.EmpleadoListView.as_view(), name='empleado_list'),
     path('empleados/nuevo/', views.EmpleadoCreateView.as_view(), name='empleado_create'),
-    path('empleados/<int:pk>/', views.EmpleadoDetailView.as_view(), name='empleado_detail'),
+    path('empleados/<int:pk>/', views.EmpleadoCreateView.as_view(), name='empleado_detail'),
     path('empleados/<int:pk>/editar/', views.EmpleadoUpdateView.as_view(), name='empleado_update'),
     path('empleados/<int:pk>/borrar/', views.empleado_delete, name='empleado_delete'),
     path('empleados/<int:empleado_id>/disponibilidad/', views.api_validar_disponibilidad, name='api_empleado_disponibilidad'),
