@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Optional
 from django.db.models import Count, Q, QuerySet
+from django.urls import reverse
 from django.utils import timezone
 from gestion.models.flota import Empleado
 from gestion.models.mudanzas import Mudanza
@@ -161,7 +162,7 @@ def _serializar_empleado(emp: Empleado, hoy: date) -> dict:
         # Flag consolidado para ícono de alerta en la fila
         "tiene_alerta_documental": tiene_alerta_documental,
         # URL detalle
-        "url_detalle": f"/gestion/empleados/{emp.pk}/",
+        "url_detalle": reverse("gestion:empleado_detail", kwargs={"pk": emp.pk}),
     }
 
 # Queryset base

@@ -1,0 +1,560 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+  :root {
+    --font-body:  'Inter', sans-serif;
+    --font-title: 'DM Serif Display', serif;
+    --radius:    13px;
+    --radius-sm:  8px;
+  }
+
+  .detalle-page {
+    margin: 0 auto;
+    padding: 32px 36px 56px;
+    max-width: 960px;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+  }
+
+  /* ── Breadcrumb ─────────────────────────────────── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .breadcrumb a { color: var(--accent-hover); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { width: 11px; height: 11px; stroke: var(--text-secondary); fill: none; stroke-width: 2.5; }
+
+  /* ── Header ─────────────────────────────────────── */
+  .emp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .emp-header-left h1 {
+    font-family: var(--font-title);
+    font-size: 2rem;
+    font-weight: 400;
+    margin: 0 0 6px;
+    color: var(--text-primary);
+  }
+  .emp-header-left .rol-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: rgba(79,124,255,.13);
+    color: var(--accent);
+    border: 1px solid rgba(79,124,255,.25);
+  }
+  .emp-header-left .rol-pill.conductor {
+    background: rgba(34,197,94,.12);
+    color: var(--success);
+    border-color: rgba(34,197,94,.25);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Botones ────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+  .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover  { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-ghost    { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+  .btn-ghost:hover    { color: var(--text-primary); border-color: rgba(255,255,255,.2); }
+  .btn-danger   { background: rgba(239,68,68,.1); color: var(--danger); border-color: rgba(239,68,68,.3); }
+  .btn-danger:hover   { background: rgba(239,68,68,.2); transform: translateY(-1px); }
+  .btn-success  { background: rgba(34,197,94,.12); color: var(--success); border-color: rgba(34,197,94,.3); }
+  .btn-success:hover  { background: rgba(34,197,94,.22); transform: translateY(-1px); }
+
+  /* ── Cards ──────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+    animation: fadeUp .35s ease both;
+  }
+  .card-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-header h2 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  .card-body { padding: 22px; }
+
+  /* ── Grid de campos ─────────────────────────────── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 28px;
+  }
+  .field-grid.three { grid-template-columns: repeat(3, 1fr); }
+  .field-grid.one   { grid-template-columns: 1fr; }
+
+  .field-block label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+  }
+  .field-value {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .field-value.muted { color: var(--text-secondary); font-weight: 400; font-style: italic; }
+
+  /* ── Inputs (modo edición) ──────────────────────── */
+  .field-input,
+  .field-select {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    font-family: inherit;
+    padding: 9px 13px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    box-sizing: border-box;
+  }
+  .field-input:focus,
+  .field-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,124,255,.15);
+  }
+  .field-select option { background: #1a1d2a; }
+
+  /* Toggle switches */
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+  }
+  .toggle-group input[type="checkbox"] {
+    appearance: none;
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--border);
+    cursor: pointer;
+    position: relative;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle-group input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left .2s;
+  }
+  .toggle-group input[type="checkbox"]:checked { background: var(--success); }
+  .toggle-group input[type="checkbox"]:checked::after { left: 19px; }
+  .toggle-label { font-size: 0.90rem; color: var(--text-primary); font-weight: 500; }
+
+  /* ── Badges reutilizados ────────────────────────── */
+  .badge-success  { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25); }
+  .badge-danger   { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25); }
+  .badge-warning  { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(245,158,11,.12);color:var(--warning);border:1px solid rgba(245,158,11,.25); }
+  .badge-secondary{ display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(148,163,184,.1);color:var(--text-secondary);border:1px solid var(--border); }
+
+  /* ── Errores ────────────────────────────────────── */
+  .error-list {
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25);
+    border-left: 3px solid var(--danger);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  .error-list p { margin: 0 0 4px; font-size: 0.88rem; color: var(--danger); }
+  .error-list p:last-child { margin: 0; }
+
+  /* ── Modal de confirmación de borrado ───────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 90%;
+    animation: fadeUp .2s ease both;
+  }
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(239,68,68,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .modal-icon svg { width: 24px; height: 24px; stroke: var(--danger); fill: none; stroke-width: 2; }
+  .modal-box h3 { font-family: var(--font-title); font-size: 1.3rem; font-weight: 400; text-align: center; margin: 0 0 8px; }
+  .modal-box p  { font-size: 0.88rem; color: var(--text-secondary); text-align: center; margin: 0 0 24px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { flex: 1; justify-content: center; }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+</style>
+
+{# ── Modal de confirmación de borrado ─────────────────────── #}
+<div class="modal-overlay" id="modal-borrar">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <h3>¿Eliminar empleado?</h3>
+    <p>
+      Esta acción eliminará a <strong>{{ empleado.nombre }}</strong> junto con su cuenta de acceso.
+      <br>No se puede deshacer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <form method="post" action="{% url 'gestion:empleado_delete' empleado.pk %}" style="flex:1;display:flex;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger" style="flex:1;justify-content:center;">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Sí, eliminar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="detalle-page">
+
+  {# ── Breadcrumb ──────────────────────────────────────────── #}
+  <nav class="breadcrumb">
+    <a href="{% url 'gestion:empleado_list' %}">Empleados</a>
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>{{ empleado.nombre }}</span>
+    {% if modo_edicion %}
+      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      <span>Editar</span>
+    {% endif %}
+  </nav>
+
+  {# ── Header ──────────────────────────────────────────────── #}
+  <div class="emp-header">
+    <div class="emp-header-left">
+      <h1>{{ empleado.nombre }}</h1>
+      <span class="rol-pill {% if empleado.rol == 'CONDUCTOR' %}conductor{% endif %}">
+        {% if empleado.rol == 'CONDUCTOR' %}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="19.78" x2="8.69" y2="16.26"/><line x1="19.78" y1="19.78" x2="15.31" y2="16.26"/></svg>
+        {% endif %}
+        {{ empleado.get_rol_display }}
+      </span>
+    </div>
+    <div class="header-actions">
+      {% if modo_edicion %}
+        <a href="{% url 'gestion:empleado_detail' empleado.pk %}" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Cancelar
+        </a>
+      {% else %}
+        <button class="btn btn-danger" onclick="abrirModal()">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Eliminar
+        </button>
+        <a href="{% url 'gestion:empleado_update' empleado.pk %}" class="btn btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Errores de validación (solo modo edición) ───────────── #}
+  {% if errors %}
+  <div class="error-list">
+    {% for e in errors %}<p>{{ e }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if modo_edicion %}
+  {# ══════════════════════════════════════════════════
+     MODO EDICIÓN — formulario POST
+  ══════════════════════════════════════════════════ #}
+  <form method="post" action="{% url 'gestion:empleado_update' empleado.pk %}">
+    {% csrf_token %}
+  {% endif %}
+
+    {# ── Datos personales ──────────────────────────── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <h2>Datos personales</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-grid">
+
+          <div class="field-block">
+            <label>Nombre completo</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="text" name="nombre" value="{{ empleado.nombre }}" required>
+            {% else %}
+              <div class="field-value">{{ empleado.nombre }}</div>
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>DNI</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="text" name="dni" value="{{ empleado.dni }}" required>
+            {% else %}
+              <div class="field-value">{{ empleado.dni }}</div>
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>Rol</label>
+            {% if modo_edicion %}
+              <select class="field-select" name="rol">
+                {% for op in opciones_rol %}
+                  <option value="{{ op.valor }}" {% if empleado.rol == op.valor %}selected{% endif %}>
+                    {{ op.label }}
+                  </option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <div class="field-value">{{ empleado.get_rol_display }}</div>
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>Usuario de acceso</label>
+            <div class="field-value {% if not empleado.user.username %}muted{% endif %}">
+              {{ empleado.user.username|default:"—" }}
+            </div>
+          </div>
+
+          <div class="field-block">
+            <label>Email de cuenta</label>
+            <div class="field-value {% if not empleado.user.email %}muted{% endif %}">
+              {{ empleado.user.email|default:"Sin email" }}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Disponibilidad y ART ──────────────────────── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <h2>Disponibilidad y seguros</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-grid">
+
+          <div class="field-block">
+            <label>Disponible para mudanzas</label>
+            {% if modo_edicion %}
+              <div class="toggle-group">
+                <input type="checkbox" name="disponible" id="toggle-disponible" value="1"
+                  {% if empleado.disponible %}checked{% endif %}>
+                <label class="toggle-label" for="toggle-disponible">Disponible</label>
+              </div>
+            {% else %}
+              {% if empleado.disponible %}
+                <span class="badge-success">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Disponible
+                </span>
+              {% else %}
+                <span class="badge-danger">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  No disponible
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>ART</label>
+            {% if modo_edicion %}
+              <div class="toggle-group">
+                <input type="checkbox" name="art" id="toggle-art" value="1"
+                  {% if empleado.art %}checked{% endif %}>
+                <label class="toggle-label" for="toggle-art">Con ART vigente</label>
+              </div>
+            {% else %}
+              {% if empleado.art %}
+                <span class="badge-success">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Vigente
+                </span>
+              {% else %}
+                <span class="badge-danger">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Sin ART
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>Seguro de riesgo (vence)</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="date" name="seguro_riesgo"
+                value="{{ empleado.seguro_riesgo|date:'Y-m-d'|default:'' }}">
+            {% else %}
+              <div class="field-value {% if not empleado.seguro_riesgo %}muted{% endif %}">
+                {{ empleado.seguro_riesgo|date:"d/m/Y"|default:"Sin datos" }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>Seguro ayudante de carga (vence)</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="date" name="seguro_ayudante_carga"
+                value="{{ empleado.seguro_ayudante_carga|date:'Y-m-d'|default:'' }}">
+            {% else %}
+              <div class="field-value {% if not empleado.seguro_ayudante_carga %}muted{% endif %}">
+                {{ empleado.seguro_ayudante_carga|date:"d/m/Y"|default:"Sin datos" }}
+              </div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Licencia (solo conductores, visible siempre) ── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <h2>Licencia de conducir</h2>
+        {% if empleado.rol != 'CONDUCTOR' and not modo_edicion %}
+          <span class="badge-secondary" style="margin-left:8px;font-size:.72rem;">No aplica para este rol</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="field-grid">
+          <div class="field-block">
+            <label>N° de licencia</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="text" name="nro_licencia"
+                value="{{ empleado.nro_licencia }}"
+                placeholder="Solo obligatorio para conductores">
+            {% else %}
+              <div class="field-value {% if not empleado.nro_licencia %}muted{% endif %}">
+                {{ empleado.nro_licencia|default:"Sin datos" }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="field-block">
+            <label>Fecha de vencimiento</label>
+            {% if modo_edicion %}
+              <input class="field-input" type="date" name="licencia_fecha_vencimiento"
+                value="{{ empleado.licencia_fecha_vencimiento|date:'Y-m-d'|default:'' }}">
+            {% else %}
+              <div class="field-value {% if not empleado.licencia_fecha_vencimiento %}muted{% endif %}">
+                {{ empleado.licencia_fecha_vencimiento|date:"d/m/Y"|default:"Sin datos" }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Botón guardar (solo modo edición) ─────────── #}
+    {% if modo_edicion %}
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+      <a href="{% url 'gestion:empleado_detail' empleado.pk %}" class="btn btn-ghost">Cancelar</a>
+      <button type="submit" class="btn btn-success">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar cambios
+      </button>
+    </div>
+    {% endif %}
+
+  {% if modo_edicion %}
+  </form>
+  {% endif %}
+
+</div>{# /detalle-page #}
+
+<script>
+  function abrirModal()  { document.getElementById('modal-borrar').classList.add('open'); }
+  function cerrarModal() { document.getElementById('modal-borrar').classList.remove('open'); }
+  // Cerrar con Escape
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+  // Cerrar al hacer click fuera del box
+  document.getElementById('modal-borrar').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+  });
+</script>
+
+{% endblock %}
