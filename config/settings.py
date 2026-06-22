@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import mercadopago
 from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", default=False, cast=bool)
+DEBUG = True
 
 ALLOWED_HOSTS = ['scruz.pythonanywhere.com', 'localhost', '127.0.0.1']
 
@@ -170,6 +171,8 @@ TWILIO_SANDBOX = config("TWILIO_SANDBOX", default=True, cast=bool)
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
 SITE_BASE_URL = config("SITE_BASE_URL", default="")
 
+# MP
+sdk = mercadopago.SDK("APP_USR-5901687408792011-062115-a7ba54d5ea5830410751bcc0de2ab251-3486812479")
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -193,6 +196,9 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            "OPTIONS": {
+                'timeout': 20,
+            }
         }
     }
 

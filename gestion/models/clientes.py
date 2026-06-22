@@ -3,7 +3,7 @@ from django.db import models
 
 class Cliente(models.Model):
     nombre_completo = models.CharField(max_length=200)
-    dni = models.CharField(max_length=15, unique=True, blank=True)
+    dni = models.CharField(max_length=15, unique=True, blank=True, null=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
     telefono = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True, unique=True)
