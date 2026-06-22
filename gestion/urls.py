@@ -27,6 +27,10 @@ urlpatterns = [
 
     # Flota
     path('flota/', views.FlotaMonitorView.as_view(), name='flota_monitor'),
+    path('flota/nuevo/', views.CamionCreateView.as_view(), name='camion_create'),
+    path('flota/<int:pk>/', views.CamionDetailView.as_view(), name='camion_detail'),
+    path('flota/<int:pk>/editar/', views.CamionUpdateView.as_view(), name='camion_update'),
+    path('flota/<int:pk>/borrar/', views.camion_delete, name='camion_delete'),
 
     # Configuración de tarifas
     path('configuracion/tarifas/', views.ConfiguracionTarifaView.as_view(), name='config_tarifas'),
