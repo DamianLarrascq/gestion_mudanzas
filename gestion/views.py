@@ -219,7 +219,107 @@ class EmpleadoListView(StaffRequiredMixin, TemplateView):
             return None
 
 
-class EmpleadoDetailView(StaffRequiredMixin, TemplateView):
+class EmpleadoCreateView(StaffRequiredMixin, TemplateView):
+    """
+    GET  /gestion/empleados/nuevo/   — renderiza el formulario vacío
+    POST /gestion/empleados/nuevo/   — crea User (contraseña inutilizable)
+                                       + Empleado y redirige al detalle
+
+    El username se genera automáticamente desde el nombre del empleado
+    (ej. "Juan Pérez" → "juan.perez"). Si ya existe se añade un sufijo
+    numérico (_2, _3, …) para garantizar unicidad.
+    """
+    template_name = "gestion/empleados/nuevo.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["titulo_pagina"] = "Nuevo Empleado"
+        ctx["seccion_activa"] = "empleados"
+        ctx["opciones_rol"] = [
+            {"valor": r.value, "label": r.label} for r in Empleado.Rol
+        ]
+        ctx["errors"] = None
+        ctx["valores"] = {}
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from django.contrib.auth.models import User
+        from django.utils.text import slugify
+
+        raw = request.POST
+        errores = []
+
+        nombre = raw.get("nombre", "").strip()
+        dni    = raw.get("dni", "").strip()
+        rol    = raw.get("rol", "").strip()
+
+        if not nombre:
+            errores.append("El nombre es obligatorio.")
+        if not dni:
+            errores.append("El DNI es obligatorio.")
+        if rol not in Empleado.Rol.values:
+            errores.append("Rol inválido.")
+        if dni and Empleado.objects.filter(dni=dni).exists():
+            errores.append("Ya existe un empleado con ese DNI.")
+
+        nro_licencia = raw.get("nro_licencia", "").strip() or None
+        if (
+            nro_licencia
+            and Empleado.objects.filter(nro_licencia=nro_licencia).exists()
+        ):
+            errores.append("Ya existe un empleado con ese número de licencia.")
+
+        def _parse_date(campo: str) -> datetime.date | None:
+            val = raw.get(campo, "").strip()
+            if not val:
+                return None
+            try:
+                return datetime.date.fromisoformat(val)
+            except ValueError:
+                errores.append(f"Formato de fecha inválido en '{campo}'.")
+                return None
+
+        licencia_fecha_vencimiento = _parse_date("licencia_fecha_vencimiento")
+        seguro_riesgo              = _parse_date("seguro_riesgo")
+        seguro_ayudante_carga      = _parse_date("seguro_ayudante_carga")
+
+        if errores:
+            ctx = self.get_context_data(**kwargs)
+            ctx["errors"]  = errores
+            ctx["valores"] = raw
+            return self.render_to_response(ctx)
+
+        # Generar username único a partir del nombre
+        base_username = slugify(nombre).replace("-", ".")
+        username = base_username
+        sufijo = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{sufijo}"
+            sufijo += 1
+
+        user = User.objects.create(username=username, is_staff=True)
+        user.set_unusable_password()
+        user.save()
+
+        empleado = Empleado.objects.create(
+            user=user,
+            nombre=nombre,
+            dni=dni,
+            rol=rol,
+            nro_licencia=nro_licencia or "",
+            licencia_fecha_vencimiento=licencia_fecha_vencimiento,
+            disponible=raw.get("disponible") == "1",
+            art=raw.get("art") == "1",
+            seguro_riesgo=seguro_riesgo,
+            seguro_ayudante_carga=seguro_ayudante_carga,
+        )
+
+        messages.success(
+            request,
+            f"Empleado {empleado.nombre} creado. Username generado: {username}. "
+            f"Asigná una contraseña desde el panel de administración."
+        )
+        return redirect("gestion:empleado_detail", pk=empleado.pk)
     """
     GET /gestion/empleados/<pk>/
 
