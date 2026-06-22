@@ -459,11 +459,22 @@ function manejarErroresValidacion(errores) {
 }
 
 function procederAlPago() {
-  if (urlPagoMercadoPago) {
+  if (!urlPagoMercadoPago) {
+      alert("Hubo un problema al recuperar la pasarela de pagos. Por favor, recargue la página e intente nuevamente.");
+      return;
+    }
+
+    // 1. Pasamos visualmente al Paso 3 ("Redirigiendo...")
     setStep(3);
-    document.getElementById("link-pago-fallback").href = urlPagoMercadoPago;
+
+    // 2. Seteamos el enlace de respaldo
+    const linkFallback = document.getElementById("link-pago-fallback");
+    if (linkFallback) {
+      linkFallback.href = urlPagoMercadoPago;
+    }
+
+    // 3. Redirigimos al usuario en la misma pestaña hacia el Checkout Pro de MercadoPago
     window.location.href = urlPagoMercadoPago;
-  }
 }
 
 // --- FLUJO NAVEGACIONAL ---

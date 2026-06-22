@@ -38,7 +38,11 @@ def _sanitize_log(value: object, max_len: int = _LOG_MAX_LEN) -> str:
 
 
 def _get_usuario_sistema() -> User:
-    return User.objects.get(username=_SISTEMA_USERNAME)
+    user, _ = User.objects.get_or_create(
+        username=_SISTEMA_USERNAME,
+        defaults={'is_active': False}
+    )
+    return user
 
 
 @csrf_exempt
@@ -106,7 +110,7 @@ def _procesar_pago(payment_id: str | int) -> None:
     pago = response["response"]
     estado_pago = pago.get("status")
     metadata = pago.get("metadata", {})
-    mudanza_uuid = metadata.get("mudanza_uuid")
+    mudanza_uuid = metadata.get("mudanza_uuid") or pago.get('external_reference')
 
     if estado_pago != "approved":
         logger.info("webhook/mp: payment_id=%s estado=%s — ignorado", _sanitize_log(payment_id), _sanitize_log(estado_pago))
