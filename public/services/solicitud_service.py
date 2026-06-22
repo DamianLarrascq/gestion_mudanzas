@@ -184,7 +184,8 @@ def procesar_solicitud_landing(form_data: dict, inventario_raw: list) -> dict:
             "mudanza_uuid": str(mudanza.uuid),
         },
     )
-    pago_url = MercadoPagoService.generar_preferencia_desde_dato(dato, guardar_en=mudanza)
+    pago_url = ''
+    # pago_url = MercadoPagoService.generar_preferencia_desde_dato(dato, guardar_en=mudanza)
 
     # Disparar seguimiento post-formulario con ETA de 4 horas
     from notificaciones.tasks import enviar_seguimiento_post_formulario
