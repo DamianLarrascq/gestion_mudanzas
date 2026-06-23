@@ -128,6 +128,7 @@ def _payload_valido(item_id: int, **overrides) -> dict:
         "destino_numero": "567",
         "destino_localidad": "CABA",
         "fecha_deseada": FECHA_VALIDA,
+        "hora_deseada" : "10:00", 
         "distancia_km": "15.00",
         "inventario": [{"catalogo_item_id": item_id, "cantidad": 2}],
     }
