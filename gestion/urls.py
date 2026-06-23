@@ -19,13 +19,18 @@ urlpatterns = [
 
     # Empleados
     path('empleados/', views.EmpleadoListView.as_view(), name='empleado_list'),
-    path('empleados/<int:pk>/', views.EmpleadoDetailView.as_view(), name='empleado_detail'),
+    path('empleados/nuevo/', views.EmpleadoCreateView.as_view(), name='empleado_create'),
+    path('empleados/<int:pk>/', views.EmpleadoCreateView.as_view(), name='empleado_detail'),
     path('empleados/<int:pk>/editar/', views.EmpleadoUpdateView.as_view(), name='empleado_update'),
     path('empleados/<int:pk>/borrar/', views.empleado_delete, name='empleado_delete'),
     path('empleados/<int:empleado_id>/disponibilidad/', views.api_validar_disponibilidad, name='api_empleado_disponibilidad'),
 
     # Flota
     path('flota/', views.FlotaMonitorView.as_view(), name='flota_monitor'),
+    path('flota/nuevo/', views.CamionCreateView.as_view(), name='camion_create'),
+    path('flota/<int:pk>/', views.CamionDetailView.as_view(), name='camion_detail'),
+    path('flota/<int:pk>/editar/', views.CamionUpdateView.as_view(), name='camion_update'),
+    path('flota/<int:pk>/borrar/', views.camion_delete, name='camion_delete'),
 
     # Configuración de tarifas
     path('configuracion/tarifas/', views.ConfiguracionTarifaView.as_view(), name='config_tarifas'),

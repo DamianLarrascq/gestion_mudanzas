@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
+from django.urls import reverse
 from django.utils import timezone
 from gestion.models.flota import Camion
 from gestion.models.mudanzas import Mudanza
@@ -123,7 +124,7 @@ def _serializar_camion(camion: Camion, estado_operativo: EstadoOperativo, hoy: d
         "documentacion_tiene_alerta": doc_critica.estado in ("VENCIDO", "POR_VENCER"),
 
         # URL de gestión
-        "url_detalle": f"/gestion/flota/{camion.pk}/",
+        "url_detalle": reverse("gestion:camion_detail", kwargs={"pk": camion.pk}),
     }
 
 

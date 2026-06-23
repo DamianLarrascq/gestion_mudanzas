@@ -1,0 +1,232 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<style>
+  :root { --radius: 13px; --radius-sm: 8px; }
+
+  .nuevo-page {
+    margin: 0 auto;
+    padding: 32px 36px 64px;
+    max-width: 860px;
+    font-family: var(--font-body, 'Inter', sans-serif);
+    color: var(--text-primary);
+  }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .85rem; color: var(--text-secondary); margin-bottom: 24px;
+  }
+  .breadcrumb a { color: var(--accent-hover); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { width: 11px; height: 11px; stroke: var(--text-secondary); fill: none; stroke-width: 2.5; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 2rem; font-weight: 700; margin: 0 0 6px; font-family: var(--font-title, 'DM Serif Display', serif); }
+  .page-header p  { font-size: .88rem; color: var(--text-secondary); margin: 0; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; animation: fadeUp .35s ease both; }
+  .card-header { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .card-header h2 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); margin: 0; }
+  .card-body { padding: 22px; }
+
+  .field-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px 28px; }
+  .field-grid.three { grid-template-columns: repeat(3,1fr); }
+  @media(max-width:640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
+  .field-block { display: flex; flex-direction: column; gap: 6px; }
+  .field-block label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-secondary); }
+  .required-star { color: var(--danger); margin-left: 2px; }
+  .field-hint { font-size: .75rem; color: var(--text-secondary); margin-top: 2px; }
+
+  .field-input, .field-select {
+    width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary); font-size: .93rem;
+    font-family: inherit; padding: 9px 13px; outline: none; box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field-input:focus, .field-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,124,255,.15); }
+  .field-input.has-error { border-color: var(--danger); }
+  .field-select option { background: #1a1d2a; }
+
+  .toggle-group { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .toggle-group input[type="checkbox"] {
+    appearance: none; width: 38px; height: 22px; border-radius: 11px;
+    background: var(--border); cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0;
+  }
+  .toggle-group input[type="checkbox"]::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; transition: left .2s;
+  }
+  .toggle-group input[type="checkbox"]:checked { background: var(--success); }
+  .toggle-group input[type="checkbox"]:checked::after { left: 19px; }
+  .toggle-label { font-size: .90rem; color: var(--text-primary); font-weight: 500; }
+
+  .error-list { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-left:3px solid var(--danger);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px; }
+  .error-list p { margin:0 0 4px;font-size:.88rem;color:var(--danger); }
+  .error-list p:last-child { margin:0; }
+
+  .btn { display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);font-size:.88rem;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent;text-decoration:none;transition:background .15s,border-color .15s,transform .1s;white-space:nowrap; }
+  .btn svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2; }
+  .btn-primary { background:var(--accent);color:#fff;border-color:var(--accent); }
+  .btn-primary:hover { background:var(--accent-hover);transform:translateY(-1px); }
+  .btn-ghost { background:transparent;color:var(--text-secondary);border-color:var(--border); }
+  .btn-ghost:hover { color:var(--text-primary);border-color:rgba(255,255,255,.2); }
+
+  .form-actions { display:flex;justify-content:flex-end;gap:10px;margin-top:4px; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+
+<div class="nuevo-page">
+
+  <nav class="breadcrumb">
+    <a href="{% url 'gestion:flota_monitor' %}">Flota</a>
+    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>Nuevo Vehículo</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Nuevo Vehículo</h1>
+    <p>Completá los datos del camión o utilitario para incorporarlo a la flota.</p>
+  </div>
+
+  {% if errors %}
+  <div class="error-list">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>
+  {% endif %}
+
+  <form method="post" action="{% url 'gestion:camion_create' %}">
+    {% csrf_token %}
+
+    {# ── Datos del vehículo ───────────────────────── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <h2>Datos del vehículo</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-grid three">
+
+          <div class="field-block">
+            <label>Patente <span class="required-star">*</span></label>
+            <input class="field-input {% if errors and not valores.patente %}has-error{% endif %}"
+              type="text" name="patente" value="{{ valores.patente|default:'' }}"
+              placeholder="Ej: AB123CD" style="text-transform:uppercase;" required>
+          </div>
+
+          <div class="field-block">
+            <label>Modelo <span class="required-star">*</span></label>
+            <input class="field-input {% if errors and not valores.modelo %}has-error{% endif %}"
+              type="text" name="modelo" value="{{ valores.modelo|default:'' }}"
+              placeholder="Ej: Mercedes Sprinter 515" required>
+          </div>
+
+          <div class="field-block">
+            <label>Año</label>
+            <input class="field-input" type="number" name="anio"
+              value="{{ valores.anio|default:'' }}" min="1900" max="2100" placeholder="Ej: 2022">
+          </div>
+
+          <div class="field-block">
+            <label>Categoría <span class="required-star">*</span></label>
+            <select class="field-select" name="categoria" required>
+              <option value="" disabled {% if not valores.categoria %}selected{% endif %}>Seleccioná una categoría...</option>
+              {% for op in opciones_categoria %}
+                <option value="{{ op.valor }}" {% if valores.categoria == op.valor %}selected{% endif %}>{{ op.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field-block">
+            <label>Volumen máx. (m³) <span class="required-star">*</span></label>
+            <input class="field-input" type="number" name="capacidad_volumen_m3"
+              value="{{ valores.capacidad_volumen_m3|default:'' }}" step="0.01" min="0.01"
+              placeholder="Ej: 20.00" required>
+          </div>
+
+          <div class="field-block">
+            <label>Peso máx. (kg) <span class="required-star">*</span></label>
+            <input class="field-input" type="number" name="capacidad_peso_kg"
+              value="{{ valores.capacidad_peso_kg|default:'' }}" step="0.01" min="0.01"
+              placeholder="Ej: 3500.00" required>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Estado operativo ─────────────────────────── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="20 4 12 12 9 9"/></svg>
+        <h2>Estado operativo</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-grid">
+
+          <div class="field-block">
+            <label>Activo en flota</label>
+            <div class="toggle-group">
+              <input type="checkbox" name="activo" id="toggle-activo" value="1"
+                {% if not valores or valores.activo == '1' %}checked{% endif %}>
+              <label class="toggle-label" for="toggle-activo">Disponible para mudanzas al crearse</label>
+            </div>
+          </div>
+
+          <div class="field-block">
+            <label>En taller</label>
+            <div class="toggle-group">
+              <input type="checkbox" name="en_taller" id="toggle-taller" value="1"
+                {% if valores.en_taller == '1' %}checked{% endif %}>
+              <label class="toggle-label" for="toggle-taller">Fuera de servicio por mantenimiento</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Documentación ────────────────────────────── #}
+    <div class="card">
+      <div class="card-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <h2>Documentación (vencimientos)</h2>
+      </div>
+      <div class="card-body">
+        <div class="field-grid three" style="margin-bottom:12px;">
+
+          <div class="field-block">
+            <label>VTV — vence</label>
+            <input class="field-input" type="date" name="vtv_fecha_vencimiento"
+              value="{{ valores.vtv_fecha_vencimiento|default:'' }}">
+          </div>
+
+          <div class="field-block">
+            <label>Seguro — vence</label>
+            <input class="field-input" type="date" name="seguro_fecha_vencimiento"
+              value="{{ valores.seguro_fecha_vencimiento|default:'' }}">
+          </div>
+
+          <div class="field-block">
+            <label>Patente — vence</label>
+            <input class="field-input" type="date" name="patente_fecha_vencimiento"
+              value="{{ valores.patente_fecha_vencimiento|default:'' }}">
+          </div>
+
+        </div>
+        <p class="field-hint">Podés completar los vencimientos ahora o editarlos más tarde desde el detalle del vehículo.</p>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'gestion:flota_monitor' %}" class="btn btn-ghost">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <svg viewBox="0 0 24 24"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar Vehículo
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

@@ -219,7 +219,107 @@ class EmpleadoListView(StaffRequiredMixin, TemplateView):
             return None
 
 
-class EmpleadoDetailView(StaffRequiredMixin, TemplateView):
+class EmpleadoCreateView(StaffRequiredMixin, TemplateView):
+    """
+    GET  /gestion/empleados/nuevo/   — renderiza el formulario vacío
+    POST /gestion/empleados/nuevo/   — crea User (contraseña inutilizable)
+                                       + Empleado y redirige al detalle
+
+    El username se genera automáticamente desde el nombre del empleado
+    (ej. "Juan Pérez" → "juan.perez"). Si ya existe se añade un sufijo
+    numérico (_2, _3, …) para garantizar unicidad.
+    """
+    template_name = "gestion/empleados/nuevo.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["titulo_pagina"] = "Nuevo Empleado"
+        ctx["seccion_activa"] = "empleados"
+        ctx["opciones_rol"] = [
+            {"valor": r.value, "label": r.label} for r in Empleado.Rol
+        ]
+        ctx["errors"] = None
+        ctx["valores"] = {}
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from django.contrib.auth.models import User
+        from django.utils.text import slugify
+
+        raw = request.POST
+        errores = []
+
+        nombre = raw.get("nombre", "").strip()
+        dni    = raw.get("dni", "").strip()
+        rol    = raw.get("rol", "").strip()
+
+        if not nombre:
+            errores.append("El nombre es obligatorio.")
+        if not dni:
+            errores.append("El DNI es obligatorio.")
+        if rol not in Empleado.Rol.values:
+            errores.append("Rol inválido.")
+        if dni and Empleado.objects.filter(dni=dni).exists():
+            errores.append("Ya existe un empleado con ese DNI.")
+
+        nro_licencia = raw.get("nro_licencia", "").strip() or None
+        if (
+            nro_licencia
+            and Empleado.objects.filter(nro_licencia=nro_licencia).exists()
+        ):
+            errores.append("Ya existe un empleado con ese número de licencia.")
+
+        def _parse_date(campo: str) -> datetime.date | None:
+            val = raw.get(campo, "").strip()
+            if not val:
+                return None
+            try:
+                return datetime.date.fromisoformat(val)
+            except ValueError:
+                errores.append(f"Formato de fecha inválido en '{campo}'.")
+                return None
+
+        licencia_fecha_vencimiento = _parse_date("licencia_fecha_vencimiento")
+        seguro_riesgo              = _parse_date("seguro_riesgo")
+        seguro_ayudante_carga      = _parse_date("seguro_ayudante_carga")
+
+        if errores:
+            ctx = self.get_context_data(**kwargs)
+            ctx["errors"]  = errores
+            ctx["valores"] = raw
+            return self.render_to_response(ctx)
+
+        # Generar username único a partir del nombre
+        base_username = slugify(nombre).replace("-", ".")
+        username = base_username
+        sufijo = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{sufijo}"
+            sufijo += 1
+
+        user = User.objects.create(username=username, is_staff=True)
+        user.set_unusable_password()
+        user.save()
+
+        empleado = Empleado.objects.create(
+            user=user,
+            nombre=nombre,
+            dni=dni,
+            rol=rol,
+            nro_licencia=nro_licencia or "",
+            licencia_fecha_vencimiento=licencia_fecha_vencimiento,
+            disponible=raw.get("disponible") == "1",
+            art=raw.get("art") == "1",
+            seguro_riesgo=seguro_riesgo,
+            seguro_ayudante_carga=seguro_ayudante_carga,
+        )
+
+        messages.success(
+            request,
+            f"Empleado {empleado.nombre} creado. Username generado: {username}. "
+            f"Asigná una contraseña desde el panel de administración."
+        )
+        return redirect("gestion:empleado_detail", pk=empleado.pk)
     """
     GET /gestion/empleados/<pk>/
 
@@ -382,6 +482,233 @@ class FlotaMonitorView(StaffRequiredMixin, TemplateView):
         ctx["titulo_pagina"] = "Monitoreo de Flota"
         ctx["seccion_activa"] = "flota"
         return ctx
+
+
+class CamionDetailView(StaffRequiredMixin, TemplateView):
+    """GET /gestion/flota/<pk>/"""
+    template_name = "gestion/flota/detalle.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
+        ctx["camion"] = camion
+        ctx["titulo_pagina"] = f"Vehículo — {camion.patente}"
+        ctx["seccion_activa"] = "flota"
+        return ctx
+
+
+class CamionUpdateView(StaffRequiredMixin, TemplateView):
+    """
+    GET  /gestion/flota/<pk>/editar/
+    POST /gestion/flota/<pk>/editar/
+    """
+    template_name = "gestion/flota/detalle.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
+        ctx["camion"] = camion
+        ctx["modo_edicion"] = True
+        ctx["titulo_pagina"] = f"Editar — {camion.patente}"
+        ctx["seccion_activa"] = "flota"
+        ctx["opciones_categoria"] = [
+            {"valor": c.value, "label": c.label} for c in Camion.Categoria
+        ]
+        ctx["errors"] = None
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
+        raw = request.POST
+        errores = []
+
+        patente = raw.get("patente", "").strip().upper()
+        modelo  = raw.get("modelo", "").strip()
+        categoria = raw.get("categoria", "").strip()
+
+        if not patente:
+            errores.append("La patente es obligatoria.")
+        if not modelo:
+            errores.append("El modelo es obligatorio.")
+        if categoria not in Camion.Categoria.values:
+            errores.append("Categoría inválida.")
+        if patente and Camion.objects.filter(patente=patente).exclude(pk=camion.pk).exists():
+            errores.append("Ya existe un vehículo con esa patente.")
+
+        def _decimal(campo: str, label: str) -> object:
+            val = raw.get(campo, "").strip()
+            if not val:
+                errores.append(f"{label} es obligatorio.")
+                return None
+            try:
+                from decimal import Decimal, InvalidOperation
+                d = Decimal(val)
+                if d <= 0:
+                    errores.append(f"{label} debe ser mayor a 0.")
+                return d
+            except InvalidOperation:
+                errores.append(f"{label} tiene un formato inválido.")
+                return None
+
+        def _parse_date(campo: str) -> datetime.date | None:
+            val = raw.get(campo, "").strip()
+            if not val:
+                return None
+            try:
+                return datetime.date.fromisoformat(val)
+            except ValueError:
+                errores.append(f"Fecha inválida en '{campo}'.")
+                return None
+
+        volumen = _decimal("capacidad_volumen_m3", "Volumen (m³)")
+        peso    = _decimal("capacidad_peso_kg", "Peso máx. (kg)")
+
+        anio_raw = raw.get("anio", "").strip()
+        anio = 0
+        if anio_raw:
+            try:
+                anio = int(anio_raw)
+                if anio < 1900 or anio > 2100:
+                    errores.append("Año fuera de rango.")
+            except ValueError:
+                errores.append("El año debe ser un número entero.")
+
+        vtv_fecha       = _parse_date("vtv_fecha_vencimiento")
+        seguro_fecha    = _parse_date("seguro_fecha_vencimiento")
+        patente_fecha   = _parse_date("patente_fecha_vencimiento")
+
+        if errores:
+            ctx = self.get_context_data(**kwargs)
+            ctx["errors"] = errores
+            return self.render_to_response(ctx)
+
+        camion.patente                  = patente
+        camion.modelo                   = modelo
+        camion.categoria                = categoria
+        camion.anio                     = anio
+        camion.capacidad_volumen_m3     = volumen
+        camion.capacidad_peso_kg        = peso
+        camion.activo                   = raw.get("activo") == "1"
+        camion.en_taller                = raw.get("en_taller") == "1"
+        camion.vtv_fecha_vencimiento    = vtv_fecha
+        camion.seguro_fecha_vencimiento = seguro_fecha
+        camion.patente_fecha_vencimiento = patente_fecha
+        camion.save()
+
+        messages.success(request, f"Vehículo {camion.patente} actualizado correctamente.")
+        return redirect("gestion:camion_detail", pk=camion.pk)
+
+
+class CamionCreateView(StaffRequiredMixin, TemplateView):
+    """
+    GET  /gestion/flota/nuevo/
+    POST /gestion/flota/nuevo/
+    """
+    template_name = "gestion/flota/nuevo.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["titulo_pagina"] = "Nuevo Vehículo"
+        ctx["seccion_activa"] = "flota"
+        ctx["opciones_categoria"] = [
+            {"valor": c.value, "label": c.label} for c in Camion.Categoria
+        ]
+        ctx["errors"] = None
+        ctx["valores"] = {}
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from decimal import Decimal, InvalidOperation
+        raw = request.POST
+        errores = []
+
+        patente   = raw.get("patente", "").strip().upper()
+        modelo    = raw.get("modelo", "").strip()
+        categoria = raw.get("categoria", "").strip()
+
+        if not patente:
+            errores.append("La patente es obligatoria.")
+        if not modelo:
+            errores.append("El modelo es obligatorio.")
+        if categoria not in Camion.Categoria.values:
+            errores.append("Categoría inválida.")
+        if patente and Camion.objects.filter(patente=patente).exists():
+            errores.append("Ya existe un vehículo con esa patente.")
+
+        def _decimal(campo: str, label: str):
+            val = raw.get(campo, "").strip()
+            if not val:
+                errores.append(f"{label} es obligatorio.")
+                return None
+            try:
+                d = Decimal(val)
+                if d <= 0:
+                    errores.append(f"{label} debe ser mayor a 0.")
+                return d
+            except InvalidOperation:
+                errores.append(f"{label} tiene un formato inválido.")
+                return None
+
+        def _parse_date(campo: str) -> datetime.date | None:
+            val = raw.get(campo, "").strip()
+            if not val:
+                return None
+            try:
+                return datetime.date.fromisoformat(val)
+            except ValueError:
+                errores.append(f"Fecha inválida en '{campo}'.")
+                return None
+
+        volumen = _decimal("capacidad_volumen_m3", "Volumen (m³)")
+        peso    = _decimal("capacidad_peso_kg", "Peso máx. (kg)")
+
+        anio_raw = raw.get("anio", "").strip()
+        anio = 0
+        if anio_raw:
+            try:
+                anio = int(anio_raw)
+                if anio < 1900 or anio > 2100:
+                    errores.append("Año fuera de rango.")
+            except ValueError:
+                errores.append("El año debe ser un número entero.")
+
+        vtv_fecha     = _parse_date("vtv_fecha_vencimiento")
+        seguro_fecha  = _parse_date("seguro_fecha_vencimiento")
+        patente_fecha = _parse_date("patente_fecha_vencimiento")
+
+        if errores:
+            ctx = self.get_context_data(**kwargs)
+            ctx["errors"]  = errores
+            ctx["valores"] = raw
+            return self.render_to_response(ctx)
+
+        camion = Camion.objects.create(
+            patente=patente,
+            modelo=modelo,
+            categoria=categoria,
+            anio=anio,
+            capacidad_volumen_m3=volumen,
+            capacidad_peso_kg=peso,
+            activo=raw.get("activo") == "1",
+            en_taller=raw.get("en_taller") == "1",
+            vtv_fecha_vencimiento=vtv_fecha,
+            seguro_fecha_vencimiento=seguro_fecha,
+            patente_fecha_vencimiento=patente_fecha,
+        )
+        messages.success(request, f"Vehículo {camion.patente} creado correctamente.")
+        return redirect("gestion:camion_detail", pk=camion.pk)
+
+
+@staff_required
+def camion_delete(request, pk: int):
+    """POST /gestion/flota/<pk>/borrar/"""
+    if request.method != "POST":
+        return redirect("gestion:camion_detail", pk=pk)
+    camion = get_object_or_404(Camion, pk=pk)
+    patente = camion.patente
+    camion.delete()
+    messages.success(request, f"Vehículo {patente} eliminado correctamente.")
+    return redirect("gestion:flota_monitor")
 
 
 # Resumen mudanza y mp

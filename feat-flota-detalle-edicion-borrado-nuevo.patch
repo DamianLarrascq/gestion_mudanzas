@@ -1,0 +1,959 @@
+From abfb331ba06b56630a2581c67b254c627f0d1ed9 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Mon, 22 Jun 2026 23:12:55 +0000
+Subject: [PATCH] =?UTF-8?q?feat(flota):=20detalle,=20edici=C3=B3n,=20borra?=
+ =?UTF-8?q?do=20y=20creaci=C3=B3n=20de=20veh=C3=ADculos?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- urls.py: agrega camion_create, camion_detail, camion_update, camion_delete
+- views.py: CamionDetailView, CamionUpdateView (GET+POST), CamionCreateView
+  (GET+POST), camion_delete (POST). Valida unicidad de patente, Decimal
+  para volumen/peso, año en rango 1900-2100, fechas ISO. En create el
+  toggle activo arranca en True, en_taller en False.
+- flota/monitor.html: botón 'Nuevo Vehículo' en el header (flex)
+- flota/detalle.html: template dual lectura/edición. Tres secciones
+  (datos vehículo, estado operativo con toggles, documentación).
+  Modal de confirmación antes de borrar con Escape y click-outside.
+- flota/nuevo.html: formulario en tres cards. Preserva valores al
+  re-renderizar con errores. Documentación opcional con hint.
+- flota_service.py: url_detalle usa reverse() en vez de string
+  hardcodeado; agrega import django.urls.reverse
+---
+ gestion/services/flota_service.py            |   3 +-
+ gestion/templates/gestion/flota/detalle.html | 378 +++++++++++++++++++
+ gestion/templates/gestion/flota/monitor.html |   9 +-
+ gestion/templates/gestion/flota/nuevo.html   | 232 ++++++++++++
+ gestion/urls.py                              |   4 +
+ gestion/views.py                             | 227 +++++++++++
+ 6 files changed, 851 insertions(+), 2 deletions(-)
+ create mode 100644 gestion/templates/gestion/flota/detalle.html
+ create mode 100644 gestion/templates/gestion/flota/nuevo.html
+
+diff --git a/gestion/services/flota_service.py b/gestion/services/flota_service.py
+index 24c0b8b..7a56780 100644
+--- a/gestion/services/flota_service.py
++++ b/gestion/services/flota_service.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ from dataclasses import dataclass
+ from datetime import date
+ from typing import Literal
++from django.urls import reverse
+ from django.utils import timezone
+ from gestion.models.flota import Camion
+ from gestion.models.mudanzas import Mudanza
+@@ -123,7 +124,7 @@ def _serializar_camion(camion: Camion, estado_operativo: EstadoOperativo, hoy: d
+         "documentacion_tiene_alerta": doc_critica.estado in ("VENCIDO", "POR_VENCER"),
+ 
+         # URL de gestión
+-        "url_detalle": f"/gestion/flota/{camion.pk}/",
++        "url_detalle": reverse("gestion:camion_detail", kwargs={"pk": camion.pk}),
+     }
+ 
+ 
+diff --git a/gestion/templates/gestion/flota/detalle.html b/gestion/templates/gestion/flota/detalle.html
+new file mode 100644
+index 0000000..1521cd2
+--- /dev/null
++++ b/gestion/templates/gestion/flota/detalle.html
+@@ -0,0 +1,378 @@
++{% extends "admin/base_admin.html" %}
++{% load static %}
++
++{% block title %}{{ titulo_pagina }}{% endblock %}
++
++{% block content %}
++<style>
++  :root { --radius: 13px; --radius-sm: 8px; }
++
++  .detalle-page {
++    margin: 0 auto;
++    padding: 32px 36px 56px;
++    max-width: 960px;
++    font-family: var(--font-body, 'Inter', sans-serif);
++    color: var(--text-primary);
++  }
++
++  /* ── Breadcrumb ─────────────────────────────────── */
++  .breadcrumb {
++    display: flex; align-items: center; gap: 8px;
++    font-size: .85rem; color: var(--text-secondary); margin-bottom: 24px;
++  }
++  .breadcrumb a { color: var(--accent-hover); text-decoration: none; }
++  .breadcrumb a:hover { text-decoration: underline; }
++  .breadcrumb svg { width: 11px; height: 11px; stroke: var(--text-secondary); fill: none; stroke-width: 2.5; }
++
++  /* ── Header ─────────────────────────────────────── */
++  .emp-header {
++    display: flex; align-items: flex-start; justify-content: space-between;
++    gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
++  }
++  .emp-header-left h1 {
++    font-size: 2rem; font-weight: 700; margin: 0 0 6px; color: var(--text-primary);
++    font-family: var(--font-title, 'DM Serif Display', serif);
++  }
++  .cat-pill {
++    display: inline-flex; align-items: center; gap: 5px;
++    padding: 4px 12px; border-radius: 20px; font-size: .78rem; font-weight: 700;
++    letter-spacing: .06em; text-transform: uppercase;
++    background: rgba(79,124,255,.13); color: var(--accent); border: 1px solid rgba(79,124,255,.25);
++  }
++  .header-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
++
++  /* ── Botones ────────────────────────────────────── */
++  .btn {
++    display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
++    border-radius: var(--radius-sm); font-size: .88rem; font-weight: 600;
++    font-family: inherit; cursor: pointer; border: 1px solid transparent;
++    text-decoration: none; transition: background .15s, border-color .15s, transform .1s; white-space: nowrap;
++  }
++  .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; }
++  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
++  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
++  .btn-ghost   { background: transparent; color: var(--text-secondary); border-color: var(--border); }
++  .btn-ghost:hover { color: var(--text-primary); border-color: rgba(255,255,255,.2); }
++  .btn-danger  { background: rgba(239,68,68,.1); color: var(--danger); border-color: rgba(239,68,68,.3); }
++  .btn-danger:hover  { background: rgba(239,68,68,.2); transform: translateY(-1px); }
++  .btn-success { background: rgba(34,197,94,.12); color: var(--success); border-color: rgba(34,197,94,.3); }
++  .btn-success:hover { background: rgba(34,197,94,.22); transform: translateY(-1px); }
++
++  /* ── Cards ──────────────────────────────────────── */
++  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; animation: fadeUp .35s ease both; }
++  .card-header { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
++  .card-header h2 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); margin: 0; }
++  .card-body { padding: 22px; }
++
++  /* ── Campos ─────────────────────────────────────── */
++  .field-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px 28px; }
++  .field-grid.three { grid-template-columns: repeat(3,1fr); }
++  @media(max-width:640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
++  .field-block { display: flex; flex-direction: column; gap: 5px; }
++  .field-block label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-secondary); }
++  .field-value { font-size: .95rem; color: var(--text-primary); font-weight: 500; }
++  .field-value.muted { color: var(--text-secondary); font-style: italic; font-weight: 400; }
++
++  /* ── Inputs ─────────────────────────────────────── */
++  .field-input, .field-select {
++    width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
++    border-radius: var(--radius-sm); color: var(--text-primary); font-size: .93rem;
++    font-family: inherit; padding: 9px 13px; outline: none; box-sizing: border-box;
++    transition: border-color .15s, box-shadow .15s;
++  }
++  .field-input:focus, .field-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,124,255,.15); }
++  .field-select option { background: #1a1d2a; }
++
++  /* ── Toggles ────────────────────────────────────── */
++  .toggle-group { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
++  .toggle-group input[type="checkbox"] {
++    appearance: none; width: 38px; height: 22px; border-radius: 11px;
++    background: var(--border); cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0;
++  }
++  .toggle-group input[type="checkbox"]::after {
++    content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
++    border-radius: 50%; background: #fff; transition: left .2s;
++  }
++  .toggle-group input[type="checkbox"]:checked { background: var(--success); }
++  .toggle-group input[type="checkbox"]:checked::after { left: 19px; }
++  .toggle-label { font-size: .90rem; color: var(--text-primary); font-weight: 500; }
++
++  /* ── Badges ─────────────────────────────────────── */
++  .badge-ok      { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25); }
++  .badge-danger  { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25); }
++  .badge-warn    { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(245,158,11,.12);color:var(--warning,#f59e0b);border:1px solid rgba(245,158,11,.25); }
++  .badge-neutral { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:rgba(148,163,184,.1);color:var(--text-secondary);border:1px solid var(--border); }
++
++  /* ── Errores ────────────────────────────────────── */
++  .error-list { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-left:3px solid var(--danger);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px; }
++  .error-list p { margin:0 0 4px;font-size:.88rem;color:var(--danger); }
++  .error-list p:last-child { margin:0; }
++
++  /* ── Modal borrado ──────────────────────────────── */
++  .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center; }
++  .modal-overlay.open { display:flex; }
++  .modal-box { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 28px;max-width:420px;width:90%;animation:fadeUp .2s ease both; }
++  .modal-icon { width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px; }
++  .modal-icon svg { width:24px;height:24px;stroke:var(--danger);fill:none;stroke-width:2; }
++  .modal-box h3 { font-size:1.3rem;font-weight:700;text-align:center;margin:0 0 8px; }
++  .modal-box p  { font-size:.88rem;color:var(--text-secondary);text-align:center;margin:0 0 24px;line-height:1.5; }
++  .modal-actions { display:flex;gap:10px; }
++  .modal-actions .btn { flex:1;justify-content:center; }
++
++  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
++</style>
++
++{# ── Modal confirmación borrado ───────────────────────────── #}
++<div class="modal-overlay" id="modal-borrar">
++  <div class="modal-box">
++    <div class="modal-icon">
++      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
++    </div>
++    <h3>¿Eliminar vehículo?</h3>
++    <p>
++      Se eliminará el vehículo <strong>{{ camion.patente }} — {{ camion.modelo }}</strong>.<br>
++      Esta acción no se puede deshacer.
++    </p>
++    <div class="modal-actions">
++      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
++      <form method="post" action="{% url 'gestion:camion_delete' camion.pk %}" style="flex:1;display:flex;">
++        {% csrf_token %}
++        <button type="submit" class="btn btn-danger" style="flex:1;justify-content:center;">
++          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
++          Sí, eliminar
++        </button>
++      </form>
++    </div>
++  </div>
++</div>
++
++<div class="detalle-page">
++
++  {# ── Breadcrumb ──────────────────────────────────────────── #}
++  <nav class="breadcrumb">
++    <a href="{% url 'gestion:flota_monitor' %}">Flota</a>
++    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
++    <span>{{ camion.patente }}</span>
++    {% if modo_edicion %}
++      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
++      <span>Editar</span>
++    {% endif %}
++  </nav>
++
++  {# ── Header ──────────────────────────────────────────────── #}
++  <div class="emp-header">
++    <div class="emp-header-left">
++      <h1>{{ camion.patente }}</h1>
++      <span class="cat-pill">{{ camion.get_categoria_display }}</span>
++    </div>
++    <div class="header-actions">
++      {% if modo_edicion %}
++        <a href="{% url 'gestion:camion_detail' camion.pk %}" class="btn btn-ghost">
++          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
++          Cancelar
++        </a>
++      {% else %}
++        <button class="btn btn-danger" onclick="abrirModal()">
++          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
++          Eliminar
++        </button>
++        <a href="{% url 'gestion:camion_update' camion.pk %}" class="btn btn-primary">
++          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
++          Editar
++        </a>
++      {% endif %}
++    </div>
++  </div>
++
++  {# ── Errores ─────────────────────────────────────────────── #}
++  {% if errors %}
++  <div class="error-list">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>
++  {% endif %}
++
++  {% if modo_edicion %}<form method="post" action="{% url 'gestion:camion_update' camion.pk %}">{% csrf_token %}{% endif %}
++
++    {# ── Datos del vehículo ───────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
++        <h2>Datos del vehículo</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid three">
++
++          <div class="field-block">
++            <label>Patente</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="text" name="patente" value="{{ camion.patente }}" required style="text-transform:uppercase;">
++            {% else %}
++              <div class="field-value">{{ camion.patente }}</div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Modelo</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="text" name="modelo" value="{{ camion.modelo }}" required>
++            {% else %}
++              <div class="field-value">{{ camion.modelo }}</div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Año</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="number" name="anio" value="{{ camion.anio }}" min="1900" max="2100" placeholder="Ej: 2020">
++            {% else %}
++              <div class="field-value {% if not camion.anio %}muted{% endif %}">{{ camion.anio|default:"Sin datos" }}</div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Categoría</label>
++            {% if modo_edicion %}
++              <select class="field-select" name="categoria">
++                {% for op in opciones_categoria %}
++                  <option value="{{ op.valor }}" {% if camion.categoria == op.valor %}selected{% endif %}>{{ op.label }}</option>
++                {% endfor %}
++              </select>
++            {% else %}
++              <div class="field-value">{{ camion.get_categoria_display }}</div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Volumen máx. (m³)</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="number" name="capacidad_volumen_m3" value="{{ camion.capacidad_volumen_m3 }}" step="0.01" min="0.01" required>
++            {% else %}
++              <div class="field-value">{{ camion.capacidad_volumen_m3 }} m³</div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Peso máx. (kg)</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="number" name="capacidad_peso_kg" value="{{ camion.capacidad_peso_kg }}" step="0.01" min="0.01" required>
++            {% else %}
++              <div class="field-value">{{ camion.capacidad_peso_kg }} kg</div>
++            {% endif %}
++          </div>
++
++        </div>
++      </div>
++    </div>
++
++    {# ── Estado operativo ─────────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="20 4 12 12 9 9"/></svg>
++        <h2>Estado operativo</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid">
++
++          <div class="field-block">
++            <label>Activo en flota</label>
++            {% if modo_edicion %}
++              <div class="toggle-group">
++                <input type="checkbox" name="activo" id="toggle-activo" value="1" {% if camion.activo %}checked{% endif %}>
++                <label class="toggle-label" for="toggle-activo">Disponible para mudanzas</label>
++              </div>
++            {% else %}
++              {% if camion.activo %}
++                <span class="badge-ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Activo</span>
++              {% else %}
++                <span class="badge-danger"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Inactivo</span>
++              {% endif %}
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>En taller</label>
++            {% if modo_edicion %}
++              <div class="toggle-group">
++                <input type="checkbox" name="en_taller" id="toggle-taller" value="1" {% if camion.en_taller %}checked{% endif %}>
++                <label class="toggle-label" for="toggle-taller">Fuera de servicio por mantenimiento</label>
++              </div>
++            {% else %}
++              {% if camion.en_taller %}
++                <span class="badge-warn">⚙ En taller</span>
++              {% else %}
++                <span class="badge-neutral">No</span>
++              {% endif %}
++            {% endif %}
++          </div>
++
++        </div>
++      </div>
++    </div>
++
++    {# ── Documentación ────────────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
++        <h2>Documentación (vencimientos)</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid three">
++
++          <div class="field-block">
++            <label>VTV — vence</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="date" name="vtv_fecha_vencimiento" value="{{ camion.vtv_fecha_vencimiento|date:'Y-m-d'|default:'' }}">
++            {% else %}
++              <div class="field-value {% if not camion.vtv_fecha_vencimiento %}muted{% endif %}">
++                {{ camion.vtv_fecha_vencimiento|date:"d/m/Y"|default:"Sin datos" }}
++              </div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Seguro — vence</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="date" name="seguro_fecha_vencimiento" value="{{ camion.seguro_fecha_vencimiento|date:'Y-m-d'|default:'' }}">
++            {% else %}
++              <div class="field-value {% if not camion.seguro_fecha_vencimiento %}muted{% endif %}">
++                {{ camion.seguro_fecha_vencimiento|date:"d/m/Y"|default:"Sin datos" }}
++              </div>
++            {% endif %}
++          </div>
++
++          <div class="field-block">
++            <label>Patente — vence</label>
++            {% if modo_edicion %}
++              <input class="field-input" type="date" name="patente_fecha_vencimiento" value="{{ camion.patente_fecha_vencimiento|date:'Y-m-d'|default:'' }}">
++            {% else %}
++              <div class="field-value {% if not camion.patente_fecha_vencimiento %}muted{% endif %}">
++                {{ camion.patente_fecha_vencimiento|date:"d/m/Y"|default:"Sin datos" }}
++              </div>
++            {% endif %}
++          </div>
++
++        </div>
++      </div>
++    </div>
++
++    {% if modo_edicion %}
++    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
++      <a href="{% url 'gestion:camion_detail' camion.pk %}" class="btn btn-ghost">Cancelar</a>
++      <button type="submit" class="btn btn-success">
++        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
++        Guardar cambios
++      </button>
++    </div>
++    {% endif %}
++
++  {% if modo_edicion %}</form>{% endif %}
++
++</div>
++
++<script>
++  function abrirModal()  { document.getElementById('modal-borrar').classList.add('open'); }
++  function cerrarModal() { document.getElementById('modal-borrar').classList.remove('open'); }
++  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
++  document.getElementById('modal-borrar').addEventListener('click', function(e) {
++    if (e.target === this) cerrarModal();
++  });
++</script>
++{% endblock %}
+diff --git a/gestion/templates/gestion/flota/monitor.html b/gestion/templates/gestion/flota/monitor.html
+index 65dbc97..dc3d6d4 100644
+--- a/gestion/templates/gestion/flota/monitor.html
++++ b/gestion/templates/gestion/flota/monitor.html
+@@ -503,7 +503,7 @@ border-color: var(--flota-accent);
+ <!-- {# ══════════════════════════════════════════════════════════
+    PAGE HEADER
+ ══════════════════════════════════════════════════════════ #} -->
+-<div class="page-header">
++<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+   <h1 class="page-title">
+     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+@@ -512,6 +512,13 @@ border-color: var(--flota-accent);
+     </svg>
+     {{ titulo_pagina }}
+   </h1>
++  <a href="{% url 'gestion:camion_create' %}"
++     style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;border-radius:8px;font-size:.88rem;font-weight:600;text-decoration:none;transition:background .15s;">
++    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
++      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
++    </svg>
++    Nuevo Vehículo
++  </a>
+ </div>
+ 
+ <!-- {# ══════════════════════════════════════════════════════════
+diff --git a/gestion/templates/gestion/flota/nuevo.html b/gestion/templates/gestion/flota/nuevo.html
+new file mode 100644
+index 0000000..49fc4dc
+--- /dev/null
++++ b/gestion/templates/gestion/flota/nuevo.html
+@@ -0,0 +1,232 @@
++{% extends "admin/base_admin.html" %}
++{% load static %}
++
++{% block title %}{{ titulo_pagina }}{% endblock %}
++
++{% block content %}
++<style>
++  :root { --radius: 13px; --radius-sm: 8px; }
++
++  .nuevo-page {
++    margin: 0 auto;
++    padding: 32px 36px 64px;
++    max-width: 860px;
++    font-family: var(--font-body, 'Inter', sans-serif);
++    color: var(--text-primary);
++  }
++
++  .breadcrumb {
++    display: flex; align-items: center; gap: 8px;
++    font-size: .85rem; color: var(--text-secondary); margin-bottom: 24px;
++  }
++  .breadcrumb a { color: var(--accent-hover); text-decoration: none; }
++  .breadcrumb a:hover { text-decoration: underline; }
++  .breadcrumb svg { width: 11px; height: 11px; stroke: var(--text-secondary); fill: none; stroke-width: 2.5; }
++
++  .page-header { margin-bottom: 28px; }
++  .page-header h1 { font-size: 2rem; font-weight: 700; margin: 0 0 6px; font-family: var(--font-title, 'DM Serif Display', serif); }
++  .page-header p  { font-size: .88rem; color: var(--text-secondary); margin: 0; }
++
++  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 18px; animation: fadeUp .35s ease both; }
++  .card-header { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
++  .card-header h2 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); margin: 0; }
++  .card-body { padding: 22px; }
++
++  .field-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px 28px; }
++  .field-grid.three { grid-template-columns: repeat(3,1fr); }
++  @media(max-width:640px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } }
++  .field-block { display: flex; flex-direction: column; gap: 6px; }
++  .field-block label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-secondary); }
++  .required-star { color: var(--danger); margin-left: 2px; }
++  .field-hint { font-size: .75rem; color: var(--text-secondary); margin-top: 2px; }
++
++  .field-input, .field-select {
++    width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
++    border-radius: var(--radius-sm); color: var(--text-primary); font-size: .93rem;
++    font-family: inherit; padding: 9px 13px; outline: none; box-sizing: border-box;
++    transition: border-color .15s, box-shadow .15s;
++  }
++  .field-input:focus, .field-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,124,255,.15); }
++  .field-input.has-error { border-color: var(--danger); }
++  .field-select option { background: #1a1d2a; }
++
++  .toggle-group { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
++  .toggle-group input[type="checkbox"] {
++    appearance: none; width: 38px; height: 22px; border-radius: 11px;
++    background: var(--border); cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0;
++  }
++  .toggle-group input[type="checkbox"]::after {
++    content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
++    border-radius: 50%; background: #fff; transition: left .2s;
++  }
++  .toggle-group input[type="checkbox"]:checked { background: var(--success); }
++  .toggle-group input[type="checkbox"]:checked::after { left: 19px; }
++  .toggle-label { font-size: .90rem; color: var(--text-primary); font-weight: 500; }
++
++  .error-list { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-left:3px solid var(--danger);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px; }
++  .error-list p { margin:0 0 4px;font-size:.88rem;color:var(--danger); }
++  .error-list p:last-child { margin:0; }
++
++  .btn { display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius-sm);font-size:.88rem;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent;text-decoration:none;transition:background .15s,border-color .15s,transform .1s;white-space:nowrap; }
++  .btn svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2; }
++  .btn-primary { background:var(--accent);color:#fff;border-color:var(--accent); }
++  .btn-primary:hover { background:var(--accent-hover);transform:translateY(-1px); }
++  .btn-ghost { background:transparent;color:var(--text-secondary);border-color:var(--border); }
++  .btn-ghost:hover { color:var(--text-primary);border-color:rgba(255,255,255,.2); }
++
++  .form-actions { display:flex;justify-content:flex-end;gap:10px;margin-top:4px; }
++
++  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
++</style>
++
++<div class="nuevo-page">
++
++  <nav class="breadcrumb">
++    <a href="{% url 'gestion:flota_monitor' %}">Flota</a>
++    <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
++    <span>Nuevo Vehículo</span>
++  </nav>
++
++  <div class="page-header">
++    <h1>Nuevo Vehículo</h1>
++    <p>Completá los datos del camión o utilitario para incorporarlo a la flota.</p>
++  </div>
++
++  {% if errors %}
++  <div class="error-list">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>
++  {% endif %}
++
++  <form method="post" action="{% url 'gestion:camion_create' %}">
++    {% csrf_token %}
++
++    {# ── Datos del vehículo ───────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
++        <h2>Datos del vehículo</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid three">
++
++          <div class="field-block">
++            <label>Patente <span class="required-star">*</span></label>
++            <input class="field-input {% if errors and not valores.patente %}has-error{% endif %}"
++              type="text" name="patente" value="{{ valores.patente|default:'' }}"
++              placeholder="Ej: AB123CD" style="text-transform:uppercase;" required>
++          </div>
++
++          <div class="field-block">
++            <label>Modelo <span class="required-star">*</span></label>
++            <input class="field-input {% if errors and not valores.modelo %}has-error{% endif %}"
++              type="text" name="modelo" value="{{ valores.modelo|default:'' }}"
++              placeholder="Ej: Mercedes Sprinter 515" required>
++          </div>
++
++          <div class="field-block">
++            <label>Año</label>
++            <input class="field-input" type="number" name="anio"
++              value="{{ valores.anio|default:'' }}" min="1900" max="2100" placeholder="Ej: 2022">
++          </div>
++
++          <div class="field-block">
++            <label>Categoría <span class="required-star">*</span></label>
++            <select class="field-select" name="categoria" required>
++              <option value="" disabled {% if not valores.categoria %}selected{% endif %}>Seleccioná una categoría...</option>
++              {% for op in opciones_categoria %}
++                <option value="{{ op.valor }}" {% if valores.categoria == op.valor %}selected{% endif %}>{{ op.label }}</option>
++              {% endfor %}
++            </select>
++          </div>
++
++          <div class="field-block">
++            <label>Volumen máx. (m³) <span class="required-star">*</span></label>
++            <input class="field-input" type="number" name="capacidad_volumen_m3"
++              value="{{ valores.capacidad_volumen_m3|default:'' }}" step="0.01" min="0.01"
++              placeholder="Ej: 20.00" required>
++          </div>
++
++          <div class="field-block">
++            <label>Peso máx. (kg) <span class="required-star">*</span></label>
++            <input class="field-input" type="number" name="capacidad_peso_kg"
++              value="{{ valores.capacidad_peso_kg|default:'' }}" step="0.01" min="0.01"
++              placeholder="Ej: 3500.00" required>
++          </div>
++
++        </div>
++      </div>
++    </div>
++
++    {# ── Estado operativo ─────────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="20 4 12 12 9 9"/></svg>
++        <h2>Estado operativo</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid">
++
++          <div class="field-block">
++            <label>Activo en flota</label>
++            <div class="toggle-group">
++              <input type="checkbox" name="activo" id="toggle-activo" value="1"
++                {% if not valores or valores.activo == '1' %}checked{% endif %}>
++              <label class="toggle-label" for="toggle-activo">Disponible para mudanzas al crearse</label>
++            </div>
++          </div>
++
++          <div class="field-block">
++            <label>En taller</label>
++            <div class="toggle-group">
++              <input type="checkbox" name="en_taller" id="toggle-taller" value="1"
++                {% if valores.en_taller == '1' %}checked{% endif %}>
++              <label class="toggle-label" for="toggle-taller">Fuera de servicio por mantenimiento</label>
++            </div>
++          </div>
++
++        </div>
++      </div>
++    </div>
++
++    {# ── Documentación ────────────────────────────── #}
++    <div class="card">
++      <div class="card-header">
++        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
++        <h2>Documentación (vencimientos)</h2>
++      </div>
++      <div class="card-body">
++        <div class="field-grid three" style="margin-bottom:12px;">
++
++          <div class="field-block">
++            <label>VTV — vence</label>
++            <input class="field-input" type="date" name="vtv_fecha_vencimiento"
++              value="{{ valores.vtv_fecha_vencimiento|default:'' }}">
++          </div>
++
++          <div class="field-block">
++            <label>Seguro — vence</label>
++            <input class="field-input" type="date" name="seguro_fecha_vencimiento"
++              value="{{ valores.seguro_fecha_vencimiento|default:'' }}">
++          </div>
++
++          <div class="field-block">
++            <label>Patente — vence</label>
++            <input class="field-input" type="date" name="patente_fecha_vencimiento"
++              value="{{ valores.patente_fecha_vencimiento|default:'' }}">
++          </div>
++
++        </div>
++        <p class="field-hint">Podés completar los vencimientos ahora o editarlos más tarde desde el detalle del vehículo.</p>
++      </div>
++    </div>
++
++    <div class="form-actions">
++      <a href="{% url 'gestion:flota_monitor' %}" class="btn btn-ghost">Cancelar</a>
++      <button type="submit" class="btn btn-primary">
++        <svg viewBox="0 0 24 24"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
++        Agregar Vehículo
++      </button>
++    </div>
++
++  </form>
++</div>
++{% endblock %}
+diff --git a/gestion/urls.py b/gestion/urls.py
+index 39244b1..30299a8 100644
+--- a/gestion/urls.py
++++ b/gestion/urls.py
+@@ -27,6 +27,10 @@ urlpatterns = [
+ 
+     # Flota
+     path('flota/', views.FlotaMonitorView.as_view(), name='flota_monitor'),
++    path('flota/nuevo/', views.CamionCreateView.as_view(), name='camion_create'),
++    path('flota/<int:pk>/', views.CamionDetailView.as_view(), name='camion_detail'),
++    path('flota/<int:pk>/editar/', views.CamionUpdateView.as_view(), name='camion_update'),
++    path('flota/<int:pk>/borrar/', views.camion_delete, name='camion_delete'),
+ 
+     # Configuración de tarifas
+     path('configuracion/tarifas/', views.ConfiguracionTarifaView.as_view(), name='config_tarifas'),
+diff --git a/gestion/views.py b/gestion/views.py
+index a690fde..5e3b91d 100644
+--- a/gestion/views.py
++++ b/gestion/views.py
+@@ -484,6 +484,233 @@ class FlotaMonitorView(StaffRequiredMixin, TemplateView):
+         return ctx
+ 
+ 
++class CamionDetailView(StaffRequiredMixin, TemplateView):
++    """GET /gestion/flota/<pk>/"""
++    template_name = "gestion/flota/detalle.html"
++
++    def get_context_data(self, **kwargs):
++        ctx = super().get_context_data(**kwargs)
++        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
++        ctx["camion"] = camion
++        ctx["titulo_pagina"] = f"Vehículo — {camion.patente}"
++        ctx["seccion_activa"] = "flota"
++        return ctx
++
++
++class CamionUpdateView(StaffRequiredMixin, TemplateView):
++    """
++    GET  /gestion/flota/<pk>/editar/
++    POST /gestion/flota/<pk>/editar/
++    """
++    template_name = "gestion/flota/detalle.html"
++
++    def get_context_data(self, **kwargs):
++        ctx = super().get_context_data(**kwargs)
++        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
++        ctx["camion"] = camion
++        ctx["modo_edicion"] = True
++        ctx["titulo_pagina"] = f"Editar — {camion.patente}"
++        ctx["seccion_activa"] = "flota"
++        ctx["opciones_categoria"] = [
++            {"valor": c.value, "label": c.label} for c in Camion.Categoria
++        ]
++        ctx["errors"] = None
++        return ctx
++
++    def post(self, request, *args, **kwargs):
++        camion = get_object_or_404(Camion, pk=self.kwargs["pk"])
++        raw = request.POST
++        errores = []
++
++        patente = raw.get("patente", "").strip().upper()
++        modelo  = raw.get("modelo", "").strip()
++        categoria = raw.get("categoria", "").strip()
++
++        if not patente:
++            errores.append("La patente es obligatoria.")
++        if not modelo:
++            errores.append("El modelo es obligatorio.")
++        if categoria not in Camion.Categoria.values:
++            errores.append("Categoría inválida.")
++        if patente and Camion.objects.filter(patente=patente).exclude(pk=camion.pk).exists():
++            errores.append("Ya existe un vehículo con esa patente.")
++
++        def _decimal(campo: str, label: str) -> object:
++            val = raw.get(campo, "").strip()
++            if not val:
++                errores.append(f"{label} es obligatorio.")
++                return None
++            try:
++                from decimal import Decimal, InvalidOperation
++                d = Decimal(val)
++                if d <= 0:
++                    errores.append(f"{label} debe ser mayor a 0.")
++                return d
++            except InvalidOperation:
++                errores.append(f"{label} tiene un formato inválido.")
++                return None
++
++        def _parse_date(campo: str) -> datetime.date | None:
++            val = raw.get(campo, "").strip()
++            if not val:
++                return None
++            try:
++                return datetime.date.fromisoformat(val)
++            except ValueError:
++                errores.append(f"Fecha inválida en '{campo}'.")
++                return None
++
++        volumen = _decimal("capacidad_volumen_m3", "Volumen (m³)")
++        peso    = _decimal("capacidad_peso_kg", "Peso máx. (kg)")
++
++        anio_raw = raw.get("anio", "").strip()
++        anio = 0
++        if anio_raw:
++            try:
++                anio = int(anio_raw)
++                if anio < 1900 or anio > 2100:
++                    errores.append("Año fuera de rango.")
++            except ValueError:
++                errores.append("El año debe ser un número entero.")
++
++        vtv_fecha       = _parse_date("vtv_fecha_vencimiento")
++        seguro_fecha    = _parse_date("seguro_fecha_vencimiento")
++        patente_fecha   = _parse_date("patente_fecha_vencimiento")
++
++        if errores:
++            ctx = self.get_context_data(**kwargs)
++            ctx["errors"] = errores
++            return self.render_to_response(ctx)
++
++        camion.patente                  = patente
++        camion.modelo                   = modelo
++        camion.categoria                = categoria
++        camion.anio                     = anio
++        camion.capacidad_volumen_m3     = volumen
++        camion.capacidad_peso_kg        = peso
++        camion.activo                   = raw.get("activo") == "1"
++        camion.en_taller                = raw.get("en_taller") == "1"
++        camion.vtv_fecha_vencimiento    = vtv_fecha
++        camion.seguro_fecha_vencimiento = seguro_fecha
++        camion.patente_fecha_vencimiento = patente_fecha
++        camion.save()
++
++        messages.success(request, f"Vehículo {camion.patente} actualizado correctamente.")
++        return redirect("gestion:camion_detail", pk=camion.pk)
++
++
++class CamionCreateView(StaffRequiredMixin, TemplateView):
++    """
++    GET  /gestion/flota/nuevo/
++    POST /gestion/flota/nuevo/
++    """
++    template_name = "gestion/flota/nuevo.html"
++
++    def get_context_data(self, **kwargs):
++        ctx = super().get_context_data(**kwargs)
++        ctx["titulo_pagina"] = "Nuevo Vehículo"
++        ctx["seccion_activa"] = "flota"
++        ctx["opciones_categoria"] = [
++            {"valor": c.value, "label": c.label} for c in Camion.Categoria
++        ]
++        ctx["errors"] = None
++        ctx["valores"] = {}
++        return ctx
++
++    def post(self, request, *args, **kwargs):
++        from decimal import Decimal, InvalidOperation
++        raw = request.POST
++        errores = []
++
++        patente   = raw.get("patente", "").strip().upper()
++        modelo    = raw.get("modelo", "").strip()
++        categoria = raw.get("categoria", "").strip()
++
++        if not patente:
++            errores.append("La patente es obligatoria.")
++        if not modelo:
++            errores.append("El modelo es obligatorio.")
++        if categoria not in Camion.Categoria.values:
++            errores.append("Categoría inválida.")
++        if patente and Camion.objects.filter(patente=patente).exists():
++            errores.append("Ya existe un vehículo con esa patente.")
++
++        def _decimal(campo: str, label: str):
++            val = raw.get(campo, "").strip()
++            if not val:
++                errores.append(f"{label} es obligatorio.")
++                return None
++            try:
++                d = Decimal(val)
++                if d <= 0:
++                    errores.append(f"{label} debe ser mayor a 0.")
++                return d
++            except InvalidOperation:
++                errores.append(f"{label} tiene un formato inválido.")
++                return None
++
++        def _parse_date(campo: str) -> datetime.date | None:
++            val = raw.get(campo, "").strip()
++            if not val:
++                return None
++            try:
++                return datetime.date.fromisoformat(val)
++            except ValueError:
++                errores.append(f"Fecha inválida en '{campo}'.")
++                return None
++
++        volumen = _decimal("capacidad_volumen_m3", "Volumen (m³)")
++        peso    = _decimal("capacidad_peso_kg", "Peso máx. (kg)")
++
++        anio_raw = raw.get("anio", "").strip()
++        anio = 0
++        if anio_raw:
++            try:
++                anio = int(anio_raw)
++                if anio < 1900 or anio > 2100:
++                    errores.append("Año fuera de rango.")
++            except ValueError:
++                errores.append("El año debe ser un número entero.")
++
++        vtv_fecha     = _parse_date("vtv_fecha_vencimiento")
++        seguro_fecha  = _parse_date("seguro_fecha_vencimiento")
++        patente_fecha = _parse_date("patente_fecha_vencimiento")
++
++        if errores:
++            ctx = self.get_context_data(**kwargs)
++            ctx["errors"]  = errores
++            ctx["valores"] = raw
++            return self.render_to_response(ctx)
++
++        camion = Camion.objects.create(
++            patente=patente,
++            modelo=modelo,
++            categoria=categoria,
++            anio=anio,
++            capacidad_volumen_m3=volumen,
++            capacidad_peso_kg=peso,
++            activo=raw.get("activo") == "1",
++            en_taller=raw.get("en_taller") == "1",
++            vtv_fecha_vencimiento=vtv_fecha,
++            seguro_fecha_vencimiento=seguro_fecha,
++            patente_fecha_vencimiento=patente_fecha,
++        )
++        messages.success(request, f"Vehículo {camion.patente} creado correctamente.")
++        return redirect("gestion:camion_detail", pk=camion.pk)
++
++
++@staff_required
++def camion_delete(request, pk: int):
++    """POST /gestion/flota/<pk>/borrar/"""
++    if request.method != "POST":
++        return redirect("gestion:camion_detail", pk=pk)
++    camion = get_object_or_404(Camion, pk=pk)
++    patente = camion.patente
++    camion.delete()
++    messages.success(request, f"Vehículo {patente} eliminado correctamente.")
++    return redirect("gestion:flota_monitor")
++
++
+ # Resumen mudanza y mp
+ 
+ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
+-- 
+2.43.0
+
