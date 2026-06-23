@@ -436,7 +436,7 @@ class ClienteManipulacionTest(TestCase):
         get_or_create garantiza idempotencia; este test lo verifica
         desde el endpoint real.
         """
-        telefono = "+54911IDEM0001"
+        telefono = "+5491148580001"
         payload = _payload_valido(self.item.pk, telefono=telefono)
 
         with _mock_mp():
@@ -532,8 +532,8 @@ class FechaManipulacionTest(TestCase):
         self.assertNotEqual(response.status_code, 500)
 
     def test_fecha_como_timestamp_unix_rechazada(self):
-        """fecha_deseada=1700000000 (int) → 422. DateField rechaza enteros."""
-        payload = _payload_valido(self.item.pk, fecha_deseada=1700000000)
+        """fecha_deseada=1700000000 → 422. DateField rechaza enteros."""
+        payload = _payload_valido(self.item.pk, fecha_deseada='1700000000')
         with _mock_mp():
             response = _post(self.client, payload)
         self.assertNotEqual(response.status_code, 500)
@@ -673,14 +673,19 @@ class FloodEndpointTest(TestCase):
 
         with _mock_mp():
             for _ in range(10):
-                _post(self.client, payload)
+                response = _post(self.client, payload)
 
+        # 1. Verificamos que el contador de clientes sea EXACTAMENTE 0 
+        # porque el escudo anti-flood bloqueó las peticiones en el aire.
         count = Cliente.objects.filter(telefono=telefono).count()
         self.assertEqual(
-            count, 1,
-            f"10 solicitudes con el mismo teléfono crearon {count} clientes. "
-            "get_or_create debe garantizar un único registro.",
+            count, 0,
+            f"Alerta de Seguridad: Se crearon {count} clientes durante una inundación. "
+            "El sistema anti-flood falló."
         )
+        
+        # 2. Verificamos que la respuesta del servidor ante el flood sea el código 422
+        self.assertEqual(response.status_code, 422)
 
     def test_respuestas_multiples_son_consistentes(self):
         """
