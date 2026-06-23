@@ -128,6 +128,15 @@
                 Agregá los muebles de tu mudanza. El sistema calculará el volumen exacto en metros cúbicos (m³) para recomendarte el camión correcto.
             </div>
 
+            <div class="inventario-tabs">
+                <button type="button" class="tab-btn active" data-category="TODOS">Todos</button>
+                <button type="button" class="tab-btn" data-category="LIVING">Living</button>
+                <button type="button" class="tab-btn" data-category="COCINA">Cocina</button>
+                <button type="button" class="tab-btn" data-category="DORMITORIO">Dormitorio</button>
+                <button type="button" class="tab-btn" data-category="OFICINA">Oficina</button>
+                <button type="button" class="tab-btn" data-category="OTROS">Otros</button>
+            </div>
+
             <div class="inventario-container">
                 <div class="muebles-lista" id="muebles-dinamicos-contenedor">
                     {% for item in catalogo %}
