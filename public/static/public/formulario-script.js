@@ -417,43 +417,11 @@ function manejarExitoServidor(datos) {
 function manejarErroresValidacion(errores) {
   Object.keys(errores).forEach(campo => {
     // Corregido: mapea a 'error-campo' tal como figura en tu HTML
-    const contenedorError = document.getElementById(`error-${campo}`);
+    const contenedorError = document.getElementById(`err-${campo}`);
     if (contenedorError) {
       contenedorError.textContent = errores[campo].join(" ");
     } else if (campo === "__all__" && document.getElementById("err-__all__")) {
       document.getElementById("err-__all__").textContent = errores[campo].join(" ");
-    }
-  });
-}
-
-function manejarExitoServidor(datos) {
-  urlPagoMercadoPago = datos.pago_url;
-
-  const kmActuales = document.getElementById("distancia_km").value;
-  document.getElementById("lineas-presupuesto").innerHTML = `
-    <div class="linea-item"><span>Tarifa base de asignación logística</span><span class="linea-monto">Operación Procesada</span></div>
-    <div class="linea-item"><span>Kilometraje en ruta calculada (${kmActuales} km)</span><span class="linea-monto">Incluido</span></div>
-  `;
-
-  document.getElementById("val-senia").textContent = "$ " + parseFloat(datos.monto_senia).toLocaleString("es-AR");
-  document.getElementById("val-total").textContent = "$ " + parseFloat(datos.monto_total).toLocaleString("es-AR");
-
-  document.getElementById("resumen-datos").innerHTML = `
-    <div class="resumen-item"><div class="resumen-label">ID Mudanza Registrada</div><div class="resumen-value">#${datos.mudanza_id}</div></div>
-    <div class="resumen-item"><div class="resumen-label">Itinerario Planificado</div><div class="resumen-value">${kmActuales} KM totales</div></div>
-  `;
-
-  setStep(2);
-}
-
-function manejarErroresValidacion(errores) {
-  Object.keys(errores).forEach(campo => {
-    const contenedorError = document.getElementById(`err-${campo}`);
-    if (contenedorError) {
-      contenedorError.textContent = errores[campo].join(" ");
-    } else if (campo === "__all__") {
-      const errAll = document.getElementById("err-__all__");
-      if (errAll) errAll.textContent = errores[campo].join(" ");
     }
   });
 }

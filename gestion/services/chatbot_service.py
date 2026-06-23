@@ -9,6 +9,7 @@ Principios:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
+from idlelib.squeezer import count_lines_with_wrapping
 from typing import Sequence
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -105,16 +106,16 @@ def _flujo_general() -> list[str]:
 
     return [
         f"¡Hola! Qué bueno que nos contactes. En {empresa} calculamos tu presupuesto "
-        "de forma automática y transparente según la distancia y tu inventario.",
+        "de forma automática y transparente según la distancia y tu inventario."
         "Contamos con una flota preparada y disponibilidad para que reserves tu fecha "
-        "con total seguridad.",
+        "con total seguridad."
         "Hacé clic en el siguiente enlace para cargar tus datos y obtener el costo al instante:",
-        f"👉 {formulario}",
+        f"👉 {formulario}"
         "Si preferís charlar con alguien del equipo, solo escribí '...' y te damos "
-        "una mano personalmente.",
+        "una mano personalmente."
         "¡Un detalle importante! Una vez que tengas tu presupuesto, podés reservar "
         "tu fecha con una seña mínima a través de Mercado Pago. Esto nos permite "
-        "asegurarte el camión y el equipo de ayudantes solo para vos ese día.",
+        "asegurarte el camión y el equipo de ayudantes solo para vos ese día."
         "Tené en cuenta que, para poder cumplir con todos nuestros clientes, si el "
         "servicio se cancela o se pospone, la seña se utiliza para cubrir los costos "
         "operativos de la reserva. ¡Así nos organizamos mejor entre todos!",
@@ -171,6 +172,30 @@ def construir_mensajes_recordatorio_24hs(
         "Por favor, asegurate de tener los bultos preparados y acceso habilitado "
         "para el camión.",
         "¡Cualquier eventualidad, escribinos por acá!",
+    ]
+
+def construir_mensaje_confirmacion_pago(
+        cliente_nombre: str,
+        mudanza_origen: str,
+        mudanza_destino: str
+) -> list[str]:
+    """
+    Mensaje enviado al cliente cuando MercadoPago acredita la seña.
+    Invocado desde webhook/views.py::_notificar_confirmacion_pago, inmediatamente
+    despues de transicionar la mudanza a CONFIRMADA.
+
+    Args:
+        cliente_nombre: Nombre completo del cliente.
+
+    """
+    primer_nombre = cliente_nombre.split()[0] if cliente_nombre else "Hola"
+
+    return [
+        f"¡Gracias, {primer_nombre}! 🎉 Recibimos tu seña y tu mudanza {mudanza_origen} -> {mudanza_destino}"
+        "quedó CONFIRMADA.",
+        "Ya reservamos el camión y el equipo de ayudantes para tu fecha. Te vamos a "
+        "escribir nuevamente 24hs antes con los detalles finales.",
+        "Cualquier consulta, respondé este mensaje y te ayudamos.",
     ]
 
 

@@ -1,14 +1,19 @@
 from __future__ import annotations
 import json
 import logging
+
+from dateutil.tz import tzname_in_python2
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth.models import User
+
+from gestion.models import Cliente
 from gestion.models.mudanzas import Mudanza
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.chatbot import SesionChatbot
@@ -129,7 +134,7 @@ def _confirmar_mudanza(mudanza_uuid: str) -> None:
     Idempotente: si ya está CONFIRMADA no hace nada.
     """
     try:
-        mudanza = Mudanza.objects.get(uuid=mudanza_uuid)
+        mudanza = Mudanza.objects.select_related('cliente').get(uuid=mudanza_uuid)
     except Mudanza.DoesNotExist:
         logger.error("webhook/mp: Mudanza uuid=%s no encontrada", _sanitize_log(mudanza_uuid))
         return
@@ -162,6 +167,39 @@ def _confirmar_mudanza(mudanza_uuid: str) -> None:
 
     logger.info("webhook/mp: Mudanza #%s uuid=%s confirmada correctamente", mudanza.pk, mudanza_uuid)
 
+    _notificar_confirmacion_pago(mudanza)
+
+def _notificar_confirmacion_pago(mudanza: Mudanza) -> None:
+    """
+    Envia la confirmacion de pago por Whatsapp y la audita en Notificacion.
+    No debe interrumpir el flujo del webhook si falla - el estado ya quedo confirmado.
+    """
+    from gestion.services.chatbot_service import construir_mensaje_confirmacion_pago
+    from gestion.models.notificaciones import Notificacion
+
+    mensajes = construir_mensaje_confirmacion_pago(
+        cliente_nombre=mudanza.cliente.nombre_completo,
+        mudanza_origen=mudanza.origen,
+        mudanza_destino=mudanza.destino
+    )
+
+    for mensaje in mensajes:
+        _enviar_mensaje_whatsapp(mudanza.cliente.telefono, mensaje)
+
+        try:
+            Notificacion.objects.create(
+                mudanza=mudanza,
+                tipo=Notificacion.Tipo.CONFIRMACION,
+                canal=Notificacion.Canal.WHATSAPP,
+                destinatario=mudanza.cliente.telefono,
+                enviada=True,
+                enviada_en=timezone.now(),
+                error="",
+            )
+        except Exception:
+            logger.exception(
+                "No se pudo registrar Notificacion de confirmacion para Mudanza #%s", mudanza.pk
+            )
 
 # ── Páginas de retorno de MercadoPago ─────────────────────────────────────────
 # MP redirige al usuario a estas URLs desde el browser.
@@ -197,21 +235,46 @@ def _get_twilio_client() -> Client:
 
 # ── Envío de mensajes ─────────────────────────────────────────────────────
 
+def _normalizar_telefono_ar_whatsapp(telefono: str) -> str:
+    """
+    Normaliza un telefono argentino al formato E.164 que exige WhatsApp: +549<area><numero>
+
+    Asume que telefono llega sin 0 ni 15 (convencion de los formularios del sistema,
+    ej: "1123456789" para Bs. As.) Si ya viene con "+" o con codigo de pais, lo respeta.
+    No resuelve numero con 0/15 sin stripear - ese caso no se da en los formularios actuales.
+    """
+
+    crudo = telefono.strip()
+    if crudo.startswith("+"):
+        return crudo
+
+    solo_digitos = re.sub(r"\D", "", crudo)
+    if solo_digitos.startswith("549"):
+        return f"+{solo_digitos}"
+    if solo_digitos.startswith("54"):
+        return f"+549{solo_digitos[2:]}"
+    return f"+549{solo_digitos}"
+
 def _enviar_mensaje_whatsapp(telefono: str, texto: str) -> None:
     """
     Envía un mensaje de texto vía Twilio WhatsApp.
 
     Args:
-        telefono: Número destino con prefijo whatsapp:, ej: "whatsapp:+5491123456789".
-                  Si llega sin prefijo, se lo agrega automáticamente.
-        texto:    Cuerpo del mensaje.
+        telefono: Numero destino. Si ya trae el prefijo "whatsapp:" se respeta tal cual
+                (caso de respuestas al chatbot, donde ya llega en E.164 desde Twilio).
+                Si no, se normaliza a formato argentino antes de enviar.
+
+        texto: Cuerpo del mensaje.
     """
     if getattr(settings, "TWILIO_SANDBOX", True):
         logger.info("[TWILIO SANDBOX] → %s: %s", telefono, texto)
         return
 
     # Normalizar: Twilio requiere el prefijo "whatsapp:"
-    destino = telefono if telefono.startswith("whatsapp:") else f"whatsapp:{telefono}"
+    if telefono.startswith("whatsapp:"):
+        destino = telefono
+    else:
+        destino = f"whatsapp:{_normalizar_telefono_ar_whatsapp(telefono)}"
 
     try:
         client = _get_twilio_client()
