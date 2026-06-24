@@ -258,7 +258,7 @@ def _enviar_mensaje_whatsapp(telefono: str, texto: str) -> None:
 
         texto: Cuerpo del mensaje.
     """
-    if getattr(settings, "TWILIO_SANDBOX", True):
+    if getattr(settings, "TWILIO_SANDBOX", False):
         logger.info("[TWILIO SANDBOX] → %s: %s", telefono, texto)
         return
 
