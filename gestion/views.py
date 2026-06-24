@@ -320,14 +320,19 @@ class EmpleadoCreateView(StaffRequiredMixin, TemplateView):
             f"Asigná una contraseña desde el panel de administración."
         )
         return redirect("gestion:empleado_detail", pk=empleado.pk)
+
+
+class EmpleadoDetailView(StaffRequiredMixin, TemplateView):
     """
     GET /gestion/empleados/<pk>/
+  
+
 
     Contexto entregado al template:
         empleado        Empleado    — instancia ORM completa
         titulo_pagina   str
         seccion_activa  str
-    """
+    """  
     template_name = "gestion/empleados/detalle.html"
 
     def get_context_data(self, **kwargs):
