@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
-from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +26,13 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['scruz.pythonanywhere.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['scruz.pythonanywhere.com', 'localhost', '127.0.0.1', 'timid-humiliate-blissful.ngrok-free.dev', 'timid-humiliate-blissful.ngrok-free.app']
+
+CSRF_TRUSTED_ORIGINS = ['https://timid-humiliate-blissful.ngrok-free.dev', 'https://timid-humiliate-blissful.ngrok-free.app']
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # Application definition
 
@@ -158,18 +164,21 @@ CELERY_BEAT_SCHEDULE = {
 # Chatbot
 CHATBOT_NOMBRE_EMPRESA = "Tu Empresa de Mudanzas"
 CHATBOT_NOMBRE_BOT = "Movi"  # nombre del asistente virtual
-CHATBOT_URL_FORMULARIO = ""
-CHATBOT_URL_WEB_PRINCIPAL = ""
+CHATBOT_URL_FORMULARIO = "https://scruz.pythonanywhere.com/presupuesto/"
+CHATBOT_URL_WEB_PRINCIPAL = "https://scruz.pythonanywhere.com/"
 
 # Twilio / Whatsapp
 TWILIO_ACCOUNT_SID   = config("TWILIO_ACCOUNT_SID",   default="")
 TWILIO_AUTH_TOKEN    = config("TWILIO_AUTH_TOKEN",     default="")
 TWILIO_WHATSAPP_FROM = config("TWILIO_WHATSAPP_FROM",  default="")
-TWILIO_SANDBOX = config("TWILIO_SANDBOX", default=True, cast=bool)
+TWILIO_SANDBOX = False
 # URL pública de este servidor, usada para validar la firma de Twilio.
 # Debe coincidir exactamente con la URL configurada en el Twilio Console.
 SITE_BASE_URL = config("SITE_BASE_URL", default="")
 
+#MP
+MERCADOPAGO_ACCESS_TOKEN = config('MERCADOPAGO_ACCESS_TOKEN')
+MERCADOPAGO_SANDBOX = config('MERCADOPAGO_SANDBOX')
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

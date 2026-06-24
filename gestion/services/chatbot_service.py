@@ -1,18 +1,9 @@
 """
 Manejador de flujos del chatbot basado en guion estructurado.
-
-Principios:
-- Sin IA ni NLP externo: Toda la logica es determinista y basada en el guion.
-- Sin dependencias HTTP: se invoca desde cualquier capa (webhook, API REST, Celery).
-- Links externos se leen exclusivamente de settings para evitar hardcodeo.
-- Toda interaccion queda auditada en MensajeChatbot.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from idlelib.squeezer import count_lines_with_wrapping
-from typing import Sequence
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from gestion.models.chatbot import MensajeChatbot, SesionChatbot
 
@@ -173,6 +164,7 @@ def construir_mensajes_recordatorio_24hs(
         "para el camión.",
         "¡Cualquier eventualidad, escribinos por acá!",
     ]
+
 
 def construir_mensaje_confirmacion_pago(
         cliente_nombre: str,
