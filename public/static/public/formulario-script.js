@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("telefono").addEventListener("input", validarFormularioCompleto);
   document.getElementById("origen_numero").addEventListener("input", validarFormularioCompleto);
   document.getElementById("destino_numero").addEventListener("input", validarFormularioCompleto);
+
+  configurarTabsInventario();
 });
 
 // --- MOTOR DE MAPAS: NOMINATIM CON ADDRESSDETAILS=1 ---
@@ -196,6 +198,45 @@ function actualizarCamionVisual() {
     tipoTag.textContent = "Vehículo Recomendado: Camión de Gran Porte";
     svgCaja.setAttribute("fill", "#fca5a5");
   }
+}
+
+// NUEVO: CONTROLADOR DE FILTRADO POR PESTAÑAS
+function configurarTabsInventario() {
+  const tabs = document.querySelectorAll('.tab-btn');
+  const MAIN_CATEGORIES = ['LIVING', 'COCINA', 'DORMITORIO', 'OFICINA'];
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 1. Alternar estado activo visual en los botones
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const categoriaSeleccionada = tab.dataset.category;
+
+      // 2. Filtrar ítems del catálogo según su data-categoria
+      document.querySelectorAll('.mueble-item').forEach(item => {
+        const catItem = item.dataset.categoria;
+
+        if (categoriaSeleccionada === 'TODOS') {
+          item.classList.remove('hidden');
+        } else if (categoriaSeleccionada === 'OTROS') {
+          // Muestra cualquier ítem que no pertenezca a las 4 principales
+          if (!MAIN_CATEGORIES.includes(catItem)) {
+            item.classList.remove('hidden');
+          } else {
+            item.classList.add('hidden');
+          }
+        } else {
+          // Filtrado directo por coincidencia exacta
+          if (catItem === categoriaSeleccionada) {
+            item.classList.remove('hidden');
+          } else {
+            item.classList.add('hidden');
+          }
+        }
+      });
+    });
+  });
 }
 
 // --- AGENDA INTERACTIVA ---
