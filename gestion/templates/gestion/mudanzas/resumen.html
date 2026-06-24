@@ -678,6 +678,79 @@
         </div>
         {% endif %}
 
+        <div class="section-card" style="margin-top: 1.5rem;">
+            <div class="section-card-header">
+                <h3 class="section-card-title">Logística y Asignación</h3>
+            </div>
+            <div class="section-card-body" style="padding: 1.25rem;">
+
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="guardar_recursos" value="1">
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="camion"
+                               style="display:block; font-size:0.78rem; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">
+                            Camión Asignado
+                        </label>
+                        <select name="camion" id="camion" class="form-control"
+                                style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem;">
+                            <option value="">-- Sin camión asignado (Planificación) --</option>
+
+                            {% for c in camiones %}
+                            <option value="{{ c.id }}"
+                                    {% if mudanza.camion_id == c.id %}selected{% endif %}
+                                    {% if c.ocupado and mudanza.camion_id != c.id %}disabled{% endif %}>
+                                {{ c.patente }} — {{ c.categoria_label }}
+                                {% if c.ocupado and mudanza.camion_id != c.id %}(Ocupado en otra mudanza){% endif %}
+                            </option>
+                            {% endfor %} </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display:block; font-size:0.78rem; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">
+                            Personal de Trabajo
+                        </label>
+
+                        <div class="empleados-list"
+                             style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; background: var(--bg-light);">
+                            {% for emp in empleados %}
+                            <div class="checkbox-item"
+                                 style="display: flex; align-items: center; padding: 0.4rem 0.5rem; border-bottom: 1px solid dashed var(--border); font-size: 0.88rem;">
+                                <label style="display: flex; align-items: center; width: 100%; cursor: pointer; gap: 10px; margin: 0;">
+                                    <input type="checkbox"
+                                           name="empleados"
+                                           value="{{ emp.id }}"
+                                           {% if emp.id in empleados_asignados_ids %}checked{% endif %}
+                                           {% if emp.disponibilidad_valor == "ocupado" and emp.id not in empleados_asignados_ids %}disabled{% endif %}>
+
+                                    <span style="flex-grow: 1;">
+                                    <strong>{{ emp.nombre }}</strong>
+                                    <span style="color: var(--text-muted); font-size: 0.78rem;">({{ emp.rol_label }})</span>
+                                </span>
+
+                                    {% if emp.disponibilidad_valor == "ocupado" and emp.id not in empleados_asignados_ids %}
+                                                <span style="color: var(--danger); font-size: 0.75rem; font-weight: 500;">(Agenda Ocupada)</span>
+                                            {% endif %}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.82rem;">
+                                No hay empleados disponibles en el sistema.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"
+                            style="width: 100%; padding: 0.7rem; font-size: 0.88rem; font-weight: 600; border-radius: 6px;">
+                        Guardar Cambios de Logística
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
         {# ── INVENTARIO ──────────────────────────────────────────────────────────── #}
         {% if tiene_presupuesto and inventario_items %}
         <div class="section-card">
