@@ -241,21 +241,18 @@ function configurarTabsInventario() {
 
 
 function inicializarCalendario() {
-    // Regla Backend: Mínimo 24 horas de anticipación desde el momento actual
-    const fechaMinima = new Date();
+const fechaMinima = new Date();
     fechaMinima.setHours(fechaMinima.getHours() + 24);
-
-    // Regla Backend: Máximo 365 días a futuro desde hoy
     const fechaMaxima = new Date().fp_incr(365);
 
     fpInstance = flatpickr("#calendario-inline", {
         locale: "es",
-        inline: true,          // Queda abierto fijo en la interfaz sin inputs molestos
-        minDate: fechaMinima,  // Se aplica el límite mínimo dinámico (+24 hs)
-        maxDate: fechaMaxima,  // Se aplica el límite máximo dinámico (365 días)
+        inline: true,
+        minDate: fechaMinima,
+        maxDate: fechaMaxima,
         disable: [
             function (date) {
-                // Deshabilita Sábados (6) y Domingos (0)
+                // Deshabilitar domingos (0) y sábados (6) si no trabajás esos días
                 return (date.getDay() === 0 || date.getDay() === 6);
             }
         ],
@@ -263,23 +260,13 @@ function inicializarCalendario() {
             if (selectedDates.length === 0) return;
 
             fechaSeleccionada = dateStr;
-            horaSeleccionada = null; // Resetea la hora al cambiar de día
+            horaSeleccionada = null;
 
             const seccionHorarios = document.getElementById("seccion-horarios");
             if (seccionHorarios) seccionHorarios.style.display = "block";
 
-            // Consultamos al backend qué horarios ya están tomados
-            fetch(`/presupuesto/horarios-ocupados/?fecha=${dateStr}`)
-                .then(res => res.json())
-                .then(data => {
-                    // data.ocupados debe ser una lista tipo: ["10:00", "14:00"]
-                    generarHorarios(data.ocupados || []);
-                })
-                .catch(err => {
-                    console.error("Error al recuperar agenda:", err);
-                    generarHorarios([]); // Fallback: asume todo libre ante caídas
-                });
-
+            // Simplemente generamos los horarios como libres al instante
+            generarHorarios([]);
             validarFormularioCompleto();
         }
     });
@@ -298,21 +285,36 @@ function seleccionarDia(botonElemento, strFecha) {
     validarFormularioCompleto();
 }
 
-function generarHorarios() {
+function generarHorarios(ocupados = []) {
     const contenedorHorarios = document.getElementById("grilla-horarios");
     if (!contenedorHorarios) return;
     contenedorHorarios.innerHTML = "";
 
     horariosBase.forEach(hora => {
         const btn = document.createElement("div");
-        btn.className = "btn-3d btn-hora";
-        btn.textContent = hora;
-        btn.onclick = () => {
-            document.querySelectorAll(".btn-hora").forEach(b => b.classList.remove("selected"));
-            btn.classList.add("selected");
-            horaSeleccionada = hora;
-            validarFormularioCompleto();
-        };
+
+        // Evaluamos si la hora actual de la lista base está ocupada
+        const estaOcupado = Array.isArray(ocupados) && ocupados.includes(hora);
+
+        if (estaOcupado) {
+            btn.className = 'btn-hora disabled';
+            btn.textContent = `${hora} (Ocupado)`;
+        } else {
+            btn.className = "btn-3d btn-hora";
+            btn.textContent = hora;
+
+            // Mantener seleccionado si el usuario ya lo había marcado
+            if (horaSeleccionada === hora) {
+                btn.classList.add("selected");
+            }
+
+            btn.onclick = () => {
+                document.querySelectorAll(".btn-hora").forEach(b => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                horaSeleccionada = hora;
+                validarFormularioCompleto();
+            };
+        }
         contenedorHorarios.appendChild(btn);
     });
 }
@@ -521,13 +523,35 @@ function volverPaso1() {
 }
 
 function reiniciarTodo() {
-    // ... (todo tu código de limpieza de inputs y variables se mantiene igual) ...
+    // 1. Limpieza de inputs que sí existen en el HTML
+    const camposTexto = [
+        "origen", "destino", "origen_calle", "origen_numero", "origen_localidad",
+        "destino_calle", "destino_numero", "destino_localidad", "distancia_km",
+        "nombre", "telefono", "email"
+    ];
 
+    camposTexto.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    // Opcional: Si querés limpiar las notas solo si el elemento existiese a futuro
+    const elNotas = document.getElementById("notas");
+    if (elNotas) elNotas.value = "";
+
+    // 2. Resetear el inventario a cero
+    Object.keys(inventarioCantidades).forEach(id => {
+        inventarioCantidades[id] = 0;
+        const elCant = document.getElementById(`cant-${id}`);
+        if (elCant) elCant.textContent = "0";
+    });
+
+    // 3. Resetear variables de estado de la reserva
     fechaSeleccionada = null;
     horaSeleccionada = null;
     urlPagoMercadoPago = null;
 
-    // Limpiar visualmente la selección en Flatpickr
+    // 4. Limpiar visualmente la selección en Flatpickr
     if (fpInstance) {
         fpInstance.clear();
     }
@@ -535,28 +559,45 @@ function reiniciarTodo() {
     const seccionHorarios = document.getElementById("seccion-horarios");
     if (seccionHorarios) seccionHorarios.style.display = "none";
 
+    document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("selected"));
+
+    // 5. Actualizar interfaz y regresar al paso 1
     actualizarCamionVisual();
     validarFormularioCompleto();
     setStep(1);
 }
 
-document.getElementById("origen").value = "";
-document.getElementById("destino").value = "";
-document.getElementById("origen_calle").value = "";
-document.getElementById("origen_numero").value = "";
-document.getElementById("origen_localidad").value = "";
-document.getElementById("destino_calle").value = "";
-document.getElementById("destino_numero").value = "";
-document.getElementById("destino_localidad").value = "";
-document.getElementById("distancia_km").value = "";
-document.getElementById("nombre").value = "";
-document.getElementById("telefono").value = "";
-document.getElementById("email").value = "";
-document.getElementById("notas").value = "";
+// Ejecución de limpieza inicial segura al cargar el script (sin romper el flujo global)
+document.addEventListener('DOMContentLoaded', () => {
+    // Forzamos un reset del estado visual inicial controlado
+    const seccionHorarios = document.getElementById("seccion-horarios");
+    if (seccionHorarios) seccionHorarios.style.display = "none";
 
-fechaSeleccionada = null;
-horaSeleccionada = null;
-urlPagoMercadoPago = null;
+    actualizarCamionVisual();
+    validarFormularioCompleto();
+});
+
+function limpiarFormulario() {
+    const ids = [
+        "origen", "destino", "origen_calle", "origen_numero", "origen_localidad",
+        "destino_calle", "destino_numero", "destino_localidad", "distancia_km",
+        "nombre", "telefono", "email", "notas"
+    ];
+
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    fechaSeleccionada = null;
+    horaSeleccionada = null;
+}
+
+// En lugar de ejecutar las líneas sueltas, llamamos a esta función al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarCalendario();
+    // ... resto de tu inicialización
+});
 
 const seccionHorarios = document.getElementById("seccion-horarios");
 if (seccionHorarios) seccionHorarios.style.display = "none";
