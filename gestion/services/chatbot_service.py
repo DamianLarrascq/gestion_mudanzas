@@ -109,8 +109,8 @@ def _flujo_general() -> list[str]:
         "de forma automática y transparente según la distancia y tu inventario."
         "Contamos con una flota preparada y disponibilidad para que reserves tu fecha "
         "con total seguridad."
-        "Hacé clic en el siguiente enlace para cargar tus datos y obtener el costo al instante:",
-        f"👉 {formulario}"
+        "Hacé clic en el siguiente enlace para cargar tus datos y obtener el costo al instante:"
+        f"👉 {formulario}",
         "Si preferís charlar con alguien del equipo, solo escribí '...' y te damos "
         "una mano personalmente."
         "¡Un detalle importante! Una vez que tengas tu presupuesto, podés reservar "
