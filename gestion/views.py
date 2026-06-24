@@ -101,7 +101,6 @@ class MudanzaCreateView(StaffRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs) -> dict:
         ctx = super().get_context_data(**kwargs)
-        fecha = self._parse_fecha_filtro()
         ctx.update(_obtener_contexto_formulario())
         ctx['titulo_pagina'] = 'Nueva Mudanza'
         ctx['seccion_activa'] = 'mudanzas'
@@ -311,6 +310,9 @@ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
         ctx.update({
             "mudanza_id": mudanza.pk,
             "cliente_nombre": mudanza.cliente.nombre_completo,
+            'origen': mudanza.origen,
+            'destino': mudanza.destino,
+            'fecha_hora': mudanza.fecha_hora,
             "titulo_pagina": f"Resumen Mudanza #{mudanza.pk}",
             "seccion_activa": "mudanzas",
             "tiene_presupuesto": presupuesto is not None,

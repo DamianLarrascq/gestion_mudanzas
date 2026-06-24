@@ -1,8 +1,6 @@
 from __future__ import annotations
 import json
 import logging
-
-from dateutil.tz import tzname_in_python2
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
@@ -13,7 +11,6 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth.models import User
 
-from gestion.models import Cliente
 from gestion.models.mudanzas import Mudanza
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.chatbot import SesionChatbot
@@ -56,9 +53,6 @@ def mp_notificacion(request):
     """
     POST /webhook/mp/notificacion/
 
-    MercadoPago envía notificaciones de pago aquí (IPN / Webhooks).
-    Documentación: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications
-
     Flujo:
         1. Parsear el body JSON de MP
         2. Ignorar notificaciones que no sean de tipo "payment"
@@ -66,8 +60,6 @@ def mp_notificacion(request):
         4. Si status == "approved": buscar la Mudanza por uuid y confirmarla
         5. Retornar HTTP 200 siempre (MP reintenta si recibe != 200)
 
-    Nota de seguridad: validar la firma X-Signature de MP antes de procesar
-    en producción. Ver: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks#editor_14
     """
     try:
         body = json.loads(request.body)
