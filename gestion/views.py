@@ -1,12 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
 from gestion.mixins import StaffRequiredMixin, MudanzaOwnerMixin, staff_required
-from gestion.models import Empleado, Camion
 from gestion.services.dashboard_service import (
     obtener_actividad_reciente,
     obtener_kpis,
@@ -14,7 +14,7 @@ from gestion.services.dashboard_service import (
 )
 from gestion.services.empleados_service import FiltrosEmpleado, obtener_empleados_listado, \
     validar_disponibilidad_para_fecha
-from gestion.services.flota_service import obtener_estado_flota
+from gestion.services.flota_service import obtener_estado_flota, obtener_camiones_disponibles_para_fecha
 from gestion.services.mudanza_create_service import MudanzaCreateService, MudanzaCreateInput, AsignacionInput, \
     ItemInventarioInput, DireccionInput
 from gestion.services.mudanzas_list_service import FiltrosMudanza, obtener_mudanzas_filtradas
@@ -23,19 +23,18 @@ from gestion.services.clientes_service import (
     FiltrosCliente, obtener_clientes_filtrados, obtener_detalle_cliente
 )
 import datetime
-from datetime import date
-from gestion.models.mudanzas import Mudanza
+from gestion.models.mudanzas import Mudanza, AsignacionEmpleado
 from gestion.services.presupuesto_service import PresupuestoService, construir_contexto_presupuesto
 from gestion.services.mercadopago_service import MercadoPagoService
 from django.core.exceptions import ValidationError
 from django.views.generic.edit import CreateView, UpdateView
 from django.contrib import messages
-from django.shortcuts import redirect
 from gestion.forms.tarifas import TarifaBaseForm
 from gestion.models.presupuestos import TarifaBase
 from gestion.services.tarifa_config_service import (
     obtener_contexto_config_tarifas
 )
+from gestion.models.flota import Camion, Empleado
 import logging
 
 logger = logging.getLogger(__name__)
@@ -101,7 +100,6 @@ class MudanzaCreateView(StaffRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs) -> dict:
         ctx = super().get_context_data(**kwargs)
-        fecha = self._parse_fecha_filtro()
         ctx.update(_obtener_contexto_formulario())
         ctx['titulo_pagina'] = 'Nueva Mudanza'
         ctx['seccion_activa'] = 'mudanzas'
@@ -735,12 +733,18 @@ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
         mudanza = get_object_or_404(
             Mudanza.objects.select_related(
                 "cliente", "camion", "origen", "destino"
-            ).prefetch_related("inventario__catalogo_item"),
+            ).prefetch_related("inventario__catalogo_item", 'asignaciones'),
             pk=self.kwargs["pk"],
         )
 
         presupuesto = getattr(mudanza, "presupuesto", None)
         pago_url = None
+        fecha_mudanza = mudanza.fecha_hora.date()
+        camiones_disponibles = obtener_camiones_disponibles_para_fecha(fecha_mudanza)
+
+        filtros_emp = FiltrosEmpleado(solo_disponibles=False, page_size=20)
+        contexto_empleados = obtener_empleados_listado(filtros_emp, fecha=fecha_mudanza)
+        empleados_asignados_id = list(mudanza.asignaciones.values_list('empleado_id', flat=True))
 
         if presupuesto:
             from gestion.services.presupuesto_service import (
@@ -773,18 +777,83 @@ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
             ctx.update(ctx_presupuesto)
 
         ctx.update({
+            'mudanza': mudanza,
             "mudanza_id": mudanza.pk,
             "cliente_nombre": mudanza.cliente.nombre_completo,
+            'origen': mudanza.origen,
+            'destino': mudanza.destino,
+            'fecha_hora': mudanza.fecha_hora,
             "titulo_pagina": f"Resumen Mudanza #{mudanza.pk}",
             "seccion_activa": "mudanzas",
             "tiene_presupuesto": presupuesto is not None,
             "senia_pagada": mudanza.senia_pagada,
             "error": None,
+
+            'fecha_mudanza': fecha_mudanza,
+            'camiones': camiones_disponibles,
+            'empleados': contexto_empleados['empleados'],
+            'empleados_asignados_ids': empleados_asignados_id,
         })
         return ctx
 
     def post(self, request, *args, **kwargs):
         mudanza_pk = self.kwargs["pk"]
+
+        # ─────────────────────────────────────────────────────────────────────────
+        # ACCIÓN A: GUARDAR RECURSOS DE LOGÍSTICA (Formulario nuevo)
+        # ─────────────────────────────────────────────────────────────────────────
+        if "guardar_recursos" in request.POST:
+            mudanza = get_object_or_404(Mudanza, pk=mudanza_pk)
+            fecha_mudanza = mudanza.fecha_hora.date()
+
+            camion_id = request.POST.get("camion")
+            empleados_ids = request.POST.getlist("empleados")
+
+            try:
+                with transaction.atomic():
+                    # 1. Vincular Vehículo
+                    if camion_id:
+                        mudanza.camion_id = int(camion_id)
+                    else:
+                        mudanza.camion = None
+
+                    # 2. Validar personal individualmente por Service antes de persistir
+                    empleados_a_asignar = []
+                    for emp_id in empleados_ids:
+                        emp_id_int = int(emp_id)
+                        validacion = validar_disponibilidad_para_fecha(emp_id_int, fecha_mudanza)
+
+                        if not validacion["puede_asignarse"]:
+                            # Permitir re-asignación si el empleado ya pertenecía a esta mudanza específica
+                            ya_asignado = mudanza.asignaciones.filter(empleado_id=emp_id_int).exists()
+                            if not ya_asignado:
+                                raise ValueError(
+                                    f"No se pudo asignar a {validacion['nombre']}: {validacion['motivo_bloqueo']}")
+
+                        empleado_obj = Empleado.objects.get(pk=emp_id_int)
+                        empleados_a_asignar.append(empleado_obj)
+
+                    mudanza.save()
+
+                    # Reemplazar asignaciones previas en lote atómico
+                    mudanza.asignaciones.all().delete()
+                    AsignacionEmpleado.objects.bulk_create([
+                        AsignacionEmpleado(mudanza=mudanza, empleado=emp, rol=emp.rol)
+                        for emp in empleados_a_asignar
+                    ])
+
+                    messages.success(request, "Flota y personal de trabajo guardados correctamente.")
+                    return redirect(request.path)
+
+            except ValueError as exc:
+                ctx = self.get_context_data(**kwargs)
+                ctx["error"] = str(exc)
+                return self.render_to_response(ctx)
+            except Exception as exc:
+                ctx = self.get_context_data(**kwargs)
+                ctx["error"] = f"Error al guardar logística: {str(exc)}"
+                return self.render_to_response(ctx)
+
         get_object_or_404(Mudanza, pk=mudanza_pk)
 
         distancia_raw = request.POST.get("distancia_km", "").strip()
@@ -812,7 +881,6 @@ class ResumenMudanzaView(MudanzaOwnerMixin, TemplateView):
                 ctx.update(ctx_presupuesto)
                 logger.exception("Error al generar preferencia MP para mudanza #%s.", mudanza_pk)
                 ctx["error"] = "No fue posible generar el link de pago. Revisá la configuración de MercadoPago."
-
                 return self.render_to_response(ctx)
 
         ctx_presupuesto["pago_url"] = pago_url
@@ -1061,7 +1129,7 @@ def _parsear_input(raw) -> MudanzaCreateInput:
             errores.append('cliente_id debe ser un entero válido.')
     else:
         # Modo creación inline
-        nombre_cl   = raw.get('cliente_nombre', '').strip()
+        nombre_cl = raw.get('cliente_nombre', '').strip()
         telefono_cl = raw.get('cliente_telefono', '').strip()
 
         if not nombre_cl:
@@ -1076,7 +1144,7 @@ def _parsear_input(raw) -> MudanzaCreateInput:
                     defaults={
                         'nombre_completo': nombre_cl,
                         'email': raw.get('cliente_email', '').strip() or None,
-                        'dni':   raw.get('cliente_dni', '').strip() or None,
+                        'dni': raw.get('cliente_dni', '').strip() or None,
                     },
                 )
                 cliente_id = cliente_obj.pk
@@ -1186,17 +1254,18 @@ def _obtener_contexto_formulario(fecha=None) -> dict:
     if fecha is not None:
         camiones = obtener_camiones_disponibles_para_fecha(fecha)
     else:
-      camiones = list(
-    Camion.objects.filter(activo=True)
-    .order_by('patente')
-    .values('id', 'patente', 'modelo', 'categoria')
-)
+        camiones = list(
+            Camion.objects.filter(activo=True)
+            .order_by('patente')
+            .values('id', 'patente', 'modelo', 'categoria')
+        )
 
     empleados = list(
         Empleado.objects.filter(disponible=True).order_by('nombre').values('id', 'nombre', 'rol')
     )
     catalogo = list(
-        CatalogoItem.objects.order_by('categoria', 'nombre').values('id', 'nombre', 'volumen_m3', 'peso_estimado_kg', 'categoria')
+        CatalogoItem.objects.order_by('categoria', 'nombre').values('id', 'nombre', 'volumen_m3', 'peso_estimado_kg',
+                                                                    'categoria')
     )
     roles = [{'valor': r.value, 'label': r.label} for r in Empleado.Rol]
 

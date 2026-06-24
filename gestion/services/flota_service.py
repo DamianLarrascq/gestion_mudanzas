@@ -210,7 +210,7 @@ def obtener_camiones_disponibles_para_fecha(fecha: date) -> list[dict]:
 
     hoy = timezone.localdate()
 
-    ocupados_ids = set[int] = set(
+    ocupados_ids: set[int] = set(
         Mudanza.objects.filter(
             fecha_hora__date=fecha,
             estado__in=[Mudanza.Estado.CONFIRMADA, Mudanza.Estado.EN_CURSO],

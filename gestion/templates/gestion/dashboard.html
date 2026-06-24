@@ -344,57 +344,100 @@ h1,h2,h3,h4,h5,h6  {
   .empty-state p { font-size: 0.85rem; }
 
   /* ── Feed actividad ──────────────────────── */
-  .activity-feed { padding: 8px 0; }
+ .activity-feed { padding: 4px 0; }
 
   .activity-item {
+    position: relative; /* Necesario para el overlay clickeable */
     display: grid;
     grid-template-columns: 36px 1fr;
-    gap: 12px;
-    padding: 14px 20px;
+    gap: 14px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--dash-border);
-    transition: background .12s;
-    text-decoration: none;
-    color: inherit;
+    transition: background .2s ease;
   }
   .activity-item:last-child { border-bottom: none; }
-  .activity-item:hover { background: rgba(255,255,255,.025); }
+  .activity-item:hover { background: rgba(255,255,255,.02); }
 
-  .activity-avatar {
+.activity-avatar {
     width: 36px; height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3b5bdb 0%, #7950f2 100%);
-    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--dash-accent) 0%, #7950f2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.75rem;
     font-weight: 700;
     color: #fff;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+    /* Candados de seguridad anti-desborde */
+    overflow: hidden;
+    white-space: nowrap;
+    line-height: 1;
   }
 
-  .activity-body { min-width: 0; }
+  .activity-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
 
-  .activity-line {
-    font-size: 0.82rem;
-    line-height: 1.45;
+  .activity-title {
+    font-size: 0.85rem;
+    line-height: 1.4;
     color: var(--dash-text);
-    margin-bottom: 5px;
+    margin: 0;
   }
-  .activity-line strong { color: #fff; }
-  .activity-mudanza-link {
-    color: var(--dash-accent-light);
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .activity-mudanza-link:hover { text-decoration: underline; }
+  .activity-title strong { color: #fff; font-weight: 600; }
 
-  .activity-meta {
+  .activity-mudanza-id {
+    color: var(--dash-accent-light);
+    font-weight: 700;
+  }
+
+  /* Contenedor secundario para el cambio de estado y el tiempo */
+  .activity-detail {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
   }
-  .activity-time {
-    font-size: 0.72rem;
+
+  .activity-change {
+    font-size: 0.80rem;
     color: var(--dash-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .activity-change em {
+    font-style: normal;
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+  .activity-change .arrow {
+    color: var(--dash-muted);
+    font-size: 0.75rem;
+  }
+
+  /* Ajuste fino para que los badges no rompan el flujo dentro de la lista */
+  .activity-detail [class^="badge-"] {
+    padding: 2px 8px;
+    font-size: 0.68rem;
+  }
+
+  .activity-time {
+    font-size: 0.75rem;
+    color: var(--dash-muted);
+  }
+
+  /* Truco Pro: Enlace invisible que cubre TODO el item de forma válida en HTML */
+  .activity-overlay-link {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
   }
 
   /* ── Animaciones de entrada ──────────────── */
@@ -555,46 +598,50 @@ h1,h2,h3,h4,h5,h6  {
 
     {# ── Actividad reciente ────────────────────────────────────── #}
     <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title">
-          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Actividad reciente
-        </span>
-        <span class="panel-count">{{ actividad_reciente|length }} eventos</span>
-      </div>
-
-      {% if actividad_reciente %}
-      <div class="activity-feed">
-        {% for ev in actividad_reciente %}
-        <a href="{{ ev.mudanza_url }}" class="activity-item">
-          <div class="activity-avatar">
-            {{ ev.usuario_nombre|slice:":1"|upper }}{{ ev.usuario_nombre|slice:"ev.usuario_nombre|wordcount:1,1:2"|upper|default:"" }}
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Actividad reciente
+            </span>
+            <span class="panel-count">{{ actividad_reciente|length }} eventos</span>
           </div>
-          <div class="activity-body">
-            <p class="activity-line">
-              <strong>{{ ev.usuario_nombre }}</strong> cambió
-              <a class="activity-mudanza-link" href="{{ ev.mudanza_url }}">#{{ ev.mudanza_id }}</a>
-              de <em>{{ ev.estado_anterior }}</em> a
-              <span class="{{ ev.estado_nuevo_badge }}">{{ ev.estado_nuevo }}</span>
-            </p>
-            <div class="activity-meta">
-              <span class="activity-time">{{ ev.fecha_humanizada }}</span>
+
+          {% if actividad_reciente %}
+          <div class="activity-feed">
+            {% for ev in actividad_reciente %}
+            <div class="activity-item">
+
+              <a href="/gestion/mudanzas/{{ ev.mudanza_id }}/resumen/" class="activity-overlay-link" aria-label="Ver detalles de mudanza"></a>
+
+              <div class="activity-avatar">
+                {{ ev.usuario_nombre|slice:":2"|upper }}
+              </div>
+
+              <div class="activity-body">
+                <p class="activity-title">
+                  <strong>{{ ev.usuario_nombre }}</strong> actualizó la mudanza
+                  <span class="activity-mudanza-id">#{{ ev.mudanza_id }}</span>
+                </p>
+
+                <div class="activity-detail">
+                  <div class="activity-change">
+                    <em>{{ ev.estado_anterior }}</em>
+                    <span class="arrow">→</span>
+                    <span class="{{ ev.estado_nuevo_badge }}">{{ ev.estado_nuevo }}</span>
+                  </div>
+                  <span class="activity-time">• {{ ev.fecha_humanizada }}</span>
+                </div>
+              </div>
             </div>
+            {% endfor %}
           </div>
-        </a>
-        {% endfor %}
-      </div>
 
-      {% else %}
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <p>Sin actividad reciente.</p>
-      </div>
-      {% endif %}
+          {% else %}
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <p>Sin actividad reciente.</p>
+          </div>
+          {% endif %}
     </div>
-
-  </div>{# /dash-grid #}
-
-</div>{# /dash-page #}
 
 {% endblock %}

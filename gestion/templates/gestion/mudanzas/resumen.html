@@ -4,312 +4,554 @@
 
 {% block extra_head %}
 <style>
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap');
-:root {
-    --font-body: 'Inter', sans-serif;
-    --font-title: 'DM Serif Display', serif;
-}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap');
 
-  /* ── Font override global ──────────────────────────────────────────────────── */
- body,
-.admin-content,
-.content-wrapper,
-main,
-[class*="content"] {
-    font-family: var(--font-body) !important;
-}
+    :root {
+        --font-body: 'Inter', sans-serif;
+        --font-title: 'DM Serif Display', serif;
+    }
 
-.page-header-title,
-.section-card-title,
-.section-card-header,
-.inv-categoria-label {
-    font-family: var(--font-title) !important;
-}
+    /* ── Font override global ──────────────────────────────────────────────────── */
+    body,
+    .admin-content,
+    .content-wrapper,
+    main,
+    [class*="content"] {
+        font-family: var(--font-body) !important;
+    }
+
+    .page-header-title,
+    .section-card-title,
+    .section-card-header,
+    .inv-categoria-label {
+        font-family: var(--font-title) !important;
+    }
 
 
-  /* ── PAGE HEADER ─────────────────────────────────────────────────────────── */
-  .page-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .page-header-left { display: flex; flex-direction: column; gap: 0.2rem; }
-  .page-header-eyebrow {
-    font-size: 1.5rem; font-weight: 700;     /* ← más grande y bold */
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--text-muted);
-    font-family: 'Inter', sans-serif;
-  }
-  .page-header-eyebrow a {
-    color: var(--text-muted); text-decoration: none;
-  }
-  .page-header-eyebrow a:hover { color: var(--accent); }
-  .page-header-eyebrow .sep { margin: 0 0.3rem; opacity: 0.5; }
+    /* ── PAGE HEADER ─────────────────────────────────────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
 
-  .page-header-title {
-    font-size: 2.5rem; font-weight: 800;     /* ← más grande y bold */
-    color: var(--text-primary); line-height: 1.1;
-    letter-spacing: -0.03em; margin: 0;
-    font-family: 'Inter', sans-serif;
-  }
-  .page-header-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .page-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
 
-  /* ── ALERT BANNER ────────────────────────────────────────────────────────── */
-  .alert-banner {
-    display: flex; align-items: flex-start; gap: 0.75rem;
-    padding: 0.875rem 1.1rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1.25rem;
-    font-size: 1rem; line-height: 1.5;
-    border: 1px solid;
-    animation: fadeSlideUp 0.25s ease both;
-  }
-  .alert-banner.error {
-    background: color-mix(in srgb, #ef4444 8%, transparent);
-    border-color: color-mix(in srgb, #ef4444 25%, transparent);
-    color: #dc2626;
-  }
-  .alert-banner.warning {
-    background: color-mix(in srgb, #f59e0b 8%, transparent);
-    border-color: color-mix(in srgb, #f59e0b 25%, transparent);
-    color: #b45309;
-  }
-  .alert-banner.success {
-    background: color-mix(in srgb, #22c55e 8%, transparent);
-    border-color: color-mix(in srgb, #22c55e 25%, transparent);
-    color: #16a34a;
-  }
-  .alert-banner svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; margin-top: 1px; }
+    .page-header-eyebrow {
+        font-size: 1.5rem;
+        font-weight: 700; /* ← más grande y bold */
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-family: 'Inter', sans-serif;
+    }
 
-  /* ── LAYOUT GRID ─────────────────────────────────────────────────────────── */
-  .resumen-grid {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 1.25rem;
-    align-items: start;
-  }
+    .page-header-eyebrow a {
+        color: var(--text-muted);
+        text-decoration: none;
+    }
 
-  /* ── SECTION CARD ────────────────────────────────────────────────────────── */
-  .section-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    animation: fadeSlideUp 0.3s ease both;
-    font-family: 'Inter', sans-serif;
-  }
-  .section-card + .section-card { margin-top: 1.25rem; }
+    .page-header-eyebrow a:hover {
+        color: var(--accent);
+    }
 
-  .section-card-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.875rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-card-title {
-    font-size: 1.2rem; font-weight: 700;   /* ← más grande */
-    letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--text-primary);
-  }
-  .section-card-body { padding: 1.25rem; }
+    .page-header-eyebrow .sep {
+        margin: 0 0.3rem;
+        opacity: 0.5;
+    }
 
-  /* ── INFO ROWS ───────────────────────────────────────────────────────────── */
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem 1.5rem;
-  }
-  .info-item { display: flex; flex-direction: column; gap: 0.2rem; }
-  .info-label {
-    font-size: 0.90rem; font-weight: 700;   /* ← más grande */
-    letter-spacing: 0.07em; text-transform: uppercase;
-    color: var(--text-muted);
-  }
-  .info-value {
-    font-size: 1rem; font-weight: 500;   /* ← más grande */
-    color: var(--text-primary); line-height: 1.4;
-  }
-  .info-value.mono {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 1rem;                     /* ← más grande */
-  }
+    .page-header-title {
+        font-size: 2.5rem;
+        font-weight: 800; /* ← más grande y bold */
+        color: var(--text-primary);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+    }
 
-  /* ── FORM PRESUPUESTO ────────────────────────────────────────────────────── */
-  .form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
-  .form-group:last-child { margin-bottom: 0; }
+    .page-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
 
-  .form-label {
-    font-size: 1rem; font-weight: 700;   /* ← más grande */
-    letter-spacing: 0.07em; text-transform: uppercase;
-    color: var(--text-muted);
-  }
+    /* ── ALERT BANNER ────────────────────────────────────────────────────────── */
+    .alert-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.875rem 1.1rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 1.25rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border: 1px solid;
+        animation: fadeSlideUp 0.25s ease both;
+    }
 
-  .form-input {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.55rem 0.875rem;
-    font-size: 0.82rem; font-family: "JetBrains Mono", monospace;
-    color: var(--text-primary);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    width: 100%;
-  }
-  .form-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
-  }
-  .form-hint { font-size: 0.80rem; color: var(--text-muted); }
+    .alert-banner.error {
+        background: color-mix(in srgb, #ef4444 8%, transparent);
+        border-color: color-mix(in srgb, #ef4444 25%, transparent);
+        color: #dc2626;
+    }
 
-  .form-check {
-    display: flex; align-items: center; gap: 0.55rem;
-    padding: 0.65rem 0.875rem;
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--radius-md); cursor: pointer;
-  }
-  .form-check input[type="checkbox"] {
-    width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
-  }
-  .form-check-label { font-size: 0.78rem; color: var(--text-primary); cursor: pointer; }
+    .alert-banner.warning {
+        background: color-mix(in srgb, #f59e0b 8%, transparent);
+        border-color: color-mix(in srgb, #f59e0b 25%, transparent);
+        color: #b45309;
+    }
 
-  /* ── DESGLOSE TABLA ──────────────────────────────────────────────────────── */
-  .desglose-table { width: 100%; border-collapse: collapse; }
-  .desglose-table tr { border-bottom: 1px solid var(--border); }
-  .desglose-table tr:last-child { border-bottom: none; }
-  .desglose-table td {
-    padding: 0.6rem 0; font-size: 0.8rem;
-    vertical-align: middle;
-  }
-  .desglose-table td:first-child { color: var(--text-muted); }
-  .desglose-table td:last-child {
-    text-align: right;
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 600; color: var(--text-primary);
-  }
-  .desglose-table .total-row td {
-    padding-top: 0.875rem; border-top: 2px solid var(--border);
-    font-weight: 700;
-  }
-  .desglose-table .total-row td:first-child { color: var(--text-primary); font-size: 0.85rem; }
-  .desglose-table .total-row td:last-child { color: var(--accent); font-size: 1.05rem; }
+    .alert-banner.success {
+        background: color-mix(in srgb, #22c55e 8%, transparent);
+        border-color: color-mix(in srgb, #22c55e 25%, transparent);
+        color: #16a34a;
+    }
 
-  /* ── SENIA BOX ───────────────────────────────────────────────────────────── */
-  .senia-box {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.875rem 1rem;
-    border-radius: var(--radius-md);
-    border: 1px solid;
-    margin-top: 1rem;
-  }
-  .senia-box.pagada {
-    background: color-mix(in srgb, #22c55e 8%, transparent);
-    border-color: color-mix(in srgb, #22c55e 25%, transparent);
-  }
-  .senia-box.pendiente {
-    background: color-mix(in srgb, #f59e0b 8%, transparent);
-    border-color: color-mix(in srgb, #f59e0b 25%, transparent);
-  }
-  .senia-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
-  .senia-box.pagada .senia-label { color: #16a34a; }
-  .senia-box.pendiente .senia-label { color: #b45309; }
-  .senia-value {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 1rem; font-weight: 700;
-  }
-  .senia-box.pagada .senia-value { color: #16a34a; }
-  .senia-box.pendiente .senia-value { color: #b45309; }
+    .alert-banner svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
 
-  /* ── PAGO BUTTON ─────────────────────────────────────────────────────────── */
-  .pago-btn {
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    width: 100%; padding: 0.75rem;
-    background: #009ee3;  /* MercadoPago blue */
-    color: #fff; border: none;
-    border-radius: var(--radius-md);
-    font-size: 1rem; font-weight: 700;
-    cursor: pointer; text-decoration: none;
-    transition: opacity 0.15s;
-    margin-top: 1rem;
-  }
-  .pago-btn:hover { opacity: 0.88; }
-  .pago-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+    /* ── LAYOUT GRID ─────────────────────────────────────────────────────────── */
+    .resumen-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 1.25rem;
+        align-items: start;
+    }
 
-  /* ── INVENTARIO ──────────────────────────────────────────────────────────── */
-  .inv-categoria {
-    margin-bottom: 1.25rem;
-  }
-  .inv-categoria:last-child { margin-bottom: 0; }
+    /* ── SECTION CARD ────────────────────────────────────────────────────────── */
+    .section-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        animation: fadeSlideUp 0.3s ease both;
+        font-family: 'Inter', sans-serif;
+    }
 
-  .inv-categoria-label {
-    font-size: 0.67rem; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--text-muted);
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 0.5rem;
-    display: block;
-  }
+    .section-card + .section-card {
+        margin-top: 1.25rem;
+    }
 
-  .inv-table { width: 100%; border-collapse: collapse; }
-  .inv-table td {
-    padding: 0.45rem 0; font-size: 0.77rem; vertical-align: middle;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  }
-  .inv-table tr:last-child td { border-bottom: none; }
-  .inv-table .inv-nombre { color: var(--text-primary); font-weight: 500; }
-  .inv-table .inv-cant {
-    text-align: center; color: var(--text-muted); font-size: 0.72rem;
-    font-family: "JetBrains Mono", monospace; white-space: nowrap; padding: 0 0.5rem;
-  }
-  .inv-table .inv-vol {
-    text-align: right; color: var(--text-muted);
-    font-family: "JetBrains Mono", monospace; font-size: 0.72rem; white-space: nowrap;
-  }
+    .section-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+    }
 
-  .inv-totales {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;
-    padding-top: 1rem; border-top: 1px solid var(--border);
-  }
-  .inv-total-item {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--radius-md); padding: 0.65rem 0.875rem;
-    display: flex; flex-direction: column; gap: 0.2rem;
-  }
-  .inv-total-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
-  .inv-total-value { font-family: "JetBrains Mono", monospace; font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+    .section-card-title {
+        font-size: 1.2rem;
+        font-weight: 700; /* ← más grande */
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-primary);
+    }
 
-  /* overflow warning */
-  .inv-total-item.alerta { border-color: color-mix(in srgb, #ef4444 35%, transparent); }
-  .inv-total-item.alerta .inv-total-value { color: #ef4444; }
+    .section-card-body {
+        padding: 1.25rem;
+    }
 
-  /* ── TARIFA BADGE ────────────────────────────────────────────────────────── */
-  .tarifa-badge {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    font-size: 1rem; font-weight: 600;
-    color: var(--text-muted);
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 20px; padding: 0.2rem 0.6rem;
-  }
+    /* ── INFO ROWS ───────────────────────────────────────────────────────────── */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem 1.5rem;
+    }
 
-  /* ── ANIMATIONS ──────────────────────────────────────────────────────────── */
-  @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .section-card:nth-child(2) { animation-delay: 0.06s; }
-  .section-card:nth-child(3) { animation-delay: 0.10s; }
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
 
-  /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
-  @media (max-width: 960px) {
-    .resumen-grid { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 600px) {
-    .info-grid { grid-template-columns: 1fr; }
-    .inv-totales { grid-template-columns: 1fr; }
-  }
+    .info-label {
+        font-size: 0.90rem;
+        font-weight: 700; /* ← más grande */
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .info-value {
+        font-size: 1rem;
+        font-weight: 500; /* ← más grande */
+        color: var(--text-primary);
+        line-height: 1.4;
+    }
+
+    .info-value.mono {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1rem; /* ← más grande */
+    }
+
+    /* ── FORM PRESUPUESTO ────────────────────────────────────────────────────── */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        font-size: 1rem;
+        font-weight: 700; /* ← más grande */
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .form-input {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.55rem 0.875rem;
+        font-size: 0.82rem;
+        font-family: "JetBrains Mono", monospace;
+        color: var(--text-primary);
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        width: 100%;
+    }
+
+    .form-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .form-hint {
+        font-size: 0.80rem;
+        color: var(--text-muted);
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.65rem 0.875rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+    }
+
+    .form-check input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    .form-check-label {
+        font-size: 0.78rem;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    /* ── DESGLOSE TABLA ──────────────────────────────────────────────────────── */
+    .desglose-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .desglose-table tr {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .desglose-table tr:last-child {
+        border-bottom: none;
+    }
+
+    .desglose-table td {
+        padding: 0.6rem 0;
+        font-size: 0.8rem;
+        vertical-align: middle;
+    }
+
+    .desglose-table td:first-child {
+        color: var(--text-muted);
+    }
+
+    .desglose-table td:last-child {
+        text-align: right;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .desglose-table .total-row td {
+        padding-top: 0.875rem;
+        border-top: 2px solid var(--border);
+        font-weight: 700;
+    }
+
+    .desglose-table .total-row td:first-child {
+        color: var(--text-primary);
+        font-size: 0.85rem;
+    }
+
+    .desglose-table .total-row td:last-child {
+        color: var(--accent);
+        font-size: 1.05rem;
+    }
+
+    /* ── SENIA BOX ───────────────────────────────────────────────────────────── */
+    .senia-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.875rem 1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid;
+        margin-top: 1rem;
+    }
+
+    .senia-box.pagada {
+        background: color-mix(in srgb, #22c55e 8%, transparent);
+        border-color: color-mix(in srgb, #22c55e 25%, transparent);
+    }
+
+    .senia-box.pendiente {
+        background: color-mix(in srgb, #f59e0b 8%, transparent);
+        border-color: color-mix(in srgb, #f59e0b 25%, transparent);
+    }
+
+    .senia-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    .senia-box.pagada .senia-label {
+        color: #16a34a;
+    }
+
+    .senia-box.pendiente .senia-label {
+        color: #b45309;
+    }
+
+    .senia-value {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .senia-box.pagada .senia-value {
+        color: #16a34a;
+    }
+
+    .senia-box.pendiente .senia-value {
+        color: #b45309;
+    }
+
+    /* ── PAGO BUTTON ─────────────────────────────────────────────────────────── */
+    .pago-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.75rem;
+        background: #009ee3; /* MercadoPago blue */
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: opacity 0.15s;
+        margin-top: 1rem;
+    }
+
+    .pago-btn:hover {
+        opacity: 0.88;
+    }
+
+    .pago-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+    }
+
+    /* ── INVENTARIO ──────────────────────────────────────────────────────────── */
+    .inv-categoria {
+        margin-bottom: 1.25rem;
+    }
+
+    .inv-categoria:last-child {
+        margin-bottom: 0;
+    }
+
+    .inv-categoria-label {
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .inv-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .inv-table td {
+        padding: 0.45rem 0;
+        font-size: 0.77rem;
+        vertical-align: middle;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    }
+
+    .inv-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .inv-table .inv-nombre {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .inv-table .inv-cant {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+        font-family: "JetBrains Mono", monospace;
+        white-space: nowrap;
+        padding: 0 0.5rem;
+    }
+
+    .inv-table .inv-vol {
+        text-align: right;
+        color: var(--text-muted);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    .inv-totales {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .inv-total-item {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.65rem 0.875rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .inv-total-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+    }
+
+    .inv-total-value {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* overflow warning */
+    .inv-total-item.alerta {
+        border-color: color-mix(in srgb, #ef4444 35%, transparent);
+    }
+
+    .inv-total-item.alerta .inv-total-value {
+        color: #ef4444;
+    }
+
+    /* ── TARIFA BADGE ────────────────────────────────────────────────────────── */
+    .tarifa-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 0.2rem 0.6rem;
+    }
+
+    /* ── ANIMATIONS ──────────────────────────────────────────────────────────── */
+    @keyframes fadeSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .section-card:nth-child(2) {
+        animation-delay: 0.06s;
+    }
+
+    .section-card:nth-child(3) {
+        animation-delay: 0.10s;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+        .resumen-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .inv-totales {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -317,294 +559,426 @@ main,
 
 {# ── PAGE HEADER ──────────────────────────────────────────────────────────── #}
 <div class="page-header">
-  <div class="page-header-left">
+    <div class="page-header-left">
     <span class="page-header-eyebrow">
       <a href="{% url 'gestion:mudanza_list' %}">Mudanzas</a>
       <span class="sep">›</span>
       #{{ mudanza_id }}
     </span>
-    <h1 class="page-header-title">{{ titulo_pagina }}</h1>
-  </div>
-  <div class="page-header-actions">
-    {% if senia_pagada %}
-      <span class="badge-success" style="font-size:0.75rem;padding:0.35rem 0.8rem;">✓ Seña cobrada</span>
-    {% endif %}
-    <a href="{% url 'gestion:mudanza_list' %}" class="btn-outline" style="font-size:0.78rem;padding:0.45rem 0.875rem;">
-      ← Volver al listado
-    </a>
-  </div>
+        <h1 class="page-header-title">{{ titulo_pagina }}</h1>
+    </div>
+    <div class="page-header-actions">
+        {% if senia_pagada %}
+        <span class="badge-success" style="font-size:0.75rem;padding:0.35rem 0.8rem;">✓ Seña cobrada</span>
+        {% endif %}
+        <a href="{% url 'gestion:mudanza_list' %}" class="btn-outline"
+           style="font-size:0.78rem;padding:0.45rem 0.875rem;">
+            ← Volver al listado
+        </a>
+    </div>
 </div>
 
 {# ── ALERT BANNERS ─────────────────────────────────────────────────────────── #}
 {% if error %}
 <div class="alert-banner error">
-  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <span>{{ error }}</span>
+    <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>{{ error }}</span>
 </div>
 {% endif %}
 
 {% if alerta_capacidad_label %}
 <div class="alert-banner warning">
-  <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-  <span>{{ alerta_capacidad_label }}</span>
+    <svg viewBox="0 0 24 24">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span>{{ alerta_capacidad_label }}</span>
 </div>
 {% endif %}
 
 {# ── MAIN GRID ─────────────────────────────────────────────────────────────── #}
 <div class="resumen-grid">
 
-  {# ═══ COLUMNA IZQUIERDA ═══ #}
-  <div>
+    {# ═══ COLUMNA IZQUIERDA ═══ #}
+    <div>
 
-    {# ── CALCULAR PRESUPUESTO FORM ───────────────────────────────────────────── #}
-    {% if not senia_pagada %}
-    <div class="section-card" style="margin-bottom:1.25rem;">
-      <div class="section-card-header">
+        {# ── CALCULAR PRESUPUESTO FORM ───────────────────────────────────────────── #}
+        {% if not senia_pagada %}
+        <div class="section-card" style="margin-bottom:1.25rem;">
+            <div class="section-card-header">
         <span class="section-card-title">
           {% if tiene_presupuesto %}Recalcular presupuesto{% else %}Calcular presupuesto{% endif %}
         </span>
-        {% if tiene_presupuesto and tarifa_nombre %}
-        <span class="tarifa-badge">
-          <svg viewBox="0 0 24 24" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                {% if tiene_presupuesto and tarifa_nombre %}
+                <span class="tarifa-badge">
+          <svg viewBox="0 0 24 24"
+               style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path
+                  d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7"
+                                                                                                            y1="7"
+                                                                                                            x2="7.01"
+                                                                                                            y2="7"/></svg>
           {{ tarifa_nombre }}
         </span>
+                {% endif %}
+            </div>
+            <div class="section-card-body">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label" for="distancia_km">Distancia total (km)</label>
+                        <input
+                                type="number"
+                                id="distancia_km"
+                                name="distancia_km"
+                                class="form-input"
+                                placeholder="Ej: 25.5"
+                                step="0.1" min="0.1"
+                                value="{{ distancia_km|default:'' }}"
+                                required
+                        >
+                        <span class="form-hint">Ingresá la distancia del trayecto origen → destino.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="costo_peajes">Peajes estimados ($)</label>
+                        <input
+                                type="number"
+                                id="costo_peajes"
+                                name="costo_peajes"
+                                class="form-input"
+                                placeholder="0"
+                                step="100" min="0"
+                                value="{% if tiene_presupuesto %}{{ desglose_items.1.valor|cut:'$'|cut:'.' }}{% else %}0{% endif %}"
+                        >
+                        <span class="form-hint">Opcional. Dejá en 0 si no hay peajes.</span>
+                    </div>
+
+                    {% if not senia_pagada %}
+                    <div class="form-group">
+                        <label class="form-check" for="generar_pago">
+                            <input type="checkbox" id="generar_pago" name="generar_pago" value="1">
+                            <span class="form-check-label">Generar link de pago MercadoPago al calcular</span>
+                        </label>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="filter-btn" style="width:100%;justify-content:center;padding:0.65rem;">
+                        <svg viewBox="0 0 24 24"
+                             style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        {% if tiene_presupuesto %}Recalcular{% else %}Calcular presupuesto{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
         {% endif %}
-      </div>
-      <div class="section-card-body">
-        <form method="post" action="">
-          {% csrf_token %}
-          <div class="form-group">
-            <label class="form-label" for="distancia_km">Distancia total (km)</label>
-            <input
-              type="number"
-              id="distancia_km"
-              name="distancia_km"
-              class="form-input"
-              placeholder="Ej: 25.5"
-              step="0.1" min="0.1"
-              value="{{ distancia_km|default:'' }}"
-              required
-            >
-            <span class="form-hint">Ingresá la distancia del trayecto origen → destino.</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="costo_peajes">Peajes estimados ($)</label>
-            <input
-              type="number"
-              id="costo_peajes"
-              name="costo_peajes"
-              class="form-input"
-              placeholder="0"
-              step="100" min="0"
-              value="{% if tiene_presupuesto %}{{ desglose_items.1.valor|cut:'$'|cut:'.' }}{% else %}0{% endif %}"
-            >
-            <span class="form-hint">Opcional. Dejá en 0 si no hay peajes.</span>
-          </div>
 
-          {% if not senia_pagada %}
-          <div class="form-group">
-            <label class="form-check" for="generar_pago">
-              <input type="checkbox" id="generar_pago" name="generar_pago" value="1">
-              <span class="form-check-label">Generar link de pago MercadoPago al calcular</span>
-            </label>
-          </div>
-          {% endif %}
+        <div class="section-card" style="margin-top: 1.5rem;">
+            <div class="section-card-header">
+                <h3 class="section-card-title">Logística y Asignación</h3>
+            </div>
+            <div class="section-card-body" style="padding: 1.25rem;">
 
-          <button type="submit" class="filter-btn" style="width:100%;justify-content:center;padding:0.65rem;">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            {% if tiene_presupuesto %}Recalcular{% else %}Calcular presupuesto{% endif %}
-          </button>
-        </form>
-      </div>
-    </div>
-    {% endif %}
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="guardar_recursos" value="1">
 
-    {# ── INVENTARIO ──────────────────────────────────────────────────────────── #}
-    {% if tiene_presupuesto and inventario_items %}
-    <div class="section-card">
-      <div class="section-card-header">
-        <span class="section-card-title">Inventario</span>
-        <span class="tarifa-badge">{{ inventario_items|length }} ítem{{ inventario_items|length|pluralize }}</span>
-      </div>
-      <div class="section-card-body">
-        {% if inventario_por_categoria %}
-          {% for categoria, items in inventario_por_categoria.items %}
-          <div class="inv-categoria">
-            <span class="inv-categoria-label">{{ items.0.categoria_label|default:categoria }}</span>
-            <table class="inv-table">
-              <tbody>
-                {% for item in items %}
-                <tr>
-                  <td class="inv-nombre">{{ item.nombre }}</td>
-                  <td class="inv-cant">× {{ item.cantidad }}</td>
-                  <td class="inv-vol">
-                    {% if item.subtotal_m3 %}{{ item.subtotal_m3 }} m³{% endif %}
-                  </td>
-                </tr>
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="camion"
+                               style="display:block; font-size:0.78rem; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">
+                            Camión Asignado
+                        </label>
+                        <select name="camion" id="camion" class="form-control"
+                                style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem;">
+                            <option value="">-- Sin camión asignado (Planificación) --</option>
+
+                            {% for c in camiones %}
+                            <option value="{{ c.id }}"
+                                    {% if mudanza.camion_id == c.id %}selected{% endif %}
+                                    {% if c.ocupado and mudanza.camion_id != c.id %}disabled{% endif %}>
+                                {{ c.patente }} — {{ c.categoria_label }}
+                                {% if c.ocupado and mudanza.camion_id != c.id %}(Ocupado en otra mudanza){% endif %}
+                            </option>
+                            {% endfor %} </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display:block; font-size:0.78rem; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;">
+                            Personal de Trabajo
+                        </label>
+
+                        <div class="empleados-list"
+                             style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; background: var(--bg-light);">
+                            {% for emp in empleados %}
+                            <div class="checkbox-item"
+                                 style="display: flex; align-items: center; padding: 0.4rem 0.5rem; border-bottom: 1px solid dashed var(--border); font-size: 0.88rem;">
+                                <label style="display: flex; align-items: center; width: 100%; cursor: pointer; gap: 10px; margin: 0;">
+                                    <input type="checkbox"
+                                           name="empleados"
+                                           value="{{ emp.id }}"
+                                           {% if emp.id in empleados_asignados_ids %}checked{% endif %}
+                                           {% if emp.disponibilidad_valor == "ocupado" and emp.id not in empleados_asignados_ids %}disabled{% endif %}>
+
+                                    <span style="flex-grow: 1;">
+                                    <strong>{{ emp.nombre }}</strong>
+                                    <span style="color: var(--text-muted); font-size: 0.78rem;">({{ emp.rol_label }})</span>
+                                </span>
+
+                                    {% if emp.disponibilidad_valor == "ocupado" and emp.id not in empleados_asignados_ids %}
+                                                <span style="color: var(--danger); font-size: 0.75rem; font-weight: 500;">(Agenda Ocupada)</span>
+                                            {% endif %}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.82rem;">
+                                No hay empleados disponibles en el sistema.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"
+                            style="width: 100%; padding: 0.7rem; font-size: 0.88rem; font-weight: 600; border-radius: 6px;">
+                        Guardar Cambios de Logística
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+        {# ── INVENTARIO ──────────────────────────────────────────────────────────── #}
+        {% if tiene_presupuesto and inventario_items %}
+        <div class="section-card">
+            <div class="section-card-header">
+                <span class="section-card-title">Inventario</span>
+                <span class="tarifa-badge">{{ inventario_items|length }} ítem{{ inventario_items|length|pluralize }}</span>
+            </div>
+            <div class="section-card-body">
+                {% if inventario_por_categoria %}
+                {% for categoria, items in inventario_por_categoria.items %}
+                <div class="inv-categoria">
+                    <span class="inv-categoria-label">{{ items.0.categoria_label|default:categoria }}</span>
+                    <table class="inv-table">
+                        <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td class="inv-nombre">{{ item.nombre }}</td>
+                            <td class="inv-cant">× {{ item.cantidad }}</td>
+                            <td class="inv-vol">
+                                {% if item.subtotal_m3 %}{{ item.subtotal_m3 }} m³{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% endfor %}
+                {% else %}
+                {% for item in inventario_items %}
+                <div style="display:flex;justify-content:space-between;padding:0.45rem 0;font-size:0.77rem;border-bottom:1px solid var(--border);">
+                    <span>{{ item.nombre }}</span>
+                    <span style="color:var(--text-muted);">× {{ item.cantidad }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {# Totales de capacidad #}
+                <div class="inv-totales">
+                    <div class="inv-total-item {% if alerta_volumen %}alerta{% endif %}">
+                        <span class="inv-total-label">Volumen total</span>
+                        <span class="inv-total-value">{{ volumen_total_m3 }} m³</span>
+                    </div>
+                    <div class="inv-total-item {% if alerta_sobrecarga %}alerta{% endif %}">
+                        <span class="inv-total-label">Peso total</span>
+                        <span class="inv-total-value">{{ peso_total_kg }} kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ── EMPTY INVENTARIO ────────────────────────────────────────────────────── #}
+        {% if not tiene_presupuesto %}
+        <div class="section-card">
+            <div class="section-card-body" style="padding: 2.5rem 1.5rem; text-align:center; color: var(--text-muted);">
+                <svg viewBox="0 0 24 24"
+                     style="width:32px;height:32px;stroke:var(--text-muted);fill:none;stroke-width:1.25;stroke-linecap:round;opacity:0.4;margin:0 auto 0.75rem;display:block;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="18" x2="12" y2="12"/>
+                    <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                <p style="font-size:0.8rem;margin:0;">Calculá el presupuesto para ver el resumen del inventario y los
+                    costos.</p>
+            </div>
+        </div>
+        {% endif %}
+
+    </div><!-- col-left -->
+
+    {# ═══ COLUMNA DERECHA ═══ #}
+    <div>
+
+        {# ── DATOS DE LA MUDANZA ─────────────────────────────────────────────────── #}
+        <div class="section-card">
+            <div class="section-card-header">
+                <span class="section-card-title">Datos del servicio</span>
+            </div>
+            <div class="section-card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Cliente</span>
+                        <span class="info-value">{{ cliente_nombre }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">N° Mudanza</span>
+                        <span class="info-value mono">#{{ mudanza_id }}</span>
+                    </div>
+
+                    {# ── NUEVOS CAMPOS: FECHA Y HORA ── #}
+                    <div class="info-item">
+                        <span class="info-label">Fecha</span>
+                        <span class="info-value mono">{{ fecha_hora|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Hora</span>
+                        <span class="info-value mono">{{ fecha_hora|time:"H:i" }} hs</span>
+                    </div>
+
+                    {# ── NUEVOS CAMPOS: DIRECCIONES (OCUPAN DOS COLUMNAS) ── #}
+                    {% if origen %}
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Origen</span>
+                        <span class="info-value">{{ origen }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if destino %}
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Destino</span>
+                        <span class="info-value">{{ destino }}</span>
+                    </div>
+                    {% endif %}
+
+                    {# ── CAMPOS EXISTENTES REUBICADOS ABAJO ── #}
+                    {% if distancia_km and distancia_km != "0" %}
+                    <div class="info-item">
+                        <span class="info-label">Distancia</span>
+                        <span class="info-value mono">{{ distancia_km }} km</span>
+                    </div>
+                    {% endif %}
+                    {% if tarifa_nombre %}
+                    <div class="info-item">
+                        <span class="info-label">Tarifa aplicada</span>
+                        <span class="info-value">{{ tarifa_nombre }}</span>
+                    </div>
+                    {% endif %}
+                    {% if tarifa_vigente_desde %}
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Vigente desde</span>
+                        <span class="info-value mono">{{ tarifa_vigente_desde }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# ── DESGLOSE DE COSTOS ──────────────────────────────────────────────────── #}
+        {% if tiene_presupuesto %}
+        <div class="section-card">
+            <div class="section-card-header">
+                <span class="section-card-title">Desglose de costos</span>
+            </div>
+            <div class="section-card-body">
+                <table class="desglose-table">
+                    <tbody>
+                    {% for item in desglose_items %}
+                    <tr>
+                        <td>{{ item.label }}</td>
+                        <td>{{ item.valor }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td>Total</td>
+                        <td>{{ monto_total_formateado }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                {# ── SEÑA ─────────────────────────────────────────────────────────────── #}
+                {% if monto_senia_formateado %}
+                <div class="senia-box {% if senia_pagada %}pagada{% else %}pendiente{% endif %}">
+                    <div>
+                        <div class="senia-label">Seña{% if senia_pagada %} cobrada{% else %} pendiente{% endif %}</div>
+                        {% if not senia_pagada %}
+                        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.15rem;">50% del total</div>
+                        {% endif %}
+                    </div>
+                    <span class="senia-value">{{ monto_senia_formateado }}</span>
+                </div>
+                {% endif %}
+
+                {# ── BOTÓN MERCADOPAGO ─────────────────────────────────────────────────── #}
+                {% if pago_url and not senia_pagada %}
+                <a href="{{ pago_url }}" target="_blank" rel="noopener" class="pago-btn">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Pagar seña con MercadoPago
+                </a>
+                {% endif %}
+
+                {# Seña ya pagada confirmación #}
+                {% if senia_pagada %}
+                <div style="margin-top:0.875rem;padding:0.65rem 0.875rem;background:color-mix(in srgb,#22c55e 6%,transparent);border:1px solid color-mix(in srgb,#22c55e 20%,transparent);border-radius:var(--radius-md);font-size:0.75rem;color:#16a34a;display:flex;align-items:center;gap:0.5rem;">
+                    <svg viewBox="0 0 24 24"
+                         style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;flex-shrink:0;">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    El pago de la seña fue confirmado correctamente.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── ALERTAS DE CAPACIDAD ─────────────────────────────────────────────────── #}
+        {% if alerta_sobrecarga or alerta_volumen %}
+        <div class="section-card" style="border-color: color-mix(in srgb,#ef4444 30%, var(--border));">
+            <div class="section-card-header">
+                <span class="section-card-title" style="color:#ef4444;">⚠ Capacidad excedida</span>
+            </div>
+            <div class="section-card-body" style="font-size:0.78rem;color:var(--text-primary);line-height:1.6;">
+                <p style="margin:0;">{{ alerta_capacidad_label }}</p>
+                <p style="margin:0.5rem 0 0;font-size:0.72rem;color:var(--text-muted);">
+                    Considerá cambiar el camión asignado o ajustar el inventario antes de confirmar.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
         {% else %}
-          {% for item in inventario_items %}
-          <div style="display:flex;justify-content:space-between;padding:0.45rem 0;font-size:0.77rem;border-bottom:1px solid var(--border);">
-            <span>{{ item.nombre }}</span>
-            <span style="color:var(--text-muted);">× {{ item.cantidad }}</span>
-          </div>
-          {% endfor %}
-        {% endif %}
-
-        {# Totales de capacidad #}
-        <div class="inv-totales">
-          <div class="inv-total-item {% if alerta_volumen %}alerta{% endif %}">
-            <span class="inv-total-label">Volumen total</span>
-            <span class="inv-total-value">{{ volumen_total_m3 }} m³</span>
-          </div>
-          <div class="inv-total-item {% if alerta_sobrecarga %}alerta{% endif %}">
-            <span class="inv-total-label">Peso total</span>
-            <span class="inv-total-value">{{ peso_total_kg }} kg</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {# ── EMPTY INVENTARIO ────────────────────────────────────────────────────── #}
-    {% if not tiene_presupuesto %}
-    <div class="section-card">
-      <div class="section-card-body" style="padding: 2.5rem 1.5rem; text-align:center; color: var(--text-muted);">
-        <svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:var(--text-muted);fill:none;stroke-width:1.25;stroke-linecap:round;opacity:0.4;margin:0 auto 0.75rem;display:block;">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-        </svg>
-        <p style="font-size:0.8rem;margin:0;">Calculá el presupuesto para ver el resumen del inventario y los costos.</p>
-      </div>
-    </div>
-    {% endif %}
-
-  </div><!-- col-left -->
-
-  {# ═══ COLUMNA DERECHA ═══ #}
-  <div>
-
-    {# ── DATOS DE LA MUDANZA ─────────────────────────────────────────────────── #}
-    <div class="section-card">
-      <div class="section-card-header">
-        <span class="section-card-title">Datos del servicio</span>
-      </div>
-      <div class="section-card-body">
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">Cliente</span>
-            <span class="info-value">{{ cliente_nombre }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">N° Mudanza</span>
-            <span class="info-value mono">#{{ mudanza_id }}</span>
-          </div>
-          {% if distancia_km and distancia_km != "0" %}
-          <div class="info-item">
-            <span class="info-label">Distancia</span>
-            <span class="info-value mono">{{ distancia_km }} km</span>
-          </div>
-          {% endif %}
-          {% if tarifa_nombre %}
-          <div class="info-item">
-            <span class="info-label">Tarifa aplicada</span>
-            <span class="info-value">{{ tarifa_nombre }}</span>
-          </div>
-          {% endif %}
-          {% if tarifa_vigente_desde %}
-          <div class="info-item" style="grid-column: span 2;">
-            <span class="info-label">Vigente desde</span>
-            <span class="info-value mono">{{ tarifa_vigente_desde }}</span>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    {# ── DESGLOSE DE COSTOS ──────────────────────────────────────────────────── #}
-    {% if tiene_presupuesto %}
-    <div class="section-card">
-      <div class="section-card-header">
-        <span class="section-card-title">Desglose de costos</span>
-      </div>
-      <div class="section-card-body">
-        <table class="desglose-table">
-          <tbody>
-            {% for item in desglose_items %}
-            <tr>
-              <td>{{ item.label }}</td>
-              <td>{{ item.valor }}</td>
-            </tr>
-            {% endfor %}
-            <tr class="total-row">
-              <td>Total</td>
-              <td>{{ monto_total_formateado }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {# ── SEÑA ─────────────────────────────────────────────────────────────── #}
-        {% if monto_senia_formateado %}
-        <div class="senia-box {% if senia_pagada %}pagada{% else %}pendiente{% endif %}">
-          <div>
-            <div class="senia-label">Seña{% if senia_pagada %} cobrada{% else %} pendiente{% endif %}</div>
-            {% if not senia_pagada %}
-            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.15rem;">50% del total</div>
-            {% endif %}
-          </div>
-          <span class="senia-value">{{ monto_senia_formateado }}</span>
+        {# No hay presupuesto aún #}
+        <div class="section-card">
+            <div class="section-card-body"
+                 style="padding: 1.75rem 1.25rem; text-align:center; color: var(--text-muted);">
+                <svg viewBox="0 0 24 24"
+                     style="width:28px;height:28px;stroke:var(--text-muted);fill:none;stroke-width:1.25;stroke-linecap:round;opacity:0.4;margin:0 auto 0.75rem;display:block;">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <p style="font-size:0.78rem;margin:0;">Completá el formulario para generar el presupuesto.</p>
+            </div>
         </div>
         {% endif %}
 
-        {# ── BOTÓN MERCADOPAGO ─────────────────────────────────────────────────── #}
-        {% if pago_url and not senia_pagada %}
-        <a href="{{ pago_url }}" target="_blank" rel="noopener" class="pago-btn">
-          <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Pagar seña con MercadoPago
-        </a>
-        {% endif %}
-
-        {# Seña ya pagada confirmación #}
-        {% if senia_pagada %}
-        <div style="margin-top:0.875rem;padding:0.65rem 0.875rem;background:color-mix(in srgb,#22c55e 6%,transparent);border:1px solid color-mix(in srgb,#22c55e 20%,transparent);border-radius:var(--radius-md);font-size:0.75rem;color:#16a34a;display:flex;align-items:center;gap:0.5rem;">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          El pago de la seña fue confirmado correctamente.
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    {# ── ALERTAS DE CAPACIDAD ─────────────────────────────────────────────────── #}
-    {% if alerta_sobrecarga or alerta_volumen %}
-    <div class="section-card" style="border-color: color-mix(in srgb,#ef4444 30%, var(--border));">
-      <div class="section-card-header">
-        <span class="section-card-title" style="color:#ef4444;">⚠ Capacidad excedida</span>
-      </div>
-      <div class="section-card-body" style="font-size:0.78rem;color:var(--text-primary);line-height:1.6;">
-        <p style="margin:0;">{{ alerta_capacidad_label }}</p>
-        <p style="margin:0.5rem 0 0;font-size:0.72rem;color:var(--text-muted);">
-          Considerá cambiar el camión asignado o ajustar el inventario antes de confirmar.
-        </p>
-      </div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    {# No hay presupuesto aún #}
-    <div class="section-card">
-      <div class="section-card-body" style="padding: 1.75rem 1.25rem; text-align:center; color: var(--text-muted);">
-        <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--text-muted);fill:none;stroke-width:1.25;stroke-linecap:round;opacity:0.4;margin:0 auto 0.75rem;display:block;">
-          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-        <p style="font-size:0.78rem;margin:0;">Completá el formulario para generar el presupuesto.</p>
-      </div>
-    </div>
-    {% endif %}
-
-  </div><!-- col-right -->
+    </div><!-- col-right -->
 
 </div><!-- resumen-grid -->
 
@@ -612,12 +986,12 @@ main,
 
 {% block extra_js %}
 <script>
-  // Pequeña UX: si hay error de validación hacemos scroll al banner
-  document.addEventListener("DOMContentLoaded", () => {
-    const banner = document.querySelector(".alert-banner.error");
-    if (banner) {
-      banner.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  });
+    // Pequeña UX: si hay error de validación hacemos scroll al banner
+    document.addEventListener("DOMContentLoaded", () => {
+        const banner = document.querySelector(".alert-banner.error");
+        if (banner) {
+            banner.scrollIntoView({behavior: "smooth", block: "center"});
+        }
+    });
 </script>
 {% endblock %}
