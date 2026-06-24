@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import os
 from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -240,3 +241,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+#Mercado Pago
+
+MERCADOPAGO_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN')
+MERCADOPAGO_PUBLIC_KEY = os.getenv('MP_PUBLIC_KEY')

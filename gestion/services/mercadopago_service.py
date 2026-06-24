@@ -1,5 +1,6 @@
 from __future__ import annotations
 import mercadopago
+import os
 from dataclasses import dataclass
 from decimal import Decimal
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from gestion.models.mudanzas import Mudanza
 
 def _get_sdk() -> mercadopago.SDK:
-    token = getattr(settings, "MERCADOPAGO_ACCESS_TOKEN", None)
+    token = getattr(settings, "TEST_ACCESS_TOKEN", None)
     if not token:
         raise ImproperlyConfigured(
             "MERCADOPAGO_ACCESS_TOKEN no esta configurado en settings."
