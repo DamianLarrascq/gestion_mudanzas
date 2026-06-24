@@ -7,6 +7,8 @@
     <title>Solicitar mudanza · GDM</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'public/formulario-style.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 </head>
 <body>
 {% csrf_token %}
@@ -197,15 +199,12 @@
                 </div>
             </div>
 
-            <div class="field" style="margin-top:18px;">
-                <label>Otros detalles o bultos menores (cajas, bolsas, etc.)</label>
-                <textarea id="notas" placeholder="Ej: 15 cajas medianas, 1 televisor, 3 valijas..."></textarea>
-            </div>
-
             <div class="section-label" style="margin-top:20px;">Agenda de Operación</div>
             <div class="field">
                 <label>1. Seleccioná el día disponible (Días Hábiles)</label>
-                <div class="grid-3d" id="calendario-dias"></div>
+                <div class="calendario-contenedor">
+                    <input type="text" id="calendario-inline" style="display: none">
+                </div>
                 <span class="error-msg" id="err-fecha_deseada"></span>
             </div>
 
@@ -214,7 +213,6 @@
                 <div class="grid-3d" id="grilla-horarios"></div>
                 <span class="error-msg" id="err-hora_deseada"></span>
             </div>
-
             <div class="error-msg" id="err-__all__" style="text-align: center; margin-top: 10px; display: block; color: var(--danger);"></div>
             <button class="btn btn-primary" id="btn-calcular" style="margin-top:20px;" disabled>
                 Calcular tarifa y registrar reserva →
@@ -271,7 +269,8 @@
     </div>
 
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 <script src="{% static 'public/formulario-script.js' %}"></script>
 </body>
 </html>
