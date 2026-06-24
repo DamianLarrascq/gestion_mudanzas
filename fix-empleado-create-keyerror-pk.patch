@@ -1,0 +1,36 @@
+From 9c620122d2c6a64039d5870fe6a85f1d97ff7154 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Tue, 23 Jun 2026 23:40:57 +0000
+Subject: [PATCH] =?UTF-8?q?fix(empleados):=20restaura=20class=20EmpleadoDe?=
+ =?UTF-8?q?tailView=20que=20qued=C3=B3=20fusionada=20dentro=20de=20Emplead?=
+ =?UTF-8?q?oCreateView?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+El str_replace previo omitió la línea 'class EmpleadoDetailView(...)' y
+pegó su docstring + template_name + get_context_data como cuerpo extra
+de EmpleadoCreateView. Python pisaba template_name='nuevo.html' con
+'detalle.html' y get_context_data (sin pk) con la que hace
+self.kwargs['pk'], causando KeyError en GET /empleados/nuevo/.
+---
+ gestion/views.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/gestion/views.py b/gestion/views.py
+index 5e3b91d..4333052 100644
+--- a/gestion/views.py
++++ b/gestion/views.py
+@@ -320,6 +320,9 @@ class EmpleadoCreateView(StaffRequiredMixin, TemplateView):
+             f"Asigná una contraseña desde el panel de administración."
+         )
+         return redirect("gestion:empleado_detail", pk=empleado.pk)
++
++
++class EmpleadoDetailView(StaffRequiredMixin, TemplateView):
+     """
+     GET /gestion/empleados/<pk>/
+ 
+-- 
+2.43.0
+
