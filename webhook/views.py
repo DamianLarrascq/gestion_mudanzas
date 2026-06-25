@@ -15,6 +15,7 @@ from gestion.models.mudanzas import Mudanza
 from gestion.models.auditoria import HistorialEstado
 from gestion.models.chatbot import SesionChatbot
 from gestion.services.chatbot_service import ResultadoChatbot, ChatbotHandler
+from gestion.services.mercadopago_service import _get_sdk 
 from twilio.rest import Client
 from twilio.request_validator import RequestValidator
 import re
@@ -94,8 +95,7 @@ def _procesar_pago(payment_id: str | int) -> None:
     """
     Consulta el pago en MP y, si está aprobado, confirma la Mudanza.
     """
-    from gestion.services.mercadopago_service import _get_sdk
-
+    
     sdk = _get_sdk()
     response = sdk.payment().get(payment_id)
 
